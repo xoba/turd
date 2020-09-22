@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto/ecdsa"
 	"flag"
 	"fmt"
 	"log"
@@ -39,17 +38,11 @@ func main() {
 }
 
 func (c Config) Run() error {
-
-	privateKey, err := tnet.NewKey()
-	if err != nil {
-		return err
-	}
-
 	modes := map[string]func() error{
 		"node":    c.RunNode,
 		"launch":  c.LaunchNode,
-		"listen":  func() error { return Listen(privateKey) },
-		"connect": func() error { return Connect(&privateKey.PublicKey) },
+		"listen":  Listen,
+		"connect": Connect,
 	}
 	handler, ok := modes[c.Mode]
 	if !ok {
@@ -67,12 +60,12 @@ func (c Config) Run() error {
 }
 
 // connect to a network listener
-func Connect(key *ecdsa.PublicKey) error {
+func Connect() error {
 	n, err := tnet.NewNetwork(nil, 8081)
 	if err != nil {
 		return err
 	}
-	c, err := n.Dial(tnet.Node{Address: "localhost:8080", PublicKey: key})
+	c, err := n.Dial(tnet.Node{Address: "localhost:8080"})
 	if err != nil {
 		return err
 	}
@@ -91,8 +84,8 @@ func Connect(key *ecdsa.PublicKey) error {
 }
 
 // play with network listeners
-func Listen(key *ecdsa.PrivateKey) error {
-	n, err := tnet.NewNetwork(key, 8080)
+func Listen() error {
+	n, err := tnet.NewNetwork(nil, 8080)
 	if err != nil {
 		return err
 	}

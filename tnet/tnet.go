@@ -3,11 +3,13 @@ package tnet
 
 import (
 	"crypto/ecdsa"
-	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/sha256"
+	"encoding/asn1"
 	"encoding/binary"
 	"fmt"
 	"io"
+	"math/big"
 	"net"
 )
 
@@ -31,12 +33,14 @@ type Conn interface {
 }
 
 type Node struct {
-	Address   string           // how to reach the node
-	PublicKey *ecdsa.PublicKey // true identity of the node
+	Address   string     // how to reach the node
+	PublicKey *PublicKey // node's public key
 }
 
 type conn struct {
-	c net.Conn
+	self  *PrivateKey
+	other *PublicKey
+	c     net.Conn
 }
 
 func (c conn) Remote() Node {
@@ -44,8 +48,23 @@ func (c conn) Remote() Node {
 }
 
 func (c conn) Receive() ([]byte, error) {
+	buf, err := receive(c.c)
+	if err != nil {
+		return nil, err
+	}
+	var p packet
+	if _, err := asn1.Unmarshal(buf, &p); err != nil {
+		return nil, err
+	}
+	if !ecdsa.Verify(c.other.k, sha256d(p.Payload), p.R, p.S) {
+		return nil, fmt.Errorf("can't authenticate packet")
+	}
+	return p.Payload, nil
+}
+
+func receive(r io.Reader) ([]byte, error) {
 	var n0 uint64
-	if err := binary.Read(c.c, binary.BigEndian, &n0); err != nil {
+	if err := binary.Read(r, binary.BigEndian, &n0); err != nil {
 		return nil, err
 	}
 	const max = 1000 * 1000
@@ -53,7 +72,7 @@ func (c conn) Receive() ([]byte, error) {
 		return nil, fmt.Errorf("can't handle buffers bigger than %d bytes", max)
 	}
 	buf := make([]byte, n0)
-	n, err := c.c.Read(buf)
+	n, err := r.Read(buf)
 	if err != nil {
 		return nil, err
 	}
@@ -63,12 +82,12 @@ func (c conn) Receive() ([]byte, error) {
 	return buf, nil
 }
 
-func (c conn) Send(buf []byte) error {
+func send(w io.Writer, buf []byte) error {
 	var n0 uint64 = uint64(len(buf))
-	if err := binary.Write(c.c, binary.BigEndian, n0); err != nil {
+	if err := binary.Write(w, binary.BigEndian, n0); err != nil {
 		return err
 	}
-	n, err := c.c.Write(buf)
+	n, err := w.Write(buf)
 	if err != nil {
 		return err
 	}
@@ -76,6 +95,36 @@ func (c conn) Send(buf []byte) error {
 		return fmt.Errorf("wrote %d/%d bytes", n, n0)
 	}
 	return nil
+}
+
+func (c conn) Send(buf []byte) error {
+	p := packet{
+		Payload: buf,
+	}
+	r, s, err := ecdsa.Sign(rand.Reader, c.self.k, sha256d(p.Payload))
+	if err != nil {
+		return err
+	}
+	p.R = r
+	p.S = s
+	m, err := asn1.Marshal(p)
+	if err != nil {
+		return err
+	}
+	return send(c.c, m)
+}
+
+type packet struct {
+	Payload []byte
+	R, S    *big.Int
+}
+
+func sha256d(buf []byte) []byte {
+	sha256 := func(x []byte) []byte {
+		h := sha256.Sum256(x)
+		return h[:]
+	}
+	return sha256(sha256(buf))
 }
 
 func (c conn) Close() error {
@@ -87,13 +136,34 @@ func (n network) Dial(to Node) (Conn, error) {
 	if err != nil {
 		return nil, err
 	}
-	var cn conn
-	cn.c = c
-	return &cn, nil
+	// send our public key
+	buf1, err := n.key.Public().MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	if err := send(c, buf1); err != nil {
+		return nil, err
+	}
+	// receive other's public key
+	buf2, err := receive(c)
+	if err != nil {
+		return nil, err
+	}
+	var other PublicKey
+	if err := other.UnmarshalBinary(buf2); err != nil {
+		return nil, err
+	}
+	cn := conn{
+		self:  n.key,
+		other: &other,
+		c:     c,
+	}
+	return cn, nil
 }
 
 type listener struct {
-	x net.Listener
+	key *PrivateKey
+	x   net.Listener
 }
 
 func (l listener) Accept() (Conn, error) {
@@ -101,7 +171,30 @@ func (l listener) Accept() (Conn, error) {
 	if err != nil {
 		return nil, err
 	}
-	return conn{c: c}, nil
+	// receive other's public key
+	buf2, err := receive(c)
+	if err != nil {
+		return nil, err
+	}
+	var other PublicKey
+	if err := other.UnmarshalBinary(buf2); err != nil {
+		return nil, err
+	}
+	// send our public key
+	buf1, err := l.key.Public().MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	if err := send(c, buf1); err != nil {
+		return nil, err
+	}
+
+	cn := conn{
+		self:  l.key,
+		other: &other,
+		c:     c,
+	}
+	return cn, nil
 }
 
 func (l listener) Close() error {
@@ -113,20 +206,15 @@ func (n network) Listen() (Listener, error) {
 	if err != nil {
 		return nil, err
 	}
-	return listener{x: x}, nil
+	return listener{x: x, key: n.key}, nil
 }
 
 type network struct {
-	port int
 	addr string
-	key  *ecdsa.PrivateKey
+	key  *PrivateKey
 }
 
-func NewKey() (*ecdsa.PrivateKey, error) {
-	return ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-}
-
-func NewNetwork(pk *ecdsa.PrivateKey, port int) (Network, error) {
+func NewNetwork(pk *PrivateKey, port int) (Network, error) {
 	if pk == nil {
 		key, err := NewKey()
 		if err != nil {
