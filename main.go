@@ -30,7 +30,7 @@ const SeedNode = "http://localhost:8080"
 func main() {
 	var c Config
 	flag.StringVar(&c.Mode, "m", "node", "mode to run")
-	flag.StringVar(&c.PublicKeyFile, "key", "pub.dat", "public key file")
+	flag.StringVar(&c.PublicKeyFile, "key", "", "public key file")
 	flag.StringVar(&c.AWSProfile, "aws", "", "aws profile")
 	flag.IntVar(&c.Port, "p", 8080, "http port to run on")
 	flag.Parse()
