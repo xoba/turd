@@ -53,13 +53,18 @@ func (n network) Dial(key *PrivateKey, to Node) (Conn, error) {
 	if err != nil {
 		return nil, err
 	}
-	sendKey := func(key *PublicKey) error {
-		buf, err := key.MarshalBinary()
-		if err != nil {
-			return err
+	keySender := func(send func([]byte) error) func(*PublicKey) error {
+		return func(key *PublicKey) error {
+			buf, err := key.MarshalBinary()
+			if err != nil {
+				return err
+			}
+			return send(buf)
 		}
-		return send(c, buf)
 	}
+	sendKey := keySender(func(buf []byte) error {
+		return send(c, buf)
+	})
 	// send our own public key
 	if err := sendKey(key.Public()); err != nil {
 		return nil, err
@@ -68,13 +73,6 @@ func (n network) Dial(key *PrivateKey, to Node) (Conn, error) {
 		remote: to.Address,
 		self:   key,
 		c:      c,
-	}
-	sendKeySigned := func(key *PublicKey) error {
-		buf, err := key.MarshalBinary()
-		if err != nil {
-			return err
-		}
-		return cn.Send(buf)
 	}
 	// send version
 	if err := cn.Send([]byte(Version)); err != nil {
@@ -93,6 +91,9 @@ func (n network) Dial(key *PrivateKey, to Node) (Conn, error) {
 		if err := cn.Send([]byte("expect")); err != nil {
 			return nil, err
 		}
+		sendKeySigned := keySender(func(buf []byte) error {
+			return cn.Send(buf)
+		})
 		if err := sendKeySigned(to.PublicKey); err != nil {
 			return nil, err
 		}
