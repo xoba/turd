@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/ecdsa"
 	"flag"
 	"fmt"
 	"log"
@@ -8,9 +9,12 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/xoba/turd/taws"
+	"github.com/xoba/turd/tnet"
 	"golang.org/x/net/websocket"
 )
 
@@ -19,6 +23,8 @@ type Config struct {
 	AWSProfile string
 	Port       int
 }
+
+const SeedNode = "http://localhost:8080"
 
 func main() {
 	var c Config
@@ -33,9 +39,17 @@ func main() {
 }
 
 func (c Config) Run() error {
+
+	privateKey, err := tnet.NewKey()
+	if err != nil {
+		return err
+	}
+
 	modes := map[string]func() error{
-		"node":   c.RunNode,
-		"launch": c.LaunchNode,
+		"node":    c.RunNode,
+		"launch":  c.LaunchNode,
+		"listen":  func() error { return Listen(privateKey) },
+		"connect": func() error { return Connect(&privateKey.PublicKey) },
 	}
 	handler, ok := modes[c.Mode]
 	if !ok {
@@ -52,11 +66,89 @@ func (c Config) Run() error {
 	return handler()
 }
 
+// connect to a network listener
+func Connect(key *ecdsa.PublicKey) error {
+	n, err := tnet.NewNetwork(nil, 8081)
+	if err != nil {
+		return err
+	}
+	c, err := n.Dial(tnet.Node{Address: "localhost:8080", PublicKey: key})
+	if err != nil {
+		return err
+	}
+	for {
+		buf, err := c.Receive()
+		if err != nil {
+			return err
+		}
+		fmt.Printf("received %q\n", string(buf))
+		if err := c.Send([]byte(fmt.Sprintf("got %q", string(buf)))); err != nil {
+			return err
+		}
+		time.Sleep(time.Second)
+	}
+	return nil
+}
+
+// play with network listeners
+func Listen(key *ecdsa.PrivateKey) error {
+	n, err := tnet.NewNetwork(key, 8080)
+	if err != nil {
+		return err
+	}
+	ln, err := n.Listen()
+	if err != nil {
+		return err
+	}
+	for {
+		c, err := ln.Accept()
+		if err != nil {
+			return err
+		}
+		go func() {
+			if err := handleConnection(c); err != nil {
+				log.Printf("oops: %v", err)
+			}
+		}()
+	}
+	return nil
+}
+
+func handleConnection(c tnet.Conn) error {
+	var i int
+	for {
+		i++
+		if err := c.Send([]byte(fmt.Sprintf("packet %d", i))); err != nil {
+			return err
+		}
+		buf, err := c.Receive()
+		if err != nil {
+			return err
+		}
+		fmt.Printf("received %q\n", string(buf))
+	}
+}
+
+type NodeID struct {
+	RemoteAddr string // verified "network" address
+	PublicKey  []byte
+}
+
+type LiveNode struct {
+	NodeID
+	LastSeen time.Time
+}
+
 type Handler struct {
+	lock  sync.Locker
+	nodes map[string]*LiveNode
 }
 
 func NewHandler() *Handler {
-	return &Handler{}
+	return &Handler{
+		lock:  new(sync.Mutex),
+		nodes: make(map[string]*LiveNode),
+	}
 }
 
 func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -71,9 +163,22 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type NodeMessage struct {
+	Type    string
+	Payload []byte
+}
+
 func (h Handler) ServeWebsocket(ws *websocket.Conn) {
 	for {
+		var m NodeMessage
+		if err := websocket.JSON.Receive(ws, &m); err != nil {
+			log.Printf("error serving %s: %v", ws.RemoteAddr(), err)
+			break
+		}
+		switch m.Type {
+		case "register":
 
+		}
 	}
 }
 
