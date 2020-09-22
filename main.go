@@ -64,7 +64,7 @@ func (c Config) Run() error {
 
 // connect to a network listener
 func (config Config) Connect() error {
-	n, err := tnet.NewNetwork(nil, 8081)
+	n, err := tnet.NewTCPLocalhost(8081)
 	if err != nil {
 		return err
 	}
@@ -80,18 +80,23 @@ func (config Config) Connect() error {
 		}
 		p = &key
 	}
-	c, err := n.Dial(tnet.Node{Address: "localhost:8080", PublicKey: p})
+	key, err := tnet.NewKey()
 	if err != nil {
 		return err
 	}
+	c, err := n.Dial(key, tnet.Node{Address: "localhost:8080", PublicKey: p})
+	if err != nil {
+		return err
+	}
+	defer c.Close()
 	fmt.Printf("remote: %v\n", c.Remote())
 	for {
 		buf, err := c.Receive()
 		if err != nil {
 			return err
 		}
-		fmt.Printf("received %q\n", string(buf.Payload))
-		if err := c.Send([]byte(fmt.Sprintf("got %q", string(buf.Payload)))); err != nil {
+		fmt.Printf("received %q\n", string(buf))
+		if err := c.Send([]byte(fmt.Sprintf("got %q", string(buf)))); err != nil {
 			return err
 		}
 		time.Sleep(300 * time.Millisecond)
@@ -114,7 +119,7 @@ func (config Config) Listen() error {
 			return err
 		}
 	}
-	n, err := tnet.NewNetwork(key, 8080)
+	n, err := tnet.NewTCPLocalhost(8080)
 	if err != nil {
 		return err
 	}
@@ -122,8 +127,9 @@ func (config Config) Listen() error {
 	if err != nil {
 		return err
 	}
+	defer ln.Close()
 	for {
-		c, err := ln.Accept()
+		c, err := ln.Accept(key)
 		if err != nil {
 			return err
 		}
@@ -138,6 +144,7 @@ func (config Config) Listen() error {
 }
 
 func handleConnection(c tnet.Conn) error {
+	defer c.Close()
 	var i int
 	for {
 		i++
@@ -148,7 +155,7 @@ func handleConnection(c tnet.Conn) error {
 		if err != nil {
 			return err
 		}
-		fmt.Printf("received %q\n", string(buf.Payload))
+		fmt.Printf("received %q\n", string(buf))
 	}
 }
 

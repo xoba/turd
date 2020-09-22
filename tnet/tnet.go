@@ -9,20 +9,27 @@ import (
 	"net"
 )
 
+func NewTCPLocalhost(port int) (Network, error) {
+	n := network{
+		addr: fmt.Sprintf("localhost:%d", port),
+	}
+	return n, nil
+}
+
 // all communication on network is authenticated by public key
 type Network interface {
-	Dial(to Node) (Conn, error)
+	Dial(*PrivateKey, Node) (Conn, error)
 	Listen() (Listener, error)
 }
 
 type Listener interface {
-	Accept() (Conn, error)
+	Accept(*PrivateKey) (Conn, error)
 	io.Closer
 }
 
 type Conn interface {
 	Remote() Node // can be used in Network.Dial()
-	Receive() (*Hashed, error)
+	Receive() ([]byte, error)
 	Send([]byte) error
 	io.Closer
 }
@@ -32,47 +39,63 @@ type Node struct {
 	PublicKey *PublicKey // node's public key
 }
 
-type Hashed struct {
-	Payload []byte
-	Hash    []byte
-}
-
-func NewNetwork(pk *PrivateKey, port int) (Network, error) {
-	if pk == nil {
-		key, err := NewKey()
-		if err != nil {
-			return nil, err
-		}
-		pk = key
-	}
-	n := network{
-		addr: fmt.Sprintf("localhost:%d", port),
-		key:  pk,
-	}
-	return n, nil
-}
-
 type network struct {
 	addr string
-	key  *PrivateKey
 }
 
-func (n network) Dial(to Node) (Conn, error) {
+const Version = "1.0"
+
+func (n network) Dial(key *PrivateKey, to Node) (Conn, error) {
+	if key == nil {
+		return nil, fmt.Errorf("needs key")
+	}
 	c, err := net.Dial("tcp", to.Address)
 	if err != nil {
 		return nil, err
 	}
-	// send our address:
-	if err := send(c, []byte(n.addr)); err != nil {
+	sendKey := func(key *PublicKey) error {
+		buf, err := key.MarshalBinary()
+		if err != nil {
+			return err
+		}
+		return send(c, buf)
+	}
+	// send our own public key
+	if err := sendKey(key.Public()); err != nil {
 		return nil, err
 	}
-	// send our public key
-	buf1, err := n.key.Public().MarshalBinary()
-	if err != nil {
+	cn := conn{
+		remote: to.Address,
+		self:   key,
+		c:      c,
+	}
+	sendKeySigned := func(key *PublicKey) error {
+		buf, err := key.MarshalBinary()
+		if err != nil {
+			return err
+		}
+		return cn.Send(buf)
+	}
+	// send version
+	if err := cn.Send([]byte(Version)); err != nil {
 		return nil, err
 	}
-	if err := send(c, buf1); err != nil {
+	// send our address
+	if err := cn.Send([]byte(n.addr)); err != nil {
 		return nil, err
+	}
+	// send which key we expect
+	if pk := to.PublicKey; pk == nil {
+		if err := cn.Send([]byte("none")); err != nil {
+			return nil, err
+		}
+	} else {
+		if err := cn.Send([]byte("expect")); err != nil {
+			return nil, err
+		}
+		if err := sendKeySigned(to.PublicKey); err != nil {
+			return nil, err
+		}
 	}
 	// receive other's public key
 	buf2, err := receive(c)
@@ -88,12 +111,7 @@ func (n network) Dial(to Node) (Conn, error) {
 			return nil, fmt.Errorf("wrong key")
 		}
 	}
-	cn := conn{
-		remote: to.Address,
-		self:   n.key,
-		other:  &other,
-		c:      c,
-	}
+	cn.other = &other
 	return cn, nil
 }
 
@@ -102,7 +120,7 @@ func (n network) Listen() (Listener, error) {
 	if err != nil {
 		return nil, err
 	}
-	return listener{ln: x, key: n.key}, nil
+	return listener{ln: x}, nil
 }
 
 func send(w io.Writer, buf []byte) error {

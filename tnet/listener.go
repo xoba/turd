@@ -1,44 +1,87 @@
 package tnet
 
-import "net"
+import (
+	"fmt"
+	"net"
+)
 
 type listener struct {
-	key *PrivateKey
-	ln   net.Listener
+	ln net.Listener
 }
 
-func (ln listener) Accept() (Conn, error) {
+func (ln listener) Accept(key *PrivateKey) (Conn, error) {
 	c, err := ln.ln.Accept()
 	if err != nil {
 		return nil, err
 	}
-	// receive other's address
-	remote, err := receive(c)
-	if err != nil {
-		return nil, err
+	receiveKey := func() (*PublicKey, error) {
+		buf, err := receive(c)
+		if err != nil {
+			return nil, err
+		}
+		var other PublicKey
+		if err := other.UnmarshalBinary(buf); err != nil {
+			return nil, err
+		}
+		return &other, nil
 	}
 	// receive other's public key
-	buf2, err := receive(c)
+	other, err := receiveKey()
 	if err != nil {
 		return nil, err
 	}
-	var other PublicKey
-	if err := other.UnmarshalBinary(buf2); err != nil {
+	cn := conn{
+		self:  key,
+		other: other,
+		c:     c,
+	}
+	receiveKeySigned := func() (*PublicKey, error) {
+		buf, err := cn.Receive()
+		if err != nil {
+			return nil, err
+		}
+		var other PublicKey
+		if err := other.UnmarshalBinary(buf); err != nil {
+			return nil, err
+		}
+		return &other, nil
+	}
+
+	// receive version
+	version, err := cn.Receive()
+	if err != nil {
 		return nil, err
 	}
+	if string(version) != Version {
+		return nil, fmt.Errorf("bad version %q", string(version))
+	}
+	// receive other's address
+	remote, err := cn.Receive()
+	if err != nil {
+		return nil, err
+	}
+	cn.remote = string(remote)
+	str, err := cn.Receive()
+	switch x := string(str); x {
+	case "none":
+	case "expect":
+		other, err := receiveKeySigned()
+		if err != nil {
+			return nil, err
+		}
+		if !other.Equal(key.Public()) {
+			return nil, fmt.Errorf("we don't have key %s", other)
+		}
+	default:
+		return nil, fmt.Errorf("illegal: %q", x)
+	}
 	// send our public key
-	buf1, err := ln.key.Public().MarshalBinary()
+	buf1, err := key.Public().MarshalBinary()
 	if err != nil {
 		return nil, err
 	}
 	if err := send(c, buf1); err != nil {
 		return nil, err
-	}
-	cn := conn{
-		remote: string(remote),
-		self:   ln.key,
-		other:  &other,
-		c:      c,
 	}
 	return cn, nil
 }

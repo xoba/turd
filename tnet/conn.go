@@ -25,7 +25,7 @@ func (c conn) Remote() Node {
 	return Node{Address: c.remote, PublicKey: c.other}
 }
 
-func (c conn) Receive() (*Hashed, error) {
+func (c conn) Receive() ([]byte, error) {
 	buf, err := receive(c.c)
 	if err != nil {
 		return nil, err
@@ -34,14 +34,10 @@ func (c conn) Receive() (*Hashed, error) {
 	if _, err := asn1.Unmarshal(buf, &p); err != nil {
 		return nil, err
 	}
-	h := Hashed{
-		Payload: p.Payload,
-		Hash:    sha256d(p.Payload),
-	}
-	if !ecdsa.Verify(c.other.k, h.Hash, p.R, p.S) {
+	if !ecdsa.Verify(c.other.k, sha256d(p.Payload), p.R, p.S) {
 		return nil, fmt.Errorf("can't authenticate packet")
 	}
-	return &h, nil
+	return p.Payload, nil
 }
 
 func (c conn) Send(buf []byte) (err error) {
