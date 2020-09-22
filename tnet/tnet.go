@@ -153,6 +153,11 @@ func (n network) Dial(to Node) (Conn, error) {
 	if err := other.UnmarshalBinary(buf2); err != nil {
 		return nil, err
 	}
+	if to.PublicKey != nil {
+		if !other.Equal(to.PublicKey) {
+			return nil, fmt.Errorf("wrong key")
+		}
+	}
 	cn := conn{
 		self:  n.key,
 		other: &other,

@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -18,9 +19,10 @@ import (
 )
 
 type Config struct {
-	Mode       string
-	AWSProfile string
-	Port       int
+	Mode          string
+	AWSProfile    string
+	Port          int
+	PublicKeyFile string
 }
 
 const SeedNode = "http://localhost:8080"
@@ -28,6 +30,7 @@ const SeedNode = "http://localhost:8080"
 func main() {
 	var c Config
 	flag.StringVar(&c.Mode, "m", "node", "mode to run")
+	flag.StringVar(&c.PublicKeyFile, "key", "pub.dat", "public key file")
 	flag.StringVar(&c.AWSProfile, "aws", "", "aws profile")
 	flag.IntVar(&c.Port, "p", 8080, "http port to run on")
 	flag.Parse()
@@ -41,8 +44,8 @@ func (c Config) Run() error {
 	modes := map[string]func() error{
 		"node":    c.RunNode,
 		"launch":  c.LaunchNode,
-		"listen":  Listen,
-		"connect": Connect,
+		"listen":  c.Listen,
+		"connect": c.Connect,
 	}
 	handler, ok := modes[c.Mode]
 	if !ok {
@@ -60,12 +63,24 @@ func (c Config) Run() error {
 }
 
 // connect to a network listener
-func Connect() error {
+func (config Config) Connect() error {
 	n, err := tnet.NewNetwork(nil, 8081)
 	if err != nil {
 		return err
 	}
-	c, err := n.Dial(tnet.Node{Address: "localhost:8080"})
+	var p *tnet.PublicKey
+	if f := config.PublicKeyFile; f != "" {
+		var key tnet.PublicKey
+		buf, err := ioutil.ReadFile(f)
+		if err != nil {
+			return err
+		}
+		if err := key.UnmarshalBinary(buf); err != nil {
+			return err
+		}
+		p = &key
+	}
+	c, err := n.Dial(tnet.Node{Address: "localhost:8080", PublicKey: p})
 	if err != nil {
 		return err
 	}
@@ -84,8 +99,21 @@ func Connect() error {
 }
 
 // play with network listeners
-func Listen() error {
-	n, err := tnet.NewNetwork(nil, 8080)
+func (config Config) Listen() error {
+	key, err := tnet.NewKey()
+	if err != nil {
+		return err
+	}
+	if f := config.PublicKeyFile; f != "" {
+		buf, err := key.Public().MarshalBinary()
+		if err != nil {
+			return err
+		}
+		if err := ioutil.WriteFile(f, buf, os.ModePerm); err != nil {
+			return err
+		}
+	}
+	n, err := tnet.NewNetwork(key, 8080)
 	if err != nil {
 		return err
 	}
