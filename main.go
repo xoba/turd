@@ -90,8 +90,8 @@ func (config Config) Connect() error {
 		if err != nil {
 			return err
 		}
-		fmt.Printf("received %q\n", string(buf))
-		if err := c.Send([]byte(fmt.Sprintf("got %q", string(buf)))); err != nil {
+		fmt.Printf("received %q\n", string(buf.Payload))
+		if err := c.Send([]byte(fmt.Sprintf("got %q", string(buf.Payload)))); err != nil {
 			return err
 		}
 		time.Sleep(time.Second)
@@ -148,7 +148,7 @@ func handleConnection(c tnet.Conn) error {
 		if err != nil {
 			return err
 		}
-		fmt.Printf("received %q\n", string(buf))
+		fmt.Printf("received %q\n", string(buf.Payload))
 	}
 }
 
