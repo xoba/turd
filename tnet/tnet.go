@@ -13,8 +13,7 @@ import (
 	"net"
 )
 
-// all communication on network is authenticated
-// by public key
+// all communication on network is authenticated by public key
 type Network interface {
 	Dial(to Node) (Conn, error)
 	Listen() (Listener, error)
@@ -38,13 +37,14 @@ type Node struct {
 }
 
 type conn struct {
-	self  *PrivateKey
-	other *PublicKey
-	c     net.Conn
+	self   *PrivateKey
+	other  *PublicKey
+	c      net.Conn
+	remote string
 }
 
 func (c conn) Remote() Node {
-	panic("Remote unimplemented")
+	return Node{Address: c.remote, PublicKey: c.other}
 }
 
 func (c conn) Receive() ([]byte, error) {
@@ -136,6 +136,10 @@ func (n network) Dial(to Node) (Conn, error) {
 	if err != nil {
 		return nil, err
 	}
+	// send our address:
+	if err := send(c, []byte(n.addr)); err != nil {
+		return nil, err
+	}
 	// send our public key
 	buf1, err := n.key.Public().MarshalBinary()
 	if err != nil {
@@ -159,9 +163,10 @@ func (n network) Dial(to Node) (Conn, error) {
 		}
 	}
 	cn := conn{
-		self:  n.key,
-		other: &other,
-		c:     c,
+		remote: to.Address,
+		self:   n.key,
+		other:  &other,
+		c:      c,
 	}
 	return cn, nil
 }
@@ -173,6 +178,11 @@ type listener struct {
 
 func (l listener) Accept() (Conn, error) {
 	c, err := l.x.Accept()
+	if err != nil {
+		return nil, err
+	}
+	// receive other's address
+	remote, err := receive(c)
 	if err != nil {
 		return nil, err
 	}
@@ -195,9 +205,10 @@ func (l listener) Accept() (Conn, error) {
 	}
 
 	cn := conn{
-		self:  l.key,
-		other: &other,
-		c:     c,
+		remote: string(remote),
+		self:   l.key,
+		other:  &other,
+		c:      c,
 	}
 	return cn, nil
 }

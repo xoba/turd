@@ -84,6 +84,7 @@ func (config Config) Connect() error {
 	if err != nil {
 		return err
 	}
+	fmt.Printf("remote: %v\n", c.Remote())
 	for {
 		buf, err := c.Receive()
 		if err != nil {
@@ -126,6 +127,7 @@ func (config Config) Listen() error {
 		if err != nil {
 			return err
 		}
+		fmt.Printf("remote: %v\n", c.Remote())
 		go func() {
 			if err := handleConnection(c); err != nil {
 				log.Printf("oops: %v", err)
