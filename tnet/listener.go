@@ -9,10 +9,14 @@ type listener struct {
 	ln net.Listener
 }
 
-func (ln listener) Accept(key *PrivateKey) (Conn, error) {
-	if key == nil {
-		return nil, fmt.Errorf("needs key")
+func (ln listener) Accept(keys ...*PrivateKey) (Conn, error) {
+	if len(keys) == 0 {
+		return nil, fmt.Errorf("needs at least one key")
 	}
+	if len(keys) > 1 {
+		return nil, fmt.Errorf("only one key supported")
+	}
+	key := keys[0]
 	c, err := ln.ln.Accept()
 	if err != nil {
 		return nil, err
@@ -39,7 +43,7 @@ func (ln listener) Accept(key *PrivateKey) (Conn, error) {
 		return nil, err
 	}
 	cn := conn{
-		self:  key,
+		self:  keys[0],
 		other: other,
 		c:     c,
 	}

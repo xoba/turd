@@ -16,7 +16,8 @@ type Network interface {
 }
 
 type Listener interface {
-	Accept(*PrivateKey) (Conn, error)
+	// Accept a connection asking for any of the given keys
+	Accept(...*PrivateKey) (Conn, error)
 	io.Closer
 }
 
