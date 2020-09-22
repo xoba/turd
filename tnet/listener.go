@@ -10,6 +10,9 @@ type listener struct {
 }
 
 func (ln listener) Accept(key *PrivateKey) (Conn, error) {
+	if key == nil {
+		return nil, fmt.Errorf("needs key")
+	}
 	c, err := ln.ln.Accept()
 	if err != nil {
 		return nil, err

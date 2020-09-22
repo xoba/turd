@@ -9,13 +9,6 @@ import (
 	"net"
 )
 
-func NewTCPLocalhost(port int) (Network, error) {
-	n := network{
-		addr: fmt.Sprintf("localhost:%d", port),
-	}
-	return n, nil
-}
-
 // all communication on network is authenticated by public key
 type Network interface {
 	Dial(*PrivateKey, Node) (Conn, error)
@@ -37,6 +30,13 @@ type Conn interface {
 type Node struct {
 	Address   string     // how to reach the node
 	PublicKey *PublicKey // node's public key
+}
+
+func NewTCPLocalhost(port int) (Network, error) {
+	n := network{
+		addr: fmt.Sprintf("localhost:%d", port),
+	}
+	return n, nil
 }
 
 type network struct {
@@ -117,44 +117,48 @@ func (n network) Dial(key *PrivateKey, to Node) (Conn, error) {
 }
 
 func (n network) Listen() (Listener, error) {
-	x, err := net.Listen("tcp", n.addr)
+	ln, err := net.Listen("tcp", n.addr)
 	if err != nil {
 		return nil, err
 	}
-	return listener{ln: x}, nil
+	return listener{ln: ln}, nil
 }
 
 func send(w io.Writer, buf []byte) error {
-	var n0 uint64 = uint64(len(buf))
-	if err := binary.Write(w, binary.BigEndian, n0); err != nil {
+	var bufSize uint64 = uint64(len(buf))
+	if bufSize > maxBufferSize {
+		return fmt.Errorf("can't handle buffers bigger than %d bytes", maxBufferSize)
+	}
+	if err := binary.Write(w, binary.BigEndian, bufSize); err != nil {
 		return err
 	}
 	n, err := w.Write(buf)
 	if err != nil {
 		return err
 	}
-	if uint64(n) != n0 {
-		return fmt.Errorf("wrote %d/%d bytes", n, n0)
+	if uint64(n) != bufSize {
+		return fmt.Errorf("wrote %d/%d bytes", n, bufSize)
 	}
 	return nil
 }
 
+const maxBufferSize = 1000 * 1000
+
 func receive(r io.Reader) ([]byte, error) {
-	var n0 uint64
-	if err := binary.Read(r, binary.BigEndian, &n0); err != nil {
+	var bufSize uint64
+	if err := binary.Read(r, binary.BigEndian, &bufSize); err != nil {
 		return nil, err
 	}
-	const max = 1000 * 1000
-	if n0 > max {
-		return nil, fmt.Errorf("can't handle buffers bigger than %d bytes", max)
+	if bufSize > maxBufferSize {
+		return nil, fmt.Errorf("can't handle buffers bigger than %d bytes", maxBufferSize)
 	}
-	buf := make([]byte, n0)
+	buf := make([]byte, bufSize)
 	n, err := r.Read(buf)
 	if err != nil {
 		return nil, err
 	}
-	if uint64(n) != n0 {
-		return nil, fmt.Errorf("read %d/%d bytes", n, n0)
+	if uint64(n) != bufSize {
+		return nil, fmt.Errorf("read %d/%d bytes", n, bufSize)
 	}
 	return buf, nil
 }
