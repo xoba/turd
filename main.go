@@ -94,7 +94,7 @@ func (config Config) Connect() error {
 		if err := c.Send([]byte(fmt.Sprintf("got %q", string(buf.Payload)))); err != nil {
 			return err
 		}
-		time.Sleep(time.Second)
+		time.Sleep(300 * time.Millisecond)
 	}
 	return nil
 }

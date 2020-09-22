@@ -4,11 +4,11 @@ import "net"
 
 type listener struct {
 	key *PrivateKey
-	x   net.Listener
+	ln   net.Listener
 }
 
-func (l listener) Accept() (Conn, error) {
-	c, err := l.x.Accept()
+func (ln listener) Accept() (Conn, error) {
+	c, err := ln.ln.Accept()
 	if err != nil {
 		return nil, err
 	}
@@ -27,7 +27,7 @@ func (l listener) Accept() (Conn, error) {
 		return nil, err
 	}
 	// send our public key
-	buf1, err := l.key.Public().MarshalBinary()
+	buf1, err := ln.key.Public().MarshalBinary()
 	if err != nil {
 		return nil, err
 	}
@@ -36,13 +36,13 @@ func (l listener) Accept() (Conn, error) {
 	}
 	cn := conn{
 		remote: string(remote),
-		self:   l.key,
+		self:   ln.key,
 		other:  &other,
 		c:      c,
 	}
 	return cn, nil
 }
 
-func (l listener) Close() error {
-	return l.x.Close()
+func (ln listener) Close() error {
+	return ln.ln.Close()
 }

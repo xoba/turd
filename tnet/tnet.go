@@ -98,11 +98,11 @@ func (n network) Dial(to Node) (Conn, error) {
 }
 
 func (n network) Listen() (Listener, error) {
-	x, err := net.Listen("tcp", ":8080")
+	x, err := net.Listen("tcp", n.addr)
 	if err != nil {
 		return nil, err
 	}
-	return listener{x: x, key: n.key}, nil
+	return listener{ln: x, key: n.key}, nil
 }
 
 func send(w io.Writer, buf []byte) error {
