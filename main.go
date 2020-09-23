@@ -13,39 +13,36 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/xoba/turd/cnfg"
+	"github.com/xoba/turd/infl"
 	"github.com/xoba/turd/taws"
 	"github.com/xoba/turd/tnet"
 	"golang.org/x/net/websocket"
 )
 
-type Config struct {
-	Mode          string
-	AWSProfile    string
-	Port          int
-	PublicKeyFile string
-}
-
 const SeedNode = "http://localhost:8080"
 
 func main() {
-	var c Config
+	var c cnfg.Config
 	flag.StringVar(&c.Mode, "m", "node", "mode to run")
 	flag.StringVar(&c.PublicKeyFile, "key", "", "public key file")
 	flag.StringVar(&c.AWSProfile, "aws", "", "aws profile")
 	flag.IntVar(&c.Port, "p", 8080, "http port to run on")
 	flag.Parse()
-	if err := c.Run(); err != nil {
+	if err := Run(c); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
 
-func (c Config) Run() error {
-	modes := map[string]func() error{
-		"node":    c.RunNode,
-		"launch":  c.LaunchNode,
-		"listen":  c.Listen,
-		"connect": c.Connect,
+func Run(c cnfg.Config) error {
+	modes := map[string]func(cnfg.Config) error{
+		"node":      RunNode,
+		"launch":    LaunchNode,
+		"listen":    Listen,
+		"connect":   Connect,
+		"inflation": infl.Run,
+		"infbig":    infl.RunBig,
 	}
 	handler, ok := modes[c.Mode]
 	if !ok {
@@ -59,11 +56,11 @@ func (c Config) Run() error {
 			strings.Join(list, ", "),
 		)
 	}
-	return handler()
+	return handler(c)
 }
 
 // connect to a network listener
-func (config Config) Connect() error {
+func Connect(config cnfg.Config) error {
 	n, err := tnet.NewTCPLocalhost(8081)
 	if err != nil {
 		return err
@@ -105,7 +102,7 @@ func (config Config) Connect() error {
 }
 
 // play with network listeners
-func (config Config) Listen() error {
+func Listen(config cnfg.Config) error {
 	key, err := tnet.NewKey()
 	if err != nil {
 		return err
@@ -212,7 +209,7 @@ func (h Handler) ServeWebsocket(ws *websocket.Conn) {
 	}
 }
 
-func (c Config) RunNode() error {
+func RunNode(c cnfg.Config) error {
 	h := NewHandler()
 	s := &http.Server{
 		Addr:    fmt.Sprintf(":%d", c.Port),
@@ -221,7 +218,7 @@ func (c Config) RunNode() error {
 	return s.ListenAndServe()
 }
 
-func (c Config) LaunchNode() error {
+func LaunchNode(c cnfg.Config) error {
 	s, err := taws.NewSessionFromProfile(c.AWSProfile)
 	if err != nil {
 		return err
