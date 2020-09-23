@@ -28,13 +28,6 @@ func newConn(c RawConn, self *PrivateKey, other *PublicKey, remote string) *conn
 	}
 }
 
-func inc(i *big.Int) *big.Int {
-	var z big.Int
-	one := big.NewInt(1)
-	z.Add(i, one)
-	return &z
-}
-
 type packet struct {
 	Seq     *big.Int
 	Payload []byte
@@ -103,4 +96,11 @@ func (c *conn) Send(buf []byte) (err error) {
 
 func (c conn) Close() error {
 	return c.c.Close()
+}
+
+func inc(i *big.Int) *big.Int {
+	var z big.Int
+	one := big.NewInt(1)
+	z.Add(i, one)
+	return &z
 }
