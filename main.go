@@ -148,7 +148,7 @@ func handleConnection(c tnet.Conn) error {
 	var i int
 	for {
 		i++
-		if err := c.Send([]byte(fmt.Sprintf("packet %d", i))); err != nil {
+		if err := c.Send([]byte(fmt.Sprintf("packet %d at %v", i, time.Now()))); err != nil {
 			return err
 		}
 		buf, err := c.Receive()

@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"math/big"
 	"net"
 )
 
@@ -71,9 +72,11 @@ func (n network) Dial(key *PrivateKey, to Node) (Conn, error) {
 		return nil, err
 	}
 	cn := conn{
-		remote: to.Address,
-		self:   key,
-		c:      c,
+		remote:   to.Address,
+		self:     key,
+		c:        c,
+		sent:     big.NewInt(0),
+		received: big.NewInt(0),
 	}
 	// send version
 	if err := cn.Send([]byte(Version)); err != nil {
@@ -114,7 +117,7 @@ func (n network) Dial(key *PrivateKey, to Node) (Conn, error) {
 		}
 	}
 	cn.other = &other
-	return cn, nil
+	return &cn, nil
 }
 
 func (n network) Listen() (Listener, error) {
