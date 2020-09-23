@@ -54,6 +54,13 @@ type Config struct {
 	Balances        map[string]Balance
 }
 
+func NewConfig(f *big.Rat) Config {
+	return Config{
+		InflationFactor: f,
+		Balances:        make(map[string]Balance),
+	}
+}
+
 func (c Config) value(b Balance) *big.Int {
 	fnum := c.InflationFactor.Num()
 	fdenom := c.InflationFactor.Denom()
@@ -114,11 +121,7 @@ func RunBig(cnfg.Config) error {
 		t0   = 100
 		unit = 100000000
 	)
-	c := Config{
-		Height:          0,
-		InflationFactor: big.NewRat(t0, t0+1),
-		Balances:        make(map[string]Balance),
-	}
+	c := NewConfig(big.NewRat(t0, t0+1))
 	for {
 		c.add(uuid.New().String(), big.NewInt(unit))
 		c.Height++
