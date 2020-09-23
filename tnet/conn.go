@@ -6,17 +6,19 @@ import (
 	"crypto/rand"
 	"encoding/asn1"
 	"fmt"
+	"io"
 	"math/big"
-	"net"
 )
 
 type conn struct {
 	self           *PrivateKey
 	other          *PublicKey
-	c              net.Conn
+	c              rawconn
 	remote         string
 	sent, received *big.Int
 }
+
+type rawconn io.ReadWriteCloser
 
 func inc(i *big.Int) *big.Int {
 	var z big.Int
