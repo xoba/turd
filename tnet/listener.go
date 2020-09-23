@@ -2,7 +2,6 @@ package tnet
 
 import (
 	"fmt"
-	"math/big"
 	"net"
 )
 
@@ -43,13 +42,7 @@ func (ln listener) Accept(keys ...*PrivateKey) (Conn, error) {
 	if err != nil {
 		return nil, err
 	}
-	cn := conn{
-		self:     keys[0],
-		other:    other,
-		c:        c,
-		sent:     big.NewInt(0),
-		received: big.NewInt(0),
-	}
+	cn := newConn(c, keys[0], other, "")
 	receiveKeySigned := keyReceiver(func() ([]byte, error) {
 		return cn.Receive()
 	})
@@ -89,7 +82,7 @@ func (ln listener) Accept(keys ...*PrivateKey) (Conn, error) {
 	if err := send(c, buf1); err != nil {
 		return nil, err
 	}
-	return &cn, nil
+	return cn, nil
 }
 
 func (ln listener) Close() error {

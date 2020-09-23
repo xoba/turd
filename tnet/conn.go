@@ -18,6 +18,17 @@ type conn struct {
 	sent, received *big.Int
 }
 
+func newConn(c rawconn, self *PrivateKey, other *PublicKey, remote string) *conn {
+	return &conn{
+		c:        c,
+		self:     self,
+		other:    other,
+		remote:   remote,
+		sent:     big.NewInt(0),
+		received: big.NewInt(0),
+	}
+}
+
 type rawconn io.ReadWriteCloser
 
 func inc(i *big.Int) *big.Int {
