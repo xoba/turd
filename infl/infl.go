@@ -46,9 +46,12 @@ func RunBig(c cnfg.Config) error {
 		})
 	}
 	const t0 = 100
+
+	//	unit := big.NewInt(1000000)
 	f0 := big.NewRat(t0, t0+1)
 	fnum := f0.Num()
 	fdenom := f0.Denom()
+
 	value := func(b Balance) *big.Rat {
 		dt := big.NewInt(int64(height - b.Height))
 		var fnum2, fdenom2 big.Int
@@ -66,7 +69,7 @@ func RunBig(c cnfg.Config) error {
 		for _, b := range list {
 			total.Add(&total, value(b))
 		}
-		if true {
+		if len(list) > 10 {
 			// consolidate list:
 			list = list[:0]
 			add(&total)
@@ -78,7 +81,7 @@ func RunBig(c cnfg.Config) error {
 		add(big.NewRat(1, 1))
 		height++
 		v, _ := totalValue().Float64()
-		fmt.Printf("height = %d, total value = %f\n", height, v)
+		fmt.Printf("height = %d, total value = %.20f\n", height, v)
 	}
 
 	return nil
