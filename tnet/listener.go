@@ -2,11 +2,10 @@ package tnet
 
 import (
 	"fmt"
-	"net"
 )
 
 type listener struct {
-	ln net.Listener
+	a Acceptor
 }
 
 func (ln listener) Accept(keys ...*PrivateKey) (Conn, error) {
@@ -17,7 +16,7 @@ func (ln listener) Accept(keys ...*PrivateKey) (Conn, error) {
 		return nil, fmt.Errorf("only one key supported")
 	}
 	key := keys[0]
-	c, err := ln.ln.Accept()
+	c, err := ln.a.Accept()
 	if err != nil {
 		return nil, err
 	}
@@ -86,5 +85,5 @@ func (ln listener) Accept(keys ...*PrivateKey) (Conn, error) {
 }
 
 func (ln listener) Close() error {
-	return ln.ln.Close()
+	return ln.a.Close()
 }

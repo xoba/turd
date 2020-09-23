@@ -118,7 +118,7 @@ func (n network) Listen() (Listener, error) {
 	if err != nil {
 		return nil, err
 	}
-	return listener{ln: ln}, nil
+	return listener{a: acceptor{ln: ln}}, nil
 }
 
 func send(w io.Writer, buf []byte) error {

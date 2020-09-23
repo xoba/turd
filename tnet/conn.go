@@ -6,19 +6,18 @@ import (
 	"crypto/rand"
 	"encoding/asn1"
 	"fmt"
-	"io"
 	"math/big"
 )
 
 type conn struct {
 	self           *PrivateKey
 	other          *PublicKey
-	c              rawconn
+	c              RawConn
 	remote         string
 	sent, received *big.Int
 }
 
-func newConn(c rawconn, self *PrivateKey, other *PublicKey, remote string) *conn {
+func newConn(c RawConn, self *PrivateKey, other *PublicKey, remote string) *conn {
 	return &conn{
 		c:        c,
 		self:     self,
@@ -28,8 +27,6 @@ func newConn(c rawconn, self *PrivateKey, other *PublicKey, remote string) *conn
 		received: big.NewInt(0),
 	}
 }
-
-type rawconn io.ReadWriteCloser
 
 func inc(i *big.Int) *big.Int {
 	var z big.Int
