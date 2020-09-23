@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/xoba/turd/cnfg"
 )
 
@@ -31,6 +32,7 @@ func Run(c cnfg.Config) error {
 }
 
 type Balance struct {
+	ID     string
 	Height int
 	Amount *big.Int
 }
@@ -48,22 +50,29 @@ func approx(r *big.Rat) *big.Int {
 
 // inflation with big numbers
 func RunBig(c cnfg.Config) error {
-	var height int
-	var list []Balance
-	add := func(i *big.Int) {
-		list = append(list, Balance{
-			Height: height,
-			Amount: cp(i),
-		})
-	}
 	const t0 = 100
-
 	unit := big.NewInt(100000000)
 	f0 := big.NewRat(t0, t0+1)
-	fnum := f0.Num()
-	fdenom := f0.Denom()
+
+	var height int
+
+	balances := make(map[string]Balance)
+
+	newBalance := func(id string, i *big.Int) Balance {
+		return Balance{
+			ID:     id,
+			Height: height,
+			Amount: cp(i),
+		}
+	}
+
+	add := func(id string, i *big.Int) {
+		balances[id] = newBalance(id, i)
+	}
 
 	value := func(b Balance) *big.Int {
+		fnum := f0.Num()
+		fdenom := f0.Denom()
 		dt := big.NewInt(int64(height - b.Height))
 		var fnum2, fdenom2 big.Int
 		fnum2.Exp(fnum, dt, nil)
@@ -77,27 +86,62 @@ func RunBig(c cnfg.Config) error {
 		return approx(&b2)
 	}
 
-	totalValue := func() *big.Int {
+	totalValue := func(m map[string]Balance) *big.Int {
 		var total big.Int
-		for _, b := range list {
+		for _, b := range m {
 			total.Add(&total, value(b))
-		}
-		if len(list) > 10 {
-			// consolidate list:
-			list = list[:0]
-			add(&total)
 		}
 		return &total
 	}
 
+	xfer := func(to, from string) error {
+		fromBalance, ok := balances[from]
+		if !ok {
+			return fmt.Errorf("no such source balance: %s", from)
+		}
+		toBalance, ok := balances[to]
+		if !ok {
+			toBalance = newBalance(to, big.NewInt(0))
+		}
+		toValue := value(toBalance)
+		fromValue := value(fromBalance)
+
+		delete(balances, from)
+		delete(balances, to)
+
+		var total big.Int
+		total.Add(toValue, fromValue)
+
+		add(to, &total)
+		return nil
+	}
+
 	for {
-		add(unit)
+		add(uuid.New().String(), unit)
 		height++
 		var units big.Rat
-		units.SetFrac(totalValue(), unit)
+		units.SetFrac(totalValue(balances), unit)
 		v, _ := units.Float64()
-		fmt.Printf("height = %d, total value = %.20f\n", height, v)
-		time.Sleep(time.Millisecond)
+		fmt.Printf("height = %d, total value = %.20f; len=%d\n", height, v, len(balances))
+		if len(balances) > 100 {
+			for i := 0; i < 5; i++ {
+				var from, to string
+			LOOP:
+				for k := range balances {
+					switch {
+					case from == "":
+						from = k
+					case to == "":
+						to = k
+					default:
+						break LOOP
+					}
+				}
+				if err := xfer(to, from); err != nil {
+					return err
+				}
+			}
+		}
 	}
 
 	return nil
