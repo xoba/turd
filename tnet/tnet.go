@@ -50,7 +50,7 @@ func (n network) Dial(key *PrivateKey, to Node) (Conn, error) {
 	if key == nil {
 		return nil, fmt.Errorf("needs key")
 	}
-	c, err := net.Dial("tcp", to.Address)
+	c0, err := net.Dial("tcp", to.Address)
 	if err != nil {
 		return nil, err
 	}
@@ -64,13 +64,13 @@ func (n network) Dial(key *PrivateKey, to Node) (Conn, error) {
 		}
 	}
 	sendKey := keySender(func(buf []byte) error {
-		return send(c, buf)
+		return send(c0, buf)
 	})
 	// send our own public key
 	if err := sendKey(key.Public()); err != nil {
 		return nil, err
 	}
-	cn := newConn(c, key, to.PublicKey, to.Address)
+	cn := newConn(c0, key, to.PublicKey, to.Address)
 	// send version
 	if err := cn.Send([]byte(Version)); err != nil {
 		return nil, err
@@ -96,7 +96,7 @@ func (n network) Dial(key *PrivateKey, to Node) (Conn, error) {
 		}
 	}
 	// receive other's public key
-	buf2, err := receive(c)
+	buf2, err := receive(c0)
 	if err != nil {
 		return nil, err
 	}

@@ -38,6 +38,7 @@ func main() {
 
 func Run(c cnfg.Config) error {
 	modes := map[string]func(cnfg.Config) error{
+		"keys":      tnet.SharedKey,
 		"gossip":    gossip.Run,
 		"node":      RunNode,
 		"launch":    LaunchNode,
