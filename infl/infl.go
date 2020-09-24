@@ -150,6 +150,5 @@ func RunBig(cnfg.Config) error {
 			}
 		}
 	}
-
 	return nil
 }
