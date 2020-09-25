@@ -21,6 +21,15 @@ func (ln listener) Accept(keys ...*PrivateKey) (Conn, error) {
 		return nil, err
 	}
 
+	// TODO: receive other's key, nonce, and requested ID first...
+	// (id is hash of public key they want)
+
+	// receive other's key and nonce
+	other, err := receiveKeyAndNonce(c0)
+	if err != nil {
+		return nil, err
+	}
+
 	// send our key and nonce
 	self, err := NewKeyAndNonce(key.Public())
 	if err != nil {
@@ -30,17 +39,11 @@ func (ln listener) Accept(keys ...*PrivateKey) (Conn, error) {
 		return nil, err
 	}
 
-	// receive other's key and nonce
-	other, err := receiveKeyAndNonce(c0)
+	selfKey, err := GenerateSharedKey(self.Nonce, key, other.Key)
 	if err != nil {
 		return nil, err
 	}
-
-	selfKey, err := self.GenerateSharedKey(key)
-	if err != nil {
-		return nil, err
-	}
-	otherKey, err := other.GenerateSharedKey(key)
+	otherKey, err := GenerateSharedKey(other.Nonce, key, other.Key)
 	if err != nil {
 		return nil, err
 	}

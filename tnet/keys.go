@@ -59,10 +59,10 @@ func (p PublicKey) String() string {
 	return "public:" + base64.StdEncoding.EncodeToString(hash(buf))
 }
 
-func (kn *KeyAndNonce) GenerateSharedKey(self *PrivateKey) ([]byte, error) {
-	a, _ := kn.Key.k.Curve.ScalarMult(kn.Key.k.X, kn.Key.k.Y, self.k.D.Bytes())
+func GenerateSharedKey(nonce []byte, self *PrivateKey, other *PublicKey) ([]byte, error) {
+	a, _ := other.k.Curve.ScalarMult(other.k.X, other.k.Y, self.k.D.Bytes())
 	w := new(bytes.Buffer)
-	w.Write(kn.Nonce)
+	w.Write(nonce)
 	w.Write(a.Bytes())
 	return hash(w.Bytes()), nil
 }
@@ -132,16 +132,12 @@ func SharedKey(cnfg.Config) error {
 		if err != nil {
 			return err
 		}
-		kn2 := KeyAndNonce{
-			Key:   key2.Public(),
-			Nonce: kn1.Nonce,
-		}
-		s1, err := kn1.GenerateSharedKey(key1)
+		s1, err := GenerateSharedKey(kn1.Nonce, key1, key2.Public())
 		if err != nil {
 			return err
 		}
 		fmt.Printf("shared1 = %x\n", s1)
-		s2, err := kn2.GenerateSharedKey(key2)
+		s2, err := GenerateSharedKey(kn1.Nonce, key2, key1.Public())
 		if err != nil {
 			return err
 		}

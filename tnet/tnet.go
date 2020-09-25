@@ -70,11 +70,11 @@ func (n network) Dial(key *PrivateKey, to Node) (Conn, error) {
 		return nil, err
 	}
 
-	selfKey, err := self.GenerateSharedKey(key)
+	selfKey, err := GenerateSharedKey(self.Nonce, key, other.Key)
 	if err != nil {
 		return nil, err
 	}
-	otherKey, err := other.GenerateSharedKey(key)
+	otherKey, err := GenerateSharedKey(other.Nonce, key, other.Key)
 	if err != nil {
 		return nil, err
 	}

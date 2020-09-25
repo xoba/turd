@@ -16,8 +16,8 @@ type conn struct {
 }
 
 func newConn(c RawConn, self, other []byte) (*conn, error) {
-	fmt.Printf("self = 0x%x\n", self)
-	fmt.Printf("other = 0x%x\n", other)
+	fmt.Printf("self:  0x%x\n", self)
+	fmt.Printf("other: 0x%x\n", other)
 	if len(self) != 32 || len(other) != 32 {
 		return nil, fmt.Errorf("need 256 bit keys")
 	}
