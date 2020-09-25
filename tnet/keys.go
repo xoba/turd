@@ -8,6 +8,7 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"fmt"
+	"io"
 
 	"github.com/xoba/turd/cnfg"
 )
@@ -55,15 +56,66 @@ func (p *PublicKey) UnmarshalBinary(data []byte) error {
 
 func (p PublicKey) String() string {
 	buf, _ := p.MarshalBinary()
-	return "public:" + base64.StdEncoding.EncodeToString(sha256d(buf))
+	return "public:" + base64.StdEncoding.EncodeToString(hash(buf))
 }
 
-func GenerateSharedKey(nonce []byte, self *PrivateKey, other *PublicKey) ([]byte, error) {
-	a, _ := other.k.Curve.ScalarMult(other.k.X, other.k.Y, self.k.D.Bytes())
+func (kn *KeyAndNonce) GenerateSharedKey(self *PrivateKey) ([]byte, error) {
+	a, _ := kn.Key.k.Curve.ScalarMult(kn.Key.k.X, kn.Key.k.Y, self.k.D.Bytes())
 	w := new(bytes.Buffer)
-	w.Write(nonce)
+	w.Write(kn.Nonce)
 	w.Write(a.Bytes())
-	return sha256d(w.Bytes()), nil
+	return hash(w.Bytes()), nil
+}
+
+type KeyAndNonce struct {
+	Key   *PublicKey
+	Nonce []byte
+}
+
+func NewKeyAndNonce(pk *PublicKey) (*KeyAndNonce, error) {
+	nonce, err := createNonce(100)
+	if err != nil {
+		return nil, err
+	}
+	return &KeyAndNonce{Key: pk, Nonce: nonce}, nil
+}
+
+func (kn *KeyAndNonce) send(w io.Writer) error {
+	buf, err := kn.Key.MarshalBinary()
+	if err != nil {
+		return err
+	}
+	if err := send(w, buf); err != nil {
+		return err
+	}
+	return send(w, kn.Nonce)
+}
+
+func receiveKeyAndNonce(r io.Reader) (*KeyAndNonce, error) {
+	buf, err := receive(r)
+	if err != nil {
+		return nil, err
+	}
+	var pk PublicKey
+	if err := pk.UnmarshalBinary(buf); err != nil {
+		return nil, err
+	}
+	kn := KeyAndNonce{
+		Key: &pk,
+	}
+	kn.Nonce, err = receive(r)
+	if err != nil {
+		return nil, err
+	}
+	return &kn, nil
+}
+
+func createNonce(n int) ([]byte, error) {
+	nonce := make([]byte, n)
+	if _, err := rand.Read(nonce); err != nil {
+		return nil, err
+	}
+	return nonce, nil
 }
 
 func SharedKey(cnfg.Config) error {
@@ -76,14 +128,20 @@ func SharedKey(cnfg.Config) error {
 		return err
 	}
 	for i := 0; i < 3; i++ {
-		nonce := make([]byte, 100)
-		rand.Read(nonce)
-		s1, err := GenerateSharedKey(nonce, key1, key2.Public())
+		kn1, err := NewKeyAndNonce(key1.Public())
+		if err != nil {
+			return err
+		}
+		kn2 := KeyAndNonce{
+			Key:   key2.Public(),
+			Nonce: kn1.Nonce,
+		}
+		s1, err := kn1.GenerateSharedKey(key1)
 		if err != nil {
 			return err
 		}
 		fmt.Printf("shared1 = %x\n", s1)
-		s2, err := GenerateSharedKey(nonce, key2, key1.Public())
+		s2, err := kn2.GenerateSharedKey(key2)
 		if err != nil {
 			return err
 		}

@@ -54,23 +54,36 @@ func (n network) Dial(key *PrivateKey, to Node) (Conn, error) {
 	if err != nil {
 		return nil, err
 	}
-	keySender := func(send func([]byte) error) func(*PublicKey) error {
-		return func(key *PublicKey) error {
-			buf, err := key.MarshalBinary()
-			if err != nil {
-				return err
-			}
-			return send(buf)
-		}
-	}
-	sendKey := keySender(func(buf []byte) error {
-		return send(c0, buf)
-	})
-	// send our own public key
-	if err := sendKey(key.Public()); err != nil {
+
+	// send our key and nonce
+	self, err := NewKeyAndNonce(key.Public())
+	if err != nil {
 		return nil, err
 	}
-	cn := newConn(c0, key, to.PublicKey, to.Address)
+	if err := self.send(c0); err != nil {
+		return nil, err
+	}
+
+	// receive other's key and nonce
+	other, err := receiveKeyAndNonce(c0)
+	if err != nil {
+		return nil, err
+	}
+
+	selfKey, err := self.GenerateSharedKey(key)
+	if err != nil {
+		return nil, err
+	}
+	otherKey, err := other.GenerateSharedKey(key)
+	if err != nil {
+		return nil, err
+	}
+
+	cn, err := newConn(c0, selfKey, otherKey)
+	if err != nil {
+		return nil, err
+	}
+
 	// send version
 	if err := cn.Send([]byte(Version)); err != nil {
 		return nil, err
@@ -79,37 +92,7 @@ func (n network) Dial(key *PrivateKey, to Node) (Conn, error) {
 	if err := cn.Send([]byte(n.addr)); err != nil {
 		return nil, err
 	}
-	// send which key we expect
-	if pk := to.PublicKey; pk == nil {
-		if err := cn.Send([]byte("none")); err != nil {
-			return nil, err
-		}
-	} else {
-		if err := cn.Send([]byte("expect")); err != nil {
-			return nil, err
-		}
-		sendKeySigned := keySender(func(buf []byte) error {
-			return cn.Send(buf)
-		})
-		if err := sendKeySigned(to.PublicKey); err != nil {
-			return nil, err
-		}
-	}
-	// receive other's public key
-	buf2, err := receive(c0)
-	if err != nil {
-		return nil, err
-	}
-	var other PublicKey
-	if err := other.UnmarshalBinary(buf2); err != nil {
-		return nil, err
-	}
-	if to.PublicKey != nil {
-		if !other.Equal(to.PublicKey) {
-			return nil, fmt.Errorf("wrong key")
-		}
-	}
-	cn.other = &other
+	cn.remote = Node{Address: "", PublicKey: other.Key}
 	return cn, nil
 }
 
@@ -160,7 +143,8 @@ func receive(r io.Reader) ([]byte, error) {
 	return buf, nil
 }
 
-func sha256d(buf []byte) []byte {
+// TODO: replace with scrypt
+func hash(buf []byte) []byte {
 	sha256 := func(x []byte) []byte {
 		h := sha256.Sum256(x)
 		return h[:]

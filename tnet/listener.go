@@ -16,35 +16,40 @@ func (ln listener) Accept(keys ...*PrivateKey) (Conn, error) {
 		return nil, fmt.Errorf("only one key supported")
 	}
 	key := keys[0]
-	c, err := ln.a.Accept()
+	c0, err := ln.a.Accept()
 	if err != nil {
 		return nil, err
 	}
-	keyReceiver := func(receive func() ([]byte, error)) func() (*PublicKey, error) {
-		return func() (*PublicKey, error) {
-			buf, err := receive()
-			if err != nil {
-				return nil, err
-			}
-			var other PublicKey
-			if err := other.UnmarshalBinary(buf); err != nil {
-				return nil, err
-			}
-			return &other, nil
-		}
-	}
-	receiveKey := keyReceiver(func() ([]byte, error) {
-		return receive(c)
-	})
-	// receive other's public key
-	other, err := receiveKey()
+
+	// send our key and nonce
+	self, err := NewKeyAndNonce(key.Public())
 	if err != nil {
 		return nil, err
 	}
-	cn := newConn(c, keys[0], other, "")
-	receiveKeySigned := keyReceiver(func() ([]byte, error) {
-		return cn.Receive()
-	})
+	if err := self.send(c0); err != nil {
+		return nil, err
+	}
+
+	// receive other's key and nonce
+	other, err := receiveKeyAndNonce(c0)
+	if err != nil {
+		return nil, err
+	}
+
+	selfKey, err := self.GenerateSharedKey(key)
+	if err != nil {
+		return nil, err
+	}
+	otherKey, err := other.GenerateSharedKey(key)
+	if err != nil {
+		return nil, err
+	}
+
+	cn, err := newConn(c0, selfKey, otherKey)
+	if err != nil {
+		return nil, err
+	}
+
 	// receive version
 	version, err := cn.Receive()
 	if err != nil {
@@ -58,29 +63,7 @@ func (ln listener) Accept(keys ...*PrivateKey) (Conn, error) {
 	if err != nil {
 		return nil, err
 	}
-	cn.remote = string(remote)
-	str, err := cn.Receive()
-	switch x := string(str); x {
-	case "none":
-	case "expect":
-		other, err := receiveKeySigned()
-		if err != nil {
-			return nil, err
-		}
-		if !other.Equal(key.Public()) {
-			return nil, fmt.Errorf("we don't have key %s", other)
-		}
-	default:
-		return nil, fmt.Errorf("illegal: %q", x)
-	}
-	// send our public key
-	buf1, err := key.Public().MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	if err := send(c, buf1); err != nil {
-		return nil, err
-	}
+	cn.remote = Node{Address: string(remote), PublicKey: other.Key}
 	return cn, nil
 }
 
