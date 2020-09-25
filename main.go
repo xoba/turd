@@ -131,7 +131,8 @@ func Listen(config cnfg.Config) error {
 	for {
 		c, err := ln.Accept(key)
 		if err != nil {
-			return err
+			log.Printf("oops: %v", err)
+			continue
 		}
 		fmt.Printf("remote: %v\n", c.Remote())
 		go func() {

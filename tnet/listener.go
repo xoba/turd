@@ -1,6 +1,7 @@
 package tnet
 
 import (
+	"bytes"
 	"fmt"
 )
 
@@ -20,14 +21,36 @@ func (ln listener) Accept(keys ...*PrivateKey) (Conn, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	// TODO: receive other's key, nonce, and requested ID first...
-	// (id is hash of public key they want)
+	var cleanup func()
+	{
+		// if we exit with error, close the connection
+		cleanup = func() {
+			c0.Close()
+		}
+		defer func() {
+			if cleanup == nil {
+				return
+			}
+			cleanup()
+		}()
+	}
 
 	// receive other's key and nonce
 	other, err := receiveKeyAndNonce(c0)
 	if err != nil {
 		return nil, err
+	}
+
+	{
+		buf, err := receive(c0)
+		if err != nil {
+			return nil, err
+		}
+		if len(buf) > 0 {
+			if !bytes.Equal(buf, key.Public().Hash()) {
+				return nil, fmt.Errorf("don't have key")
+			}
+		}
 	}
 
 	// send our key and nonce
@@ -67,6 +90,7 @@ func (ln listener) Accept(keys ...*PrivateKey) (Conn, error) {
 		return nil, err
 	}
 	cn.remote = Node{Address: string(remote), PublicKey: other.Key}
+	cleanup = nil
 	return cn, nil
 }
 

@@ -64,6 +64,17 @@ func (n network) Dial(key *PrivateKey, to Node) (Conn, error) {
 		return nil, err
 	}
 
+	// send public key we're looking for:
+	if pk := to.PublicKey; pk == nil {
+		if err := send(c0, nil); err != nil {
+			return nil, err
+		}
+	} else {
+		if err := send(c0, pk.Hash()); err != nil {
+			return nil, err
+		}
+	}
+
 	// receive other's key and nonce
 	other, err := receiveKeyAndNonce(c0)
 	if err != nil {

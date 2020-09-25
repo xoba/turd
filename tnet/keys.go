@@ -55,8 +55,12 @@ func (p *PublicKey) UnmarshalBinary(data []byte) error {
 }
 
 func (p PublicKey) String() string {
+	return "public:" + base64.StdEncoding.EncodeToString(p.Hash())
+}
+
+func (p PublicKey) Hash() []byte {
 	buf, _ := p.MarshalBinary()
-	return "public:" + base64.StdEncoding.EncodeToString(hash(buf))
+	return hash(buf)
 }
 
 func GenerateSharedKey(nonce []byte, self *PrivateKey, other *PublicKey) ([]byte, error) {
