@@ -10,6 +10,28 @@ type listener struct {
 	a    Acceptor
 }
 
+type cleaner struct {
+	clean    bool
+	deferred func()
+}
+
+func newCleaner(deferred func()) *cleaner {
+	return &cleaner{
+		deferred: deferred,
+	}
+}
+
+func (c *cleaner) MarkClean() {
+	c.clean = true
+}
+
+func (c *cleaner) Cleanup() {
+	if c.clean {
+		return
+	}
+	c.deferred()
+}
+
 func (ln listener) Accept(keys ...*PrivateKey) (Conn, error) {
 	if len(keys) == 0 {
 		return nil, fmt.Errorf("needs at least one key")
@@ -18,33 +40,25 @@ func (ln listener) Accept(keys ...*PrivateKey) (Conn, error) {
 		return nil, fmt.Errorf("only one key supported")
 	}
 	key := keys[0]
-	c0, err := ln.a.Accept()
+	insecureConn, err := ln.a.Accept()
 	if err != nil {
 		return nil, err
 	}
 
-	var cleanup func()
-	{
-		// if we exit with error, close the connection
-		cleanup = func() {
-			c0.Close()
-		}
-		defer func() {
-			if cleanup == nil {
-				return
-			}
-			cleanup()
-		}()
-	}
+	cleaner := newCleaner(func() {
+		insecureConn.Close()
+	})
+	defer cleaner.Cleanup()
 
 	// receive other's key and nonce
-	other, err := receiveKeyAndNonce(c0)
+	other, err := receiveKeyAndNonce(insecureConn)
 	if err != nil {
 		return nil, err
 	}
 
+	// receive other's request for our key
 	{
-		buf, err := receive(c0)
+		buf, err := receive(insecureConn)
 		if err != nil {
 			return nil, err
 		}
@@ -60,7 +74,7 @@ func (ln listener) Accept(keys ...*PrivateKey) (Conn, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := self.send(c0); err != nil {
+	if err := self.send(insecureConn); err != nil {
 		return nil, err
 	}
 
@@ -73,38 +87,17 @@ func (ln listener) Accept(keys ...*PrivateKey) (Conn, error) {
 		return nil, err
 	}
 
-	cn, err := newConn(c0, selfKey, otherKey)
+	secure, err := newConn(insecureConn, selfKey, otherKey)
 	if err != nil {
 		return nil, err
 	}
 
-	// send version
-	if err := cn.Send([]byte(Version)); err != nil {
+	if err := secure.negotiate(ln.addr, other.Key); err != nil {
 		return nil, err
 	}
 
-	// receive version
-	version, err := cn.Receive()
-	if err != nil {
-		return nil, err
-	}
-	if string(version) != Version {
-		return nil, fmt.Errorf("bad version %q", string(version))
-	}
-
-	// send address
-	if err := cn.Send([]byte(ln.addr)); err != nil {
-		return nil, err
-	}
-
-	// receive other's address
-	remote, err := cn.Receive()
-	if err != nil {
-		return nil, err
-	}
-	cn.remote = Node{Address: string(remote), PublicKey: other.Key}
-	cleanup = nil
-	return cn, nil
+	cleaner.MarkClean()
+	return secure, nil
 }
 
 func (ln listener) Close() error {

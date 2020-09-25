@@ -81,3 +81,29 @@ func inc(i *big.Int) *big.Int {
 	z.Add(i, one)
 	return &z
 }
+
+func (cn *conn) negotiate(selfAddr string, other *PublicKey) error {
+	// send version
+	if err := cn.Send([]byte(Version)); err != nil {
+		return err
+	}
+	// receive version
+	version, err := cn.Receive()
+	if err != nil {
+		return err
+	}
+	if string(version) != Version {
+		return fmt.Errorf("bad version %q", string(version))
+	}
+	// send our address
+	if err := cn.Send([]byte(selfAddr)); err != nil {
+		return err
+	}
+	// receive address
+	addr, err := cn.Receive()
+	if err != nil {
+		return err
+	}
+	cn.remote = Node{Address: string(addr), PublicKey: other}
+	return nil
+}

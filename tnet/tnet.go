@@ -50,47 +50,38 @@ func (n network) Dial(key *PrivateKey, to Node) (Conn, error) {
 	if key == nil {
 		return nil, fmt.Errorf("needs key")
 	}
-	c0, err := net.Dial("tcp", to.Address)
+	insecureConn, err := net.Dial("tcp", to.Address)
 	if err != nil {
 		return nil, err
 	}
 
-	var cleanup func()
-	{
-		// if we exit with error, close the connection
-		cleanup = func() {
-			c0.Close()
-		}
-		defer func() {
-			if cleanup == nil {
-				return
-			}
-			cleanup()
-		}()
-	}
+	cleaner := newCleaner(func() {
+		insecureConn.Close()
+	})
+	defer cleaner.Cleanup()
 
 	// send our key and nonce
 	self, err := NewKeyAndNonce(key.Public())
 	if err != nil {
 		return nil, err
 	}
-	if err := self.send(c0); err != nil {
+	if err := self.send(insecureConn); err != nil {
 		return nil, err
 	}
 
 	// send public key we're looking for:
 	if pk := to.PublicKey; pk == nil {
-		if err := send(c0, nil); err != nil {
+		if err := send(insecureConn, nil); err != nil {
 			return nil, err
 		}
 	} else {
-		if err := send(c0, pk.Hash()); err != nil {
+		if err := send(insecureConn, pk.Hash()); err != nil {
 			return nil, err
 		}
 	}
 
 	// receive other's key and nonce
-	other, err := receiveKeyAndNonce(c0)
+	other, err := receiveKeyAndNonce(insecureConn)
 	if err != nil {
 		return nil, err
 	}
@@ -104,39 +95,17 @@ func (n network) Dial(key *PrivateKey, to Node) (Conn, error) {
 		return nil, err
 	}
 
-	cn, err := newConn(c0, selfKey, otherKey)
+	secure, err := newConn(insecureConn, selfKey, otherKey)
 	if err != nil {
 		return nil, err
 	}
 
-	// send version
-	if err := cn.Send([]byte(Version)); err != nil {
+	if err := secure.negotiate(n.addr, other.Key); err != nil {
 		return nil, err
 	}
 
-	// receive version
-	version, err := cn.Receive()
-	if err != nil {
-		return nil, err
-	}
-	if string(version) != Version {
-		return nil, fmt.Errorf("bad version %q", string(version))
-	}
-
-	// send our address
-	if err := cn.Send([]byte(n.addr)); err != nil {
-		return nil, err
-	}
-
-	// receive address
-	addr, err := cn.Receive()
-	if err != nil {
-		return nil, err
-	}
-
-	cn.remote = Node{Address: string(addr), PublicKey: other.Key}
-	cleanup = nil
-	return cn, nil
+	cleaner.MarkClean()
+	return secure, nil
 }
 
 func (n network) Listen() (Listener, error) {
