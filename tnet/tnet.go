@@ -55,6 +55,20 @@ func (n network) Dial(key *PrivateKey, to Node) (Conn, error) {
 		return nil, err
 	}
 
+	var cleanup func()
+	{
+		// if we exit with error, close the connection
+		cleanup = func() {
+			c0.Close()
+		}
+		defer func() {
+			if cleanup == nil {
+				return
+			}
+			cleanup()
+		}()
+	}
+
 	// send our key and nonce
 	self, err := NewKeyAndNonce(key.Public())
 	if err != nil {
@@ -99,11 +113,29 @@ func (n network) Dial(key *PrivateKey, to Node) (Conn, error) {
 	if err := cn.Send([]byte(Version)); err != nil {
 		return nil, err
 	}
+
+	// receive version
+	version, err := cn.Receive()
+	if err != nil {
+		return nil, err
+	}
+	if string(version) != Version {
+		return nil, fmt.Errorf("bad version %q", string(version))
+	}
+
 	// send our address
 	if err := cn.Send([]byte(n.addr)); err != nil {
 		return nil, err
 	}
-	cn.remote = Node{Address: "", PublicKey: other.Key}
+
+	// receive address
+	addr, err := cn.Receive()
+	if err != nil {
+		return nil, err
+	}
+
+	cn.remote = Node{Address: string(addr), PublicKey: other.Key}
+	cleanup = nil
 	return cn, nil
 }
 
@@ -112,7 +144,7 @@ func (n network) Listen() (Listener, error) {
 	if err != nil {
 		return nil, err
 	}
-	return listener{a: acceptor{ln: ln}}, nil
+	return listener{a: acceptor{ln: ln}, addr: n.addr}, nil
 }
 
 func send(w io.Writer, buf []byte) error {

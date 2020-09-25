@@ -6,7 +6,8 @@ import (
 )
 
 type listener struct {
-	a Acceptor
+	addr string
+	a    Acceptor
 }
 
 func (ln listener) Accept(keys ...*PrivateKey) (Conn, error) {
@@ -21,6 +22,7 @@ func (ln listener) Accept(keys ...*PrivateKey) (Conn, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	var cleanup func()
 	{
 		// if we exit with error, close the connection
@@ -76,6 +78,11 @@ func (ln listener) Accept(keys ...*PrivateKey) (Conn, error) {
 		return nil, err
 	}
 
+	// send version
+	if err := cn.Send([]byte(Version)); err != nil {
+		return nil, err
+	}
+
 	// receive version
 	version, err := cn.Receive()
 	if err != nil {
@@ -84,6 +91,12 @@ func (ln listener) Accept(keys ...*PrivateKey) (Conn, error) {
 	if string(version) != Version {
 		return nil, fmt.Errorf("bad version %q", string(version))
 	}
+
+	// send address
+	if err := cn.Send([]byte(ln.addr)); err != nil {
+		return nil, err
+	}
+
 	// receive other's address
 	remote, err := cn.Receive()
 	if err != nil {
