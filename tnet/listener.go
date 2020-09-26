@@ -3,6 +3,8 @@ package tnet
 import (
 	"bytes"
 	"fmt"
+
+	"github.com/xoba/turd/tnet/packet"
 )
 
 type listener struct {
@@ -46,20 +48,22 @@ func (ln listener) Accept(keys ...*PrivateKey) (Conn, error) {
 		return nil, err
 	}
 
+	pc := packet.NewConn(insecureConn)
+
 	cleaner := newCleaner(func() {
 		insecureConn.Close()
 	})
 	defer cleaner.Cleanup()
 
 	// receive other's key and nonce
-	other, err := receiveKeyAndNonce(insecureConn)
+	other, err := receiveKeyAndNonce(pc)
 	if err != nil {
 		return nil, err
 	}
 
 	// receive other's request for our key
 	{
-		buf, err := receive(insecureConn)
+		buf, err := pc.Receive()
 		if err != nil {
 			return nil, err
 		}
@@ -75,7 +79,7 @@ func (ln listener) Accept(keys ...*PrivateKey) (Conn, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := self.send(insecureConn); err != nil {
+	if err := self.send(pc); err != nil {
 		return nil, err
 	}
 
@@ -88,7 +92,7 @@ func (ln listener) Accept(keys ...*PrivateKey) (Conn, error) {
 		return nil, err
 	}
 
-	secure, err := newConn(insecureConn, selfKey, otherKey)
+	secure, err := newConn(pc, selfKey, otherKey)
 	if err != nil {
 		return nil, err
 	}

@@ -5,17 +5,19 @@ import (
 	"crypto/cipher"
 	"fmt"
 	"math/big"
+
+	"github.com/xoba/turd/tnet/packet"
 )
 
 type conn struct {
 	self           cipher.AEAD // key we encrypt with
 	other          cipher.AEAD // key we decrypt with
 	remote         Node
-	c              RawConn
+	c              packet.Connection
 	sent, received *big.Int
 }
 
-func newConn(c RawConn, self, other []byte) (*conn, error) {
+func newConn(c packet.Connection, self, other []byte) (*conn, error) {
 	if len(self) != 32 || len(other) != 32 {
 		return nil, fmt.Errorf("need 256 bit keys")
 	}
@@ -49,7 +51,7 @@ func (c conn) Remote() Node {
 }
 
 func (c *conn) Receive() ([]byte, error) {
-	cipherText, err := receive(c.c)
+	cipherText, err := c.c.Receive()
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +70,7 @@ func (c *conn) nonce(i *big.Int, n int) []byte {
 func (c *conn) Send(buf []byte) (err error) {
 	cipherText := c.self.Seal(nil, c.nonce(c.sent, c.self.NonceSize()), buf, nil)
 	c.sent = inc(c.sent)
-	return send(c.c, cipherText)
+	return c.c.Send(cipherText)
 }
 
 func (c conn) Close() error {

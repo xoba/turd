@@ -9,9 +9,9 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
 
 	"github.com/xoba/turd/cnfg"
+	"github.com/xoba/turd/tnet/packet"
 )
 
 func NewKey() (*PrivateKey, error) {
@@ -106,19 +106,19 @@ func NewKeyAndNonce(pk *PublicKey) (*KeyAndNonce, error) {
 	return &KeyAndNonce{Key: pk, Nonce: nonce}, nil
 }
 
-func (kn *KeyAndNonce) send(w io.Writer) error {
+func (kn *KeyAndNonce) send(pc packet.Sender) error {
 	buf, err := kn.Key.MarshalBinary()
 	if err != nil {
 		return err
 	}
-	if err := send(w, buf); err != nil {
+	if err := pc.Send(buf); err != nil {
 		return err
 	}
-	return send(w, kn.Nonce)
+	return pc.Send(kn.Nonce)
 }
 
-func receiveKeyAndNonce(r io.Reader) (*KeyAndNonce, error) {
-	buf, err := receive(r)
+func receiveKeyAndNonce(pc packet.Receiver) (*KeyAndNonce, error) {
+	buf, err := pc.Receive()
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +129,7 @@ func receiveKeyAndNonce(r io.Reader) (*KeyAndNonce, error) {
 	kn := KeyAndNonce{
 		Key: &pk,
 	}
-	kn.Nonce, err = receive(r)
+	kn.Nonce, err = pc.Receive()
 	if err != nil {
 		return nil, err
 	}

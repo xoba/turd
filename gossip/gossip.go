@@ -30,12 +30,24 @@ type serverRecord struct {
 type server struct {
 	sync.Locker
 	tnet.Network
+
 	closed      bool
 	key         *tnet.PrivateKey
 	seeds       []string
-	seen        map[string]bool         // message id's already seen
-	connections map[string]connRecord   // map by hash of public key
-	records     map[string]serverRecord // map by public key hash?
+	seen        map[string]bool          // message id's already seen
+	connections map[string]connRecord    // map by key string
+	records     map[string]*serverRecord // map by key string
+}
+
+type Message struct {
+	ID      string
+	Type    string
+	Records []*serverRecord `json:",omitempty"`
+}
+
+type connRecord struct {
+	tnet.Conn
+	send chan *Message
 }
 
 func (n *server) Closed() bool {
@@ -67,14 +79,8 @@ func NewNode(port int, seeds ...string) (*server, error) {
 		seeds:       seeds,
 		seen:        make(map[string]bool),
 		connections: make(map[string]connRecord),
-		records:     make(map[string]serverRecord),
+		records:     make(map[string]*serverRecord),
 	}, nil
-}
-
-type Message struct {
-	ID      string
-	Type    string
-	Records []serverRecord `json:",omitempty"`
 }
 
 func (m Message) String() string {
@@ -110,8 +116,15 @@ func (node *server) process(m *Message) error {
 	}
 	node.seen[m.ID] = true
 	for _, r := range m.Records {
-		// don't check last times seen yet
-		node.records[r.Address] = r
+		key := r.PublicKey.String()
+		r0, ok := node.records[key]
+		if ok {
+			if r.LastSeen.After(r0.LastSeen) {
+				node.records[key].LastSeen = r.LastSeen
+			}
+		} else {
+			node.records[key] = r
+		}
 	}
 	var list []connRecord
 	func() {
@@ -148,6 +161,7 @@ func (node *server) makeNewConnections() error {
 	rand.Shuffle(len(nodes), func(i, j int) {
 		nodes[i], nodes[j] = nodes[j], nodes[i]
 	})
+	var bad []tnet.Node
 	for _, n := range nodes {
 		if key := n.PublicKey; key != nil {
 			if node.alreadyConnected(key) {
@@ -156,10 +170,20 @@ func (node *server) makeNewConnections() error {
 		}
 		c, err := node.Dial(node.key, n)
 		if err != nil {
-			return err
+			bad = append(bad, n)
+			continue
 		}
 		go node.handleConn(c)
 	}
+	func() {
+		node.Lock()
+		defer node.Unlock()
+		for _, n := range bad {
+			fmt.Println(n) // TODO: public key is nil for seed!
+			delete(node.records, n.PublicKey.String())
+		}
+	}()
+
 	return nil
 }
 
@@ -175,17 +199,12 @@ func (node *server) engageWithNodes() {
 	}
 }
 
-type connRecord struct {
-	tnet.Conn
-	send chan *Message
-}
-
 func (node *server) addConn(c connRecord) {
 	node.Lock()
 	defer node.Unlock()
 	key := c.Remote().PublicKey.String()
 	node.connections[key] = c
-	node.records[key] = serverRecord{
+	node.records[key] = &serverRecord{
 		LastSeen: time.Now(),
 		Node:     c.Remote(),
 	}
@@ -198,7 +217,6 @@ func (node *server) removeConn(c connRecord) {
 	delete(node.connections, c.Remote().PublicKey.String())
 }
 
-// TODO: need to think more about structure here....
 func (node *server) handleConn(c tnet.Conn) error {
 	if h := c.Remote().PublicKey; node.alreadyConnected(h) {
 		return nil

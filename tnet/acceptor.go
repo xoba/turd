@@ -6,17 +6,15 @@ import (
 )
 
 type Acceptor interface {
-	Accept() (RawConn, error)
-	Close() error
+	Accept() (io.ReadWriteCloser, error)
+	io.Closer
 }
-
-type RawConn io.ReadWriteCloser
 
 type acceptor struct {
 	ln net.Listener
 }
 
-func (a acceptor) Accept() (RawConn, error) {
+func (a acceptor) Accept() (io.ReadWriteCloser, error) {
 	return a.ln.Accept()
 }
 

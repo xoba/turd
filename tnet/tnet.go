@@ -3,11 +3,12 @@ package tnet
 
 import (
 	"crypto/sha256"
-	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net"
+
+	"github.com/xoba/turd/tnet/packet"
 )
 
 // all communication on network is authenticated by public key
@@ -25,9 +26,7 @@ type Listener interface {
 
 type Conn interface {
 	Remote() Node // can be used in Network.Dial()
-	Receive() ([]byte, error)
-	Send([]byte) error
-	io.Closer
+	packet.Connection
 }
 
 // a processing node in the system
@@ -67,6 +66,8 @@ func (n network) Dial(key *PrivateKey, to Node) (Conn, error) {
 		return nil, err
 	}
 
+	pc := packet.NewConn(insecureConn)
+
 	cleaner := newCleaner(func() {
 		insecureConn.Close()
 	})
@@ -77,23 +78,23 @@ func (n network) Dial(key *PrivateKey, to Node) (Conn, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := self.send(insecureConn); err != nil {
+	if err := self.send(pc); err != nil {
 		return nil, err
 	}
 
 	// send public key we're looking for:
 	if pk := to.PublicKey; pk == nil {
-		if err := send(insecureConn, nil); err != nil {
+		if err := pc.Send(nil); err != nil {
 			return nil, err
 		}
 	} else {
-		if err := send(insecureConn, pk.Hash()); err != nil {
+		if err := pc.Send(pk.Hash()); err != nil {
 			return nil, err
 		}
 	}
 
 	// receive other's key and nonce
-	other, err := receiveKeyAndNonce(insecureConn)
+	other, err := receiveKeyAndNonce(pc)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +115,7 @@ func (n network) Dial(key *PrivateKey, to Node) (Conn, error) {
 		return nil, err
 	}
 
-	secure, err := newConn(insecureConn, selfKey, otherKey)
+	secure, err := newConn(pc, selfKey, otherKey)
 	if err != nil {
 		return nil, err
 	}
@@ -133,45 +134,6 @@ func (n network) Listen() (Listener, error) {
 		return nil, err
 	}
 	return listener{a: acceptor{ln: ln}, addr: n.addr}, nil
-}
-
-func send(w io.Writer, buf []byte) error {
-	var bufSize uint64 = uint64(len(buf))
-	if bufSize > maxBufferSize {
-		return fmt.Errorf("can't handle buffers bigger than %d bytes", maxBufferSize)
-	}
-	if err := binary.Write(w, binary.BigEndian, bufSize); err != nil {
-		return err
-	}
-	n, err := w.Write(buf)
-	if err != nil {
-		return err
-	}
-	if uint64(n) != bufSize {
-		return fmt.Errorf("wrote %d/%d bytes", n, bufSize)
-	}
-	return nil
-}
-
-const maxBufferSize = 1000 * 1000
-
-func receive(r io.Reader) ([]byte, error) {
-	var bufSize uint64
-	if err := binary.Read(r, binary.BigEndian, &bufSize); err != nil {
-		return nil, err
-	}
-	if bufSize > maxBufferSize {
-		return nil, fmt.Errorf("can't handle buffers bigger than %d bytes", maxBufferSize)
-	}
-	buf := make([]byte, bufSize)
-	n, err := r.Read(buf)
-	if err != nil {
-		return nil, err
-	}
-	if uint64(n) != bufSize {
-		return nil, fmt.Errorf("read %d/%d bytes", n, bufSize)
-	}
-	return buf, nil
 }
 
 // hash generates a 256-bit hash
