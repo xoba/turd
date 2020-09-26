@@ -26,7 +26,8 @@ const SeedNode = "http://localhost:8080"
 func main() {
 	var c cnfg.Config
 	flag.StringVar(&c.Mode, "m", "node", "mode to run")
-	flag.StringVar(&c.PublicKeyFile, "key", "", "public key file")
+	flag.StringVar(&c.PublicKeyFile, "pub", "pub.dat", "public key file")
+	flag.StringVar(&c.PrivateKeyFile, "priv", "priv.dat", "private key file")
 	flag.StringVar(&c.AWSProfile, "aws", "", "aws profile")
 	flag.IntVar(&c.Port, "p", 8080, "http port to run on")
 	flag.Parse()
@@ -40,7 +41,7 @@ func Run(c cnfg.Config) error {
 	modes := map[string]func(cnfg.Config) error{
 		"keys":      tnet.SharedKey,
 		"gossip":    gossip.Run,
-		"node":      RunNode,
+		"hnode":     RunHTMLNode,
 		"launch":    LaunchNode,
 		"listen":    Listen,
 		"connect":   Connect,
@@ -104,9 +105,37 @@ func Connect(config cnfg.Config) error {
 	return nil
 }
 
+func CachedKey(f string) (*tnet.PrivateKey, error) {
+	if f == "" {
+		return tnet.NewKey()
+	}
+	if _, err := os.Stat(f); err != nil {
+		key, err := tnet.NewKey()
+		if err != nil {
+			return nil, err
+		}
+		buf, err := key.MarshalBinary()
+		if err != nil {
+			return nil, err
+		}
+		if err := ioutil.WriteFile(f, buf, os.ModePerm); err != nil {
+			return nil, err
+		}
+	}
+	buf, err := ioutil.ReadFile(f)
+	if err != nil {
+		return nil, err
+	}
+	var key tnet.PrivateKey
+	if err := key.UnmarshalBinary(buf); err != nil {
+		return nil, err
+	}
+	return &key, nil
+}
+
 // play with network listeners
 func Listen(config cnfg.Config) error {
-	key, err := tnet.NewKey()
+	key, err := CachedKey(config.PrivateKeyFile)
 	if err != nil {
 		return err
 	}
@@ -119,6 +148,7 @@ func Listen(config cnfg.Config) error {
 			return err
 		}
 	}
+
 	n, err := tnet.NewTCPLocalhost(8080)
 	if err != nil {
 		return err
@@ -213,7 +243,7 @@ func (h Handler) ServeWebsocket(ws *websocket.Conn) {
 	}
 }
 
-func RunNode(c cnfg.Config) error {
+func RunHTMLNode(c cnfg.Config) error {
 	h := NewHandler()
 	s := &http.Server{
 		Addr:    fmt.Sprintf(":%d", c.Port),

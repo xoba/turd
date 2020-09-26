@@ -15,6 +15,7 @@ type cleaner struct {
 	deferred func()
 }
 
+// TODO: maybe incorporate sending an error code too?
 func newCleaner(deferred func()) *cleaner {
 	return &cleaner{
 		deferred: deferred,

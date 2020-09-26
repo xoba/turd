@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 
@@ -33,6 +34,19 @@ func (p PrivateKey) Public() *PublicKey {
 	return &PublicKey{k: &p.k.PublicKey}
 }
 
+func (p PrivateKey) MarshalBinary() (data []byte, err error) {
+	return x509.MarshalECPrivateKey(p.k)
+}
+
+func (p *PrivateKey) UnmarshalBinary(data []byte) error {
+	k, err := x509.ParseECPrivateKey(data)
+	if err != nil {
+		return err
+	}
+	p.k = k
+	return nil
+}
+
 func (p PublicKey) Equal(o *PublicKey) bool {
 	return p.k.Equal(o.k)
 }
@@ -52,6 +66,14 @@ func (p *PublicKey) UnmarshalBinary(data []byte) error {
 	}
 	p.k = pk
 	return nil
+}
+
+func (p PublicKey) MarshalJSON() (data []byte, err error) {
+	buf, err := p.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(buf)
 }
 
 func (p PublicKey) String() string {

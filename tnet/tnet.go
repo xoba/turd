@@ -4,6 +4,7 @@ package tnet
 import (
 	"crypto/sha256"
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
@@ -28,9 +29,15 @@ type Conn interface {
 	io.Closer
 }
 
+// a processing node in the system
 type Node struct {
 	Address   string     // how to reach the node
-	PublicKey *PublicKey // node's public key
+	PublicKey *PublicKey // node's public key, kind of like an ID, but may be transient
+}
+
+func (n Node) String() string {
+	buf, _ := json.Marshal(n)
+	return string(buf)
 }
 
 func NewTCPLocalhost(port int) (Network, error) {
@@ -84,6 +91,13 @@ func (n network) Dial(key *PrivateKey, to Node) (Conn, error) {
 	other, err := receiveKeyAndNonce(insecureConn)
 	if err != nil {
 		return nil, err
+	}
+
+	// check that we got key we asked for:
+	if pk := to.PublicKey; pk != nil {
+		if !other.Key.Equal(pk) {
+			return nil, fmt.Errorf("received wrong key")
+		}
 	}
 
 	selfKey, err := GenerateSharedKey(self.Nonce, key, other.Key)
@@ -155,11 +169,16 @@ func receive(r io.Reader) ([]byte, error) {
 	return buf, nil
 }
 
-// TODO: replace with scrypt
+// hash generates a 256-bit hash
 func hash(buf []byte) []byte {
 	sha256 := func(x []byte) []byte {
 		h := sha256.Sum256(x)
 		return h[:]
 	}
 	return sha256(sha256(buf))
+}
+
+// TODO: replace with something like scrypt
+func mine(buf []byte) []byte {
+	return hash(buf)
 }
