@@ -77,12 +77,12 @@ func (p PublicKey) MarshalJSON() (data []byte, err error) {
 }
 
 func (p PublicKey) String() string {
-	return "public:" + base64.StdEncoding.EncodeToString(p.Hash())
+	return base64.StdEncoding.EncodeToString(p.Hash())
 }
 
 func (p PublicKey) Hash() []byte {
 	buf, _ := p.MarshalBinary()
-	return hash(buf)
+	return Hash(buf)
 }
 
 func GenerateSharedKey(nonce []byte, self *PrivateKey, other *PublicKey) ([]byte, error) {
@@ -90,7 +90,7 @@ func GenerateSharedKey(nonce []byte, self *PrivateKey, other *PublicKey) ([]byte
 	w := new(bytes.Buffer)
 	w.Write(nonce)
 	w.Write(a.Bytes())
-	return hash(w.Bytes()), nil
+	return Hash(w.Bytes()), nil
 }
 
 type KeyAndNonce struct {

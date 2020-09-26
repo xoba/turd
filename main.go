@@ -21,8 +21,6 @@ import (
 	"golang.org/x/net/websocket"
 )
 
-const SeedNode = "http://localhost:8080"
-
 func main() {
 	var c cnfg.Config
 	flag.StringVar(&c.Mode, "m", "node", "mode to run")

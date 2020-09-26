@@ -170,7 +170,7 @@ func receive(r io.Reader) ([]byte, error) {
 }
 
 // hash generates a 256-bit hash
-func hash(buf []byte) []byte {
+func Hash(buf []byte) []byte {
 	sha256 := func(x []byte) []byte {
 		h := sha256.Sum256(x)
 		return h[:]
@@ -180,5 +180,5 @@ func hash(buf []byte) []byte {
 
 // TODO: replace with something like scrypt
 func mine(buf []byte) []byte {
-	return hash(buf)
+	return Hash(buf)
 }
