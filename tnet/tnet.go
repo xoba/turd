@@ -12,6 +12,7 @@ import (
 
 // all communication on network is authenticated by public key
 type Network interface {
+	Addr() string
 	Dial(*PrivateKey, Node) (Conn, error)
 	Listen() (Listener, error)
 }
@@ -52,6 +53,10 @@ type network struct {
 }
 
 const Version = "1.0"
+
+func (n network) Addr() string {
+	return n.addr
+}
 
 func (n network) Dial(key *PrivateKey, to Node) (Conn, error) {
 	if key == nil {

@@ -12,68 +12,46 @@ import (
 	"github.com/xoba/turd/tnet"
 )
 
+const Seed = "localhost:8080"
+
 func Run(c cnfg.Config) error {
-	const seedPort = 8080
-	seedAddr := fmt.Sprintf("localhost:%d", seedPort)
-
-	run := func(port int, seeds ...string) error {
-		n, err := NewNode(port)
-		if err != nil {
-			return err
-		}
-		go func() {
-			if err := n.Gossip(); err != nil {
-				log.Printf("node on port %d failed: %v", port, err)
-			}
-		}()
-		return nil
+	n, err := NewNode(c.Port, Seed)
+	if err != nil {
+		return err
 	}
-
-	if err := run(seedPort); err != nil {
-		log.Fatal(err)
-	}
-
-	for i := 0; i < 3; i++ {
-		if err := run(i+1+seedPort, seedAddr); err != nil {
-			log.Fatal(err)
-		}
-	}
-
-	<-make(chan bool)
-
-	return nil
+	return n.Gossip()
 }
 
-type NodeRecord struct {
+type serverRecord struct {
 	LastSeen time.Time
 	tnet.Node
 }
 
-type Node struct {
+type server struct {
 	sync.Locker
 	tnet.Network
 	closed      bool
 	key         *tnet.PrivateKey
 	seeds       []string
-	seen        map[string]bool       // message id's already seen
-	connections map[string]tnet.Conn  // map by hash of public key
-	records     map[string]NodeRecord // map by public key hash?
+	seen        map[string]bool         // message id's already seen
+	connections map[string]connRecord   // map by hash of public key
+	records     map[string]serverRecord // map by public key hash?
 }
 
-func (n *Node) Closed() bool {
+func (n *server) Closed() bool {
 	n.Lock()
 	defer n.Unlock()
 	return n.closed
 }
 
-func (n *Node) Close() error {
+func (n *server) Close() error {
 	n.Lock()
 	defer n.Unlock()
 	n.closed = true
 	return nil
 }
 
-func NewNode(port int, seeds ...string) (*Node, error) {
+func NewNode(port int, seeds ...string) (*server, error) {
 	key, err := tnet.NewKey()
 	if err != nil {
 		return nil, err
@@ -82,21 +60,21 @@ func NewNode(port int, seeds ...string) (*Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Node{
+	return &server{
 		Locker:      new(sync.Mutex),
 		Network:     n,
 		key:         key,
 		seeds:       seeds,
 		seen:        make(map[string]bool),
-		connections: make(map[string]tnet.Conn),
-		records:     make(map[string]NodeRecord),
+		connections: make(map[string]connRecord),
+		records:     make(map[string]serverRecord),
 	}, nil
 }
 
 type Message struct {
 	ID      string
 	Type    string
-	Records []NodeRecord `json:",omitempty"`
+	Records []serverRecord `json:",omitempty"`
 }
 
 func (m Message) String() string {
@@ -104,7 +82,7 @@ func (m Message) String() string {
 	return string(buf)
 }
 
-func (node *Node) Gossip() error {
+func (node *server) Gossip() error {
 	go node.engageWithNodes()
 	ln, err := node.Listen()
 	if err != nil {
@@ -123,20 +101,33 @@ func (node *Node) Gossip() error {
 	}
 }
 
-func (node *Node) process(m *Message) {
+func (node *server) process(m *Message) error {
+	log.Printf("process(%v)", m)
 	node.Lock()
 	defer node.Unlock()
 	if node.seen[m.ID] {
-		return
+		return nil
 	}
 	node.seen[m.ID] = true
 	for _, r := range m.Records {
 		// don't check last times seen yet
 		node.records[r.Address] = r
 	}
+	var list []connRecord
+	func() {
+		node.Lock()
+		defer node.Unlock()
+		for _, v := range node.connections {
+			list = append(list, v)
+		}
+	}()
+	for _, s := range list {
+		s.send <- m
+	}
+	return nil
 }
 
-func (node *Node) makeNewConnections() error {
+func (node *server) makeNewConnections() error {
 	var nodes []tnet.Node
 	func() {
 		node.Lock()
@@ -149,7 +140,9 @@ func (node *Node) makeNewConnections() error {
 	}()
 	if len(nodes) == 0 {
 		for _, s := range node.seeds {
-			nodes = append(nodes, tnet.Node{Address: s})
+			if s != node.Addr() {
+				nodes = append(nodes, tnet.Node{Address: s})
+			}
 		}
 	}
 	rand.Shuffle(len(nodes), func(i, j int) {
@@ -161,7 +154,6 @@ func (node *Node) makeNewConnections() error {
 				continue
 			}
 		}
-		fmt.Printf("going to connect with %s\n", n)
 		c, err := node.Dial(node.key, n)
 		if err != nil {
 			return err
@@ -171,26 +163,35 @@ func (node *Node) makeNewConnections() error {
 	return nil
 }
 
-func (node *Node) engageWithNodes() {
+func (node *server) engageWithNodes() {
 	for {
 		if node.Closed() {
 			return
 		}
 		time.Sleep(time.Second)
-		fmt.Printf("%s engaging\n", node.key.Public())
 		if err := node.makeNewConnections(); err != nil {
 			log.Printf("error making new connections: %v", err)
 		}
 	}
 }
 
-func (node *Node) addConn(c tnet.Conn) {
-	node.Lock()
-	defer node.Unlock()
-	node.connections[c.Remote().PublicKey.String()] = c
+type connRecord struct {
+	tnet.Conn
+	send chan *Message
 }
 
-func (node *Node) removeConn(c tnet.Conn) {
+func (node *server) addConn(c connRecord) {
+	node.Lock()
+	defer node.Unlock()
+	key := c.Remote().PublicKey.String()
+	node.connections[key] = c
+	node.records[key] = serverRecord{
+		LastSeen: time.Now(),
+		Node:     c.Remote(),
+	}
+}
+
+func (node *server) removeConn(c connRecord) {
 	node.Lock()
 	defer node.Unlock()
 	defer c.Close()
@@ -198,36 +199,47 @@ func (node *Node) removeConn(c tnet.Conn) {
 }
 
 // TODO: need to think more about structure here....
-func (node *Node) handleConn(c tnet.Conn) {
-	fmt.Printf("handling %s\n", c.Remote())
-	defer c.Close()
+func (node *server) handleConn(c tnet.Conn) error {
 	if h := c.Remote().PublicKey; node.alreadyConnected(h) {
-		fmt.Printf("already connected to %s\n", h)
-		return
+		return nil
 	}
-	node.addConn(c)
+	log.Printf("handling %s", c.Remote())
+	cr := connRecord{
+		Conn: c,
+		send: make(chan *Message),
+	}
+	defer close(cr.send)
+	node.addConn(cr)
+	defer node.removeConn(cr)
 	go func() {
-		defer node.removeConn(c)
+		defer node.removeConn(cr)
 		for {
 			m, err := receive(c)
 			if err != nil {
-				log.Printf("problem with %v: %v", c.Remote(), err)
+				log.Printf("can't receive from %v: %v", c.Remote(), err)
 				return
 			}
-			fmt.Printf("got %s from %s\n", m, c.Remote())
-			node.process(m)
+			if err := node.process(m); err != nil {
+				log.Printf("can't send to %v: %v", c.Remote(), err)
+				return
+			}
 		}
 	}()
+	for m := range cr.send {
+		send(cr.Conn, m)
+	}
+	return nil
 }
 
-func (node *Node) alreadyConnected(remote *tnet.PublicKey) bool {
+func (node *server) alreadyConnected(remote *tnet.PublicKey) bool {
 	node.Lock()
 	defer node.Unlock()
 	_, ok := node.connections[remote.String()]
 	return ok
 }
 
-func send(c tnet.Conn, m Message) error {
+func send(c tnet.Conn, m *Message) error {
+	fmt.Printf("send %s\n", m)
 	buf, err := json.Marshal(m)
 	if err != nil {
 		return err
