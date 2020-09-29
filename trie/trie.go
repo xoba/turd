@@ -12,37 +12,42 @@ import (
 )
 
 type Trie struct {
-	kv   *KeyValue
-	b    *byte
+	kv   *keyValue
 	hash []byte
 	next [256]*Trie
 }
 
-func New(b *byte) *Trie {
-	return &Trie{b: b}
-}
-
-func Byte(i int) *byte {
-	b := byte(i)
-	return &b
+func New() *Trie {
+	return &Trie{}
 }
 
 func Run(cnfg.Config) error {
 	rand.Seed(0)
-	const idlen = 16
-	newID := func() []byte {
+	const (
+		idlen = 16
+		n     = 10
+	)
+	var ids []keyValue
+	for i := 0; i < n; i++ {
 		buf := make([]byte, idlen)
 		rand.Read(buf)
-		return buf
+		ids = append(ids, keyValue{
+			Key:   buf,
+			Value: buf[:1+rand.Intn(idlen-1)],
+		})
 	}
-	t := New(nil)
+	if true {
+		rand.Seed(time.Now().UTC().UnixNano())
+		rand.Shuffle(len(ids), func(i, j int) {
+			ids[i], ids[j] = ids[j], ids[i]
+		})
+	}
+	t := New()
 	all := make(map[string]string)
 	m := make(map[string]bool)
-	const n = 10
 	start := time.Now()
-	for i := 0; i < n; i++ {
-		id := newID()
-		prefix := id[:1+rand.Intn(idlen-1)]
+	for _, kv := range ids {
+		id, prefix := kv.Key, kv.Value
 		all[string(id)] = string(prefix)
 		m[string(prefix)] = true
 		if err := t.Set(prefix, id); err != nil {
@@ -79,9 +84,6 @@ func (t *Trie) ComputeHash() ([]byte, error) {
 	if len(t.hash) > 0 {
 		return t.hash, nil
 	}
-	if false && t.b != nil {
-		fmt.Printf("ComputeHash(%x)\n", []byte{*t.b})
-	}
 	var list [][]byte
 	add := func(x []byte) {
 		list = append(list, x)
@@ -109,11 +111,11 @@ func (t *Trie) ComputeHash() ([]byte, error) {
 	return t.hash, nil
 }
 
-type KeyValue struct {
+type keyValue struct {
 	Key, Value []byte
 }
 
-func (kv KeyValue) ComputeHash() ([]byte, error) {
+func (kv keyValue) ComputeHash() ([]byte, error) {
 	buf, err := asn1.Marshal(kv)
 	if err != nil {
 		return nil, err
@@ -123,13 +125,13 @@ func (kv KeyValue) ComputeHash() ([]byte, error) {
 
 func (t *Trie) String() string {
 	var list []string
-	t.Do(func(kv *KeyValue) {
+	t.Do(func(kv *keyValue) {
 		list = append(list, fmt.Sprintf("%q:%q", string(kv.Key), string(kv.Value)))
 	})
 	return strings.Join(list, ", ")
 }
 
-func (t *Trie) Do(f func(kv *KeyValue)) {
+func (t *Trie) Do(f func(kv *keyValue)) {
 	for _, x := range t.next {
 		if x == nil {
 			continue
@@ -168,12 +170,12 @@ func (t *Trie) Set(key, value []byte) error {
 		if x := current.next[b]; x != nil {
 			current = x
 		} else {
-			newNode := New(Byte(int(b)))
+			newNode := New()
 			current.next[b] = newNode
 			current = newNode
 		}
 		current.hash = nil
 	}
-	current.kv = &KeyValue{Key: key, Value: value}
+	current.kv = &keyValue{Key: key, Value: value}
 	return nil
 }
