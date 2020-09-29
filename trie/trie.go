@@ -25,7 +25,7 @@ func Run(cnfg.Config) error {
 	rand.Seed(0)
 	const (
 		idlen = 16
-		n     = 10
+		n     = 700
 	)
 	var ids []keyValue
 	for i := 0; i < n; i++ {
@@ -53,11 +53,6 @@ func Run(cnfg.Config) error {
 		if err := t.Set(prefix, id); err != nil {
 			return err
 		}
-		h, err := t.ComputeHash()
-		if err != nil {
-			return err
-		}
-		fmt.Printf("hash = %x\n", h)
 	}
 	for id, prefix := range all {
 		_, ok := t.Get([]byte(prefix))
@@ -163,7 +158,6 @@ func (t *Trie) Get(key []byte) ([]byte, bool) {
 }
 
 func (t *Trie) Set(key, value []byte) error {
-	fmt.Printf("Set(%x, %x)\n", key, value)
 	t.hash = nil
 	current := t
 	for _, b := range key {
