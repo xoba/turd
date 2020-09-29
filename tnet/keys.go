@@ -11,6 +11,7 @@ import (
 	"fmt"
 
 	"github.com/xoba/turd/cnfg"
+	"github.com/xoba/turd/thash"
 	"github.com/xoba/turd/tnet/packet"
 )
 
@@ -82,7 +83,7 @@ func (p PublicKey) String() string {
 
 func (p PublicKey) Hash() []byte {
 	buf, _ := p.MarshalBinary()
-	return Hash(buf)
+	return thash.Hash(buf)
 }
 
 func GenerateSharedKey(nonce []byte, self *PrivateKey, other *PublicKey) ([]byte, error) {
@@ -90,7 +91,7 @@ func GenerateSharedKey(nonce []byte, self *PrivateKey, other *PublicKey) ([]byte
 	w := new(bytes.Buffer)
 	w.Write(nonce)
 	w.Write(a.Bytes())
-	return Hash(w.Bytes()), nil
+	return thash.Hash(w.Bytes()), nil
 }
 
 type KeyAndNonce struct {

@@ -2,7 +2,6 @@
 package tnet
 
 import (
-	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -134,18 +133,4 @@ func (n network) Listen() (Listener, error) {
 		return nil, err
 	}
 	return listener{a: acceptor{ln: ln}, addr: n.addr}, nil
-}
-
-// hash generates a 256-bit hash
-func Hash(buf []byte) []byte {
-	sha256 := func(x []byte) []byte {
-		h := sha256.Sum256(x)
-		return h[:]
-	}
-	return sha256(sha256(buf))
-}
-
-// TODO: replace with something like scrypt
-func mine(buf []byte) []byte {
-	return Hash(buf)
 }

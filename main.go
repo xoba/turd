@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
 	"sort"
@@ -263,4 +264,8 @@ func LaunchNode(c cnfg.Config) error {
 	}
 	fmt.Println(r)
 	return fmt.Errorf("LaunchNode unimplemented")
+}
+
+func init() {
+	rand.Seed(time.Now().UTC().UnixNano())
 }
