@@ -18,6 +18,7 @@ import (
 	"github.com/xoba/turd/infl"
 	"github.com/xoba/turd/taws"
 	"github.com/xoba/turd/tnet"
+	"github.com/xoba/turd/trie"
 	"golang.org/x/net/websocket"
 )
 
@@ -37,14 +38,15 @@ func main() {
 
 func Run(c cnfg.Config) error {
 	modes := map[string]func(cnfg.Config) error{
-		"keys":      tnet.SharedKey,
+		"connect":   Connect,
 		"gossip":    gossip.Run,
 		"hnode":     RunHTMLNode,
+		"infbig":    infl.RunBig,
+		"inflation": infl.Run,
+		"keys":      tnet.SharedKey,
 		"launch":    LaunchNode,
 		"listen":    Listen,
-		"connect":   Connect,
-		"inflation": infl.Run,
-		"infbig":    infl.RunBig,
+		"trie":      trie.Run,
 	}
 	handler, ok := modes[c.Mode]
 	if !ok {
