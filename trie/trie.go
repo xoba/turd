@@ -29,6 +29,50 @@ type Database interface {
 	Get([]byte) ([]byte, bool)
 	Delete([]byte)
 	Do(func(kv *KeyValue))
+	// hash is implementation-dependent, but based only on key/values in the db
+	ComputeHash() []byte
+}
+
+type StringDatabase interface {
+	Set(string, string)
+	Get(string) (string, bool)
+	Delete(string)
+	Do(func(kv *StringKeyValue))
+	// hash is implementation-dependent, but based only on key/values in the db
+	ComputeHash() []byte
+}
+
+type stringDB struct {
+	hashLen int
+	x       Database
+}
+
+func (db stringDB) Set(key string, value string) {
+	db.x.Set([]byte(key), []byte(value))
+}
+
+func (db stringDB) Get(key string) (string, bool) {
+	v, ok := db.x.Get([]byte(key))
+	return string(v), ok
+}
+
+func (db stringDB) Delete(key string) {
+	db.x.Delete([]byte(key))
+}
+func (db stringDB) Do(f func(kv *StringKeyValue)) {
+	db.x.Do(func(kv *KeyValue) {
+		f(&StringKeyValue{
+			Key:   string(kv.Key),
+			Value: string(kv.Value),
+		})
+	})
+}
+func (db stringDB) ComputeHash() []byte {
+	h := db.x.ComputeHash()
+	if n := db.hashLen; n > 0 {
+		h = h[:n]
+	}
+	return h
 }
 
 type Iterable interface {
@@ -75,10 +119,43 @@ func String(i Iterable) string {
 	return string(buf)
 }
 
+func (m mapdb) ComputeHash() []byte {
+	return thash.Hash([]byte(String(m)))
+}
+
 func Run(cnfg.Config) error {
+	var db1, db2 Database
+	db1 = make(mapdb)
+	db2 = New()
+	if err := CheckDelete("map", stringDB{hashLen: 8, x: db1}); err != nil {
+		return err
+	}
+	if err := CheckDelete("trie", stringDB{hashLen: 8, x: db2}); err != nil {
+		return err
+	}
+	return nil
+}
+
+func CheckDelete(name string, db StringDatabase) error {
+	db.Set("a", "x")
+	db.Set("b", "y")
+	first := db.ComputeHash()
+	fmt.Printf("%s hash = %x\n", name, first)
+	db.Set("c", "z")
+	fmt.Printf("%s hash = %x\n", name, db.ComputeHash())
+	db.Delete("c")
+	second := db.ComputeHash()
+	fmt.Printf("%s hash = %x\n", name, second)
+	if !bytes.Equal(first, second) {
+		return fmt.Errorf("%s hash mismatch: %x vs %x", name, first, second)
+	}
+	return nil
+}
+
+func Run3(cnfg.Config) error {
 	const (
 		n = 3
-		m = 1000000
+		m = 10000
 	)
 	newBuf := func() []byte {
 		buf := make([]byte, 1+rand.Intn(n))
@@ -88,10 +165,17 @@ func Run(cnfg.Config) error {
 	var db1, db2 Database
 	db1 = make(mapdb)
 	db2 = New()
+	var keys [][]byte
 	for i := 0; i < m; i++ {
 		k, v := newBuf(), newBuf()
+		keys = append(keys, k)
 		db1.Set(k, v)
 		db2.Set(k, v)
+		if rand.Intn(10) == 0 {
+			key := keys[rand.Intn(len(keys))]
+			db1.Delete(key)
+			db2.Delete(key)
+		}
 	}
 	if String(db1) != String(db2) {
 		return fmt.Errorf("mismatch")
@@ -184,6 +268,10 @@ type KeyValue struct {
 	Key, Value []byte
 }
 
+type StringKeyValue struct {
+	Key, Value string
+}
+
 func (kv KeyValue) ComputeHash() ([]byte, error) {
 	buf, err := asn1.Marshal(kv)
 	if err != nil {
@@ -248,5 +336,15 @@ func (t *Trie) Set(key, value []byte) {
 }
 
 func (t *Trie) Delete(key []byte) {
-	check(fmt.Errorf("Delete unimplemented"))
+	t.hash = nil
+	current := t
+	for _, b := range key {
+		if x := current.next[b]; x != nil {
+			current = x
+		} else {
+			return
+		}
+		current.hash = nil
+	}
+	current.kv = nil
 }
