@@ -5,6 +5,7 @@ import (
 	"encoding/asn1"
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"math/rand"
 	"sort"
 	"strings"
@@ -15,6 +16,7 @@ import (
 )
 
 type Trie struct {
+	size *big.Int
 	kv   *KeyValue
 	hash []byte
 	next [256]*Trie
@@ -28,6 +30,7 @@ type Database interface {
 	Set([]byte, []byte)
 	Get([]byte) ([]byte, bool)
 	Delete([]byte)
+	Len() *big.Int
 	Do(func(kv *KeyValue))
 	// hash is implementation-dependent, but based only on key/values in the db
 	ComputeHash() []byte
@@ -37,6 +40,7 @@ type StringDatabase interface {
 	Set(string, string)
 	Get(string) (string, bool)
 	Delete(string)
+	Len() *big.Int
 	Do(func(kv *StringKeyValue))
 	// hash is implementation-dependent, but based only on key/values in the db
 	ComputeHash() []byte
@@ -75,6 +79,10 @@ func (db stringDB) ComputeHash() []byte {
 	return h
 }
 
+func (db stringDB) Len() *big.Int {
+	return db.x.Len()
+}
+
 type Iterable interface {
 	Do(func(kv *KeyValue))
 }
@@ -110,6 +118,10 @@ func (m mapdb) Do(f func(*KeyValue)) {
 	}
 }
 
+func (m mapdb) Len() *big.Int {
+	return big.NewInt(int64(len(m)))
+}
+
 func String(i Iterable) string {
 	var list []*KeyValue
 	i.Do(func(kv *KeyValue) {
@@ -137,13 +149,31 @@ func Run(cnfg.Config) error {
 }
 
 func CheckDelete(name string, db StringDatabase) error {
+	checkSize := func(i int64) error {
+		if n := db.Len().Int64(); n != i {
+			return fmt.Errorf("got len = %d, expected %d", n, i)
+		}
+		return nil
+	}
 	db.Set("a", "x")
+	if err := checkSize(1); err != nil {
+		return err
+	}
 	db.Set("b", "y")
+	if err := checkSize(2); err != nil {
+		return err
+	}
 	first := db.ComputeHash()
 	fmt.Printf("%s hash = %x\n", name, first)
 	db.Set("c", "z")
+	if err := checkSize(3); err != nil {
+		return err
+	}
 	fmt.Printf("%s hash = %x\n", name, db.ComputeHash())
 	db.Delete("c")
+	if err := checkSize(2); err != nil {
+		return err
+	}
 	second := db.ComputeHash()
 	fmt.Printf("%s hash = %x\n", name, second)
 	if !bytes.Equal(first, second) {
@@ -239,6 +269,10 @@ func check(e error) {
 	}
 }
 
+func (t *Trie) Len() *big.Int {
+	return t.size
+}
+
 func (t *Trie) ComputeHash() []byte {
 	if len(t.hash) > 0 {
 		return t.hash
@@ -288,6 +322,7 @@ func (t *Trie) String() string {
 	return strings.Join(list, ", ")
 }
 
+// TODO: "Do" should take a range arguemnt, and handler should return bool
 func (t *Trie) Do(f func(kv *KeyValue)) {
 	for _, x := range t.next {
 		if x == nil {
@@ -332,7 +367,19 @@ func (t *Trie) Set(key, value []byte) {
 		}
 		current.hash = nil
 	}
+	if current.kv == nil {
+		t.size = inc(t.size, +1)
+	}
 	current.kv = &KeyValue{Key: key, Value: value}
+}
+
+func inc(i *big.Int, v int64) *big.Int {
+	if i == nil {
+		i = big.NewInt(0)
+	}
+	var x big.Int
+	x.Add(i, big.NewInt(v))
+	return &x
 }
 
 func (t *Trie) Delete(key []byte) {
@@ -345,6 +392,9 @@ func (t *Trie) Delete(key []byte) {
 			return
 		}
 		current.hash = nil
+	}
+	if current.kv != nil {
+		t.size = inc(t.size, -1)
 	}
 	current.kv = nil
 }
