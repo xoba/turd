@@ -36,12 +36,12 @@ type Trie struct {
 	next  [256]*Trie
 }
 
-func (t *Trie) Stats() *Stats {
-	panic("stats")
-}
-
 func (t *Trie) IsDirty() bool {
 	return t.dirty
+}
+
+func (t *Trie) IsClean() bool {
+	return !t.IsDirty()
 }
 
 func (t *Trie) MarkDirty() {
@@ -59,6 +59,12 @@ type Stats struct {
 }
 
 func (s *Stats) Inc(o *Stats) {
+	if s.Count == nil {
+		s.Count = big.NewInt(0)
+	}
+	if s.Size == nil {
+		s.Size = big.NewInt(0)
+	}
 	s.Count.Add(s.Count, o.Count)
 	s.Size.Add(s.Size, o.Size)
 }
@@ -66,8 +72,9 @@ func (s *Stats) Inc(o *Stats) {
 func (s *Stats) IncCount(i int) {
 	s.Count = inc(s.Count, i)
 }
+
 func (s *Stats) IncSize(i int) {
-	s.Count = inc(s.Count, i)
+	s.Size = inc(s.Size, i)
 }
 
 type Iterable interface {
@@ -83,7 +90,7 @@ func String(i Iterable) string {
 	return string(buf)
 }
 
-func Run(cnfg.Config) error {
+func Run(c cnfg.Config) error {
 	var db1, db2 Database
 	db1 = make(mapdb)
 	db2 = New()
@@ -93,33 +100,42 @@ func Run(cnfg.Config) error {
 	if err := CheckDelete("trie", stringDB{hashLen: 8, x: db2}); err != nil {
 		return err
 	}
+	if err := Run2(c); err != nil {
+		return err
+	}
+	if err := Run3(c); err != nil {
+		return err
+	}
 	return nil
 }
 
 func CheckDelete(name string, db StringDatabase) error {
-	checkSize := func(i int64) error {
-		if n := db.Stats().Count.Int64(); n != i {
-			return fmt.Errorf("%s got len = %d, expected %d", name, n, i)
+	checkStats := func(count, size int64) error {
+		if n := db.Stats().Count.Int64(); n != count {
+			return fmt.Errorf("%s got count = %d, expected %d", name, n, count)
+		}
+		if n := db.Stats().Size.Int64(); n != size {
+			return fmt.Errorf("%s got size = %d, expected %d", name, n, size)
 		}
 		return nil
 	}
-	db.Set("a", "x")
-	if err := checkSize(1); err != nil {
+	db.Set("a", "xx")
+	if err := checkStats(1, 2); err != nil {
 		return err
 	}
-	db.Set("b", "y")
-	if err := checkSize(2); err != nil {
+	db.Set("b", "yy")
+	if err := checkStats(2, 4); err != nil {
 		return err
 	}
 	first := db.Hash()
 	fmt.Printf("%s hash = %x\n", name, first)
-	db.Set("c", "z")
-	if err := checkSize(3); err != nil {
+	db.Set("c", "zz")
+	if err := checkStats(3, 6); err != nil {
 		return err
 	}
 	fmt.Printf("%s hash = %x\n", name, db.Hash())
 	db.Delete("c")
-	if err := checkSize(2); err != nil {
+	if err := checkStats(2, 4); err != nil {
 		return err
 	}
 	second := db.Hash()
@@ -218,7 +234,7 @@ func check(e error) {
 }
 
 func (t *Trie) clean() {
-	if !t.IsDirty() {
+	if t.IsClean() {
 		return
 	}
 	t.hash = t.computeHash()
@@ -263,6 +279,13 @@ func (t *Trie) computeHash() []byte {
 	check(err)
 	t.hash = thash.Hash(buf)
 	return t.hash
+}
+
+func (t *Trie) Stats() *Stats {
+	if t.IsDirty() {
+		t.clean()
+	}
+	return t.stats
 }
 
 func (t *Trie) Hash() []byte {
@@ -373,7 +396,7 @@ func (t *Trie) ToGviz(file string) error {
 }
 
 func (t *Trie) Prune() bool {
-	if !t.IsDirty() {
+	if t.IsClean() {
 		return false
 	}
 	var children int
