@@ -16,7 +16,7 @@ import (
 )
 
 type Trie struct {
-	size *big.Int
+	size *big.Int // TODO: this field is only present in root node, so can be more efficient?
 	kv   *KeyValue
 	hash []byte
 	next [256]*Trie
@@ -397,4 +397,29 @@ func (t *Trie) Delete(key []byte) {
 		t.size = inc(t.size, -1)
 	}
 	current.kv = nil
+	t.Prune() // TODO: this is inefficient, since involves traversing the whole trie
+}
+
+func (t *Trie) ToGviz(file string) error {
+	return fmt.Errorf("ToGviz unimplemented")
+}
+
+func (t *Trie) Prune() bool {
+	var children int
+	for i, c := range t.next {
+		if c == nil {
+			continue
+		}
+		children++
+		if c.Prune() {
+			t.next[i] = nil
+		}
+	}
+	if t.kv != nil {
+		return false
+	}
+	if children > 0 {
+		return false
+	}
+	return true
 }
