@@ -41,7 +41,8 @@ func (m mapdb) Do(f func(*KeyValue)) {
 func (m mapdb) Stats() *Stats {
 	var s Stats
 	s.IncCount(len(m))
-	for _, v := range m {
+	for k, v := range m {
+		s.IncSize(len(k))
 		s.IncSize(len(v))
 	}
 	return &s

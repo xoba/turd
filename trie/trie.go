@@ -102,8 +102,7 @@ func TestPaths(cnfg.Config) error {
 	add("/a/z/123")
 	add("/b")
 	fmt.Println(db)
-
-	return fmt.Errorf("test paths")
+	return nil
 }
 
 func Run(c cnfg.Config) error {
@@ -139,22 +138,22 @@ func CheckDelete(name string, db StringDatabase) error {
 		return nil
 	}
 	db.Set("a", "xx")
-	if err := checkStats(1, 2); err != nil {
+	if err := checkStats(1, 3); err != nil {
 		return err
 	}
 	db.Set("b", "yy")
-	if err := checkStats(2, 4); err != nil {
+	if err := checkStats(2, 6); err != nil {
 		return err
 	}
 	first := db.Hash()
 	fmt.Printf("%s hash = %x\n", name, first)
 	db.Set("c", "zz")
-	if err := checkStats(3, 6); err != nil {
+	if err := checkStats(3, 9); err != nil {
 		return err
 	}
 	fmt.Printf("%s hash = %x\n", name, db.Hash())
 	db.Delete("c")
-	if err := checkStats(2, 4); err != nil {
+	if err := checkStats(2, 6); err != nil {
 		return err
 	}
 	second := db.Hash()
@@ -265,6 +264,7 @@ func (t *Trie) computeStats() *Stats {
 	var s Stats
 	if t.kv != nil {
 		s.Count = inc(s.Count, 1)
+		s.Size = inc(s.Size, len(t.kv.Key))
 		s.Size = inc(s.Size, len(t.kv.Value))
 	}
 	for _, x := range t.next {
