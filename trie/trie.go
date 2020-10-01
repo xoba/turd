@@ -20,7 +20,7 @@ type Database interface {
 	Delete([]byte)
 	Stats() *Stats
 	Do(func(kv *KeyValue))
-	// hash is implementation-dependent, but based only on key/values in the db
+	// hash is implementation-dependent, but based only on what is gettable in the db
 	Hash() []byte
 }
 
@@ -90,14 +90,33 @@ func String(i Iterable) string {
 	return string(buf)
 }
 
+func TestPaths(cnfg.Config) error {
+	db := NewStrings(New())
+	add := func(p string) {
+		db.Set(p, "nil")
+	}
+	add("/a")
+	add("/a/x")
+	add("/a/y")
+	add("/a/z")
+	add("/a/z/123")
+	add("/b")
+	fmt.Println(db)
+
+	return fmt.Errorf("test paths")
+}
+
 func Run(c cnfg.Config) error {
+	if err := TestPaths(c); err != nil {
+		return err
+	}
 	var db1, db2 Database
 	db1 = make(mapdb)
 	db2 = New()
-	if err := CheckDelete("map", stringDB{hashLen: 8, x: db1}); err != nil {
+	if err := CheckDelete("map", NewStrings(db1)); err != nil {
 		return err
 	}
-	if err := CheckDelete("trie", stringDB{hashLen: 8, x: db2}); err != nil {
+	if err := CheckDelete("trie", NewStrings(db2)); err != nil {
 		return err
 	}
 	if err := Run2(c); err != nil {

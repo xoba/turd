@@ -1,5 +1,7 @@
 package trie
 
+import "fmt"
+
 type StringDatabase interface {
 	Set(string, string)
 	Get(string) (string, bool)
@@ -13,6 +15,10 @@ type StringDatabase interface {
 type stringDB struct {
 	hashLen int
 	x       Database
+}
+
+func NewStrings(db Database) StringDatabase {
+	return stringDB{hashLen: 8, x: db}
 }
 
 func (db stringDB) Set(key string, value string) {
@@ -45,4 +51,8 @@ func (db stringDB) Hash() []byte {
 
 func (db stringDB) Stats() *Stats {
 	return db.x.Stats()
+}
+
+func (db stringDB) String() string {
+	return fmt.Sprintf("%v", db.x)
 }
