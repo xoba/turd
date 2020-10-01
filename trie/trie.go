@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"math/big"
 	"math/rand"
-	"sort"
 	"strings"
 	"time"
 
@@ -15,119 +14,64 @@ import (
 	"github.com/xoba/turd/thash"
 )
 
-type Trie struct {
-	size *big.Int // TODO: this field is only present in root node, so can be more efficient?
-	kv   *KeyValue
-	hash []byte
-	next [256]*Trie
-}
-
-func (t *Trie) IsDirty() bool {
-	return t.hash == nil
-}
-
-func (t *Trie) MarkDirty() {
-	t.hash = nil
-}
-
-func New() *Trie {
-	return &Trie{}
-}
-
 type Database interface {
 	Set([]byte, []byte)
 	Get([]byte) ([]byte, bool)
 	Delete([]byte)
-	Len() *big.Int
+	Stats() *Stats
 	Do(func(kv *KeyValue))
 	// hash is implementation-dependent, but based only on key/values in the db
-	ComputeHash() []byte
+	Hash() []byte
 }
 
-type StringDatabase interface {
-	Set(string, string)
-	Get(string) (string, bool)
-	Delete(string)
-	Len() *big.Int
-	Do(func(kv *StringKeyValue))
-	// hash is implementation-dependent, but based only on key/values in the db
-	ComputeHash() []byte
+func New() *Trie {
+	return &Trie{dirty: true}
 }
 
-type stringDB struct {
-	hashLen int
-	x       Database
+type Trie struct {
+	kv    *KeyValue
+	dirty bool
+	stats *Stats
+	hash  []byte
+	next  [256]*Trie
 }
 
-func (db stringDB) Set(key string, value string) {
-	db.x.Set([]byte(key), []byte(value))
+func (t *Trie) Stats() *Stats {
+	panic("stats")
 }
 
-func (db stringDB) Get(key string) (string, bool) {
-	v, ok := db.x.Get([]byte(key))
-	return string(v), ok
+func (t *Trie) IsDirty() bool {
+	return t.dirty
 }
 
-func (db stringDB) Delete(key string) {
-	db.x.Delete([]byte(key))
-}
-func (db stringDB) Do(f func(kv *StringKeyValue)) {
-	db.x.Do(func(kv *KeyValue) {
-		f(&StringKeyValue{
-			Key:   string(kv.Key),
-			Value: string(kv.Value),
-		})
-	})
-}
-func (db stringDB) ComputeHash() []byte {
-	h := db.x.ComputeHash()
-	if n := db.hashLen; n > 0 {
-		h = h[:n]
-	}
-	return h
+func (t *Trie) MarkDirty() {
+	t.dirty = true
+	t.hash = nil
+	t.stats = nil
 }
 
-func (db stringDB) Len() *big.Int {
-	return db.x.Len()
+func (t *Trie) MarkClean() {
+	t.dirty = false
+}
+
+type Stats struct {
+	Count, Size *big.Int
+}
+
+func (s *Stats) Inc(o *Stats) {
+	s.Count.Add(s.Count, o.Count)
+	s.Size.Add(s.Size, o.Size)
+}
+
+func (s *Stats) IncCount(i int) {
+	s.Count = inc(s.Count, i)
+}
+func (s *Stats) IncSize(i int) {
+	s.Count = inc(s.Count, i)
 }
 
 type Iterable interface {
 	Do(func(kv *KeyValue))
-}
-
-type mapdb map[string][]byte
-
-func (m mapdb) Set(key []byte, value []byte) {
-	m[string(key)] = value
-}
-
-func (m mapdb) Get(key []byte) ([]byte, bool) {
-	v, ok := m[string(key)]
-	return v, ok
-}
-
-func (m mapdb) Delete(key []byte) {
-	delete(m, string(key))
-}
-
-func (m mapdb) Do(f func(*KeyValue)) {
-	var list []*KeyValue
-	for k, v := range m {
-		list = append(list, &KeyValue{
-			Key:   []byte(k),
-			Value: v,
-		})
-	}
-	sort.Slice(list, func(i, j int) bool {
-		return bytes.Compare(list[i].Key, list[j].Key) == -1
-	})
-	for _, kv := range list {
-		f(kv)
-	}
-}
-
-func (m mapdb) Len() *big.Int {
-	return big.NewInt(int64(len(m)))
 }
 
 func String(i Iterable) string {
@@ -137,10 +81,6 @@ func String(i Iterable) string {
 	})
 	buf, _ := json.Marshal(list)
 	return string(buf)
-}
-
-func (m mapdb) ComputeHash() []byte {
-	return thash.Hash([]byte(String(m)))
 }
 
 func Run(cnfg.Config) error {
@@ -158,8 +98,8 @@ func Run(cnfg.Config) error {
 
 func CheckDelete(name string, db StringDatabase) error {
 	checkSize := func(i int64) error {
-		if n := db.Len().Int64(); n != i {
-			return fmt.Errorf("got len = %d, expected %d", n, i)
+		if n := db.Stats().Count.Int64(); n != i {
+			return fmt.Errorf("%s got len = %d, expected %d", name, n, i)
 		}
 		return nil
 	}
@@ -171,18 +111,18 @@ func CheckDelete(name string, db StringDatabase) error {
 	if err := checkSize(2); err != nil {
 		return err
 	}
-	first := db.ComputeHash()
+	first := db.Hash()
 	fmt.Printf("%s hash = %x\n", name, first)
 	db.Set("c", "z")
 	if err := checkSize(3); err != nil {
 		return err
 	}
-	fmt.Printf("%s hash = %x\n", name, db.ComputeHash())
+	fmt.Printf("%s hash = %x\n", name, db.Hash())
 	db.Delete("c")
 	if err := checkSize(2); err != nil {
 		return err
 	}
-	second := db.ComputeHash()
+	second := db.Hash()
 	fmt.Printf("%s hash = %x\n", name, second)
 	if !bytes.Equal(first, second) {
 		return fmt.Errorf("%s hash mismatch: %x vs %x", name, first, second)
@@ -266,7 +206,7 @@ func Run2(cnfg.Config) error {
 			}
 		}
 	}
-	fmt.Printf("trie hash: 0x%x\n", t.ComputeHash())
+	fmt.Printf("trie hash: 0x%x\n", t.Hash())
 	fmt.Printf("%v per iteration\n", time.Since(start)/n)
 	return nil
 }
@@ -277,19 +217,38 @@ func check(e error) {
 	}
 }
 
-func (t *Trie) Len() *big.Int {
-	return t.size
+func (t *Trie) clean() {
+	if !t.IsDirty() {
+		return
+	}
+	t.hash = t.computeHash()
+	t.stats = t.computeStats()
+	t.MarkClean()
 }
 
-func (t *Trie) ComputeHash() []byte {
-	if len(t.hash) > 0 {
-		return t.hash
+func (t *Trie) computeStats() *Stats {
+	var s Stats
+	if t.kv != nil {
+		s.Count = inc(s.Count, 1)
+		s.Size = inc(s.Size, len(t.kv.Value))
 	}
+	for _, x := range t.next {
+		if x == nil {
+			continue
+		}
+		s.Inc(x.Stats())
+	}
+	return &s
+}
+
+func (t *Trie) computeHash() []byte {
 	var list [][]byte
 	add := func(x []byte) {
 		list = append(list, x)
 	}
-	if t.kv != nil {
+	if t.kv == nil {
+		add(nil)
+	} else {
 		add(t.kv.Key)
 		add(t.kv.Value)
 	}
@@ -298,11 +257,18 @@ func (t *Trie) ComputeHash() []byte {
 			continue
 		}
 		add([]byte{byte(i)})
-		add(x.ComputeHash())
+		add(x.Hash())
 	}
 	buf, err := asn1.Marshal(list)
 	check(err)
 	t.hash = thash.Hash(buf)
+	return t.hash
+}
+
+func (t *Trie) Hash() []byte {
+	if t.IsDirty() {
+		t.clean()
+	}
 	return t.hash
 }
 
@@ -314,7 +280,7 @@ type StringKeyValue struct {
 	Key, Value string
 }
 
-func (kv KeyValue) ComputeHash() ([]byte, error) {
+func (kv KeyValue) Hash() ([]byte, error) {
 	buf, err := asn1.Marshal(kv)
 	if err != nil {
 		return nil, err
@@ -375,18 +341,15 @@ func (t *Trie) Set(key, value []byte) {
 		}
 		current.MarkDirty()
 	}
-	if current.kv == nil {
-		t.size = inc(t.size, +1)
-	}
 	current.kv = &KeyValue{Key: key, Value: value}
 }
 
-func inc(i *big.Int, v int64) *big.Int {
+func inc(i *big.Int, v int) *big.Int {
 	if i == nil {
 		i = big.NewInt(0)
 	}
 	var x big.Int
-	x.Add(i, big.NewInt(v))
+	x.Add(i, big.NewInt(int64(v)))
 	return &x
 }
 
@@ -400,9 +363,6 @@ func (t *Trie) Delete(key []byte) {
 			return
 		}
 		current.MarkDirty()
-	}
-	if current.kv != nil {
-		t.size = inc(t.size, -1)
 	}
 	current.kv = nil
 	t.Prune()
