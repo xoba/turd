@@ -22,6 +22,14 @@ type Trie struct {
 	next [256]*Trie
 }
 
+func (t *Trie) IsDirty() bool {
+	return t.hash == nil
+}
+
+func (t *Trie) MarkDirty() {
+	t.hash = nil
+}
+
 func New() *Trie {
 	return &Trie{}
 }
@@ -355,7 +363,7 @@ func (t *Trie) Get(key []byte) ([]byte, bool) {
 }
 
 func (t *Trie) Set(key, value []byte) {
-	t.hash = nil
+	t.MarkDirty()
 	current := t
 	for _, b := range key {
 		if x := current.next[b]; x != nil {
@@ -365,7 +373,7 @@ func (t *Trie) Set(key, value []byte) {
 			current.next[b] = newNode
 			current = newNode
 		}
-		current.hash = nil
+		current.MarkDirty()
 	}
 	if current.kv == nil {
 		t.size = inc(t.size, +1)
@@ -383,7 +391,7 @@ func inc(i *big.Int, v int64) *big.Int {
 }
 
 func (t *Trie) Delete(key []byte) {
-	t.hash = nil
+	t.MarkDirty()
 	current := t
 	for _, b := range key {
 		if x := current.next[b]; x != nil {
@@ -391,13 +399,13 @@ func (t *Trie) Delete(key []byte) {
 		} else {
 			return
 		}
-		current.hash = nil
+		current.MarkDirty()
 	}
 	if current.kv != nil {
 		t.size = inc(t.size, -1)
 	}
 	current.kv = nil
-	t.Prune() // TODO: this is inefficient, since involves traversing the whole trie
+	t.Prune()
 }
 
 func (t *Trie) ToGviz(file string) error {
@@ -405,6 +413,9 @@ func (t *Trie) ToGviz(file string) error {
 }
 
 func (t *Trie) Prune() bool {
+	if !t.IsDirty() {
+		return false
+	}
 	var children int
 	for i, c := range t.next {
 		if c == nil {
