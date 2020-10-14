@@ -25,7 +25,7 @@ import (
 
 func main() {
 	var c cnfg.Config
-	flag.StringVar(&c.Mode, "m", "node", "mode to run")
+	flag.StringVar(&c.Mode, "m", "trie", "mode to run")
 	flag.StringVar(&c.PublicKeyFile, "pub", "pub.dat", "public key file")
 	flag.StringVar(&c.PrivateKeyFile, "priv", "priv.dat", "private key file")
 	flag.StringVar(&c.AWSProfile, "aws", "", "aws profile")

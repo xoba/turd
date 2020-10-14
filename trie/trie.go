@@ -29,11 +29,11 @@ func New() *Trie {
 }
 
 type Trie struct {
-	kv    *KeyValue
-	dirty bool
-	stats *Stats
-	hash  []byte
-	next  [256]*Trie
+	kv     *KeyValue
+	dirty  bool
+	stats  *Stats
+	merkle []byte
+	next   [256]*Trie
 }
 
 func (t *Trie) IsDirty() bool {
@@ -46,7 +46,7 @@ func (t *Trie) IsClean() bool {
 
 func (t *Trie) MarkDirty() {
 	t.dirty = true
-	t.hash = nil
+	t.merkle = nil
 	t.stats = nil
 }
 
@@ -255,7 +255,7 @@ func (t *Trie) clean() {
 	if t.IsClean() {
 		return
 	}
-	t.hash = t.computeHash()
+	t.merkle = t.computeHash()
 	t.stats = t.computeStats()
 	t.MarkClean()
 }
@@ -296,8 +296,8 @@ func (t *Trie) computeHash() []byte {
 	}
 	buf, err := asn1.Marshal(list)
 	check(err)
-	t.hash = thash.Hash(buf)
-	return t.hash
+	t.merkle = thash.Hash(buf)
+	return t.merkle
 }
 
 func (t *Trie) Stats() *Stats {
@@ -311,7 +311,7 @@ func (t *Trie) Hash() []byte {
 	if t.IsDirty() {
 		t.clean()
 	}
-	return t.hash
+	return t.merkle
 }
 
 type KeyValue struct {
@@ -322,7 +322,7 @@ type StringKeyValue struct {
 	Key, Value string
 }
 
-func (kv KeyValue) Hash() ([]byte, error) {
+func (kv KeyValue) xHash() ([]byte, error) {
 	buf, err := asn1.Marshal(kv)
 	if err != nil {
 		return nil, err
