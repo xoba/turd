@@ -1,4 +1,40 @@
-design doc
-----------
+design doc:
+
+tokens are mined, and assigned to keys, which are used for signing.
+all services are paid for, so no free-riding or mooching, since tokens
+are obtainable by everyone.
+
+blockchain sharded on keyspace, each chain only handles transactions
+signed by its assigned keys.  chains becomes a lattice via cross-chain
+references, not just intra-chain as in traditional
+blockchain. sharding events are voted upon with tokens.
+
+transactions involve token transfers, as well as shared data structure
+updates. data stored as merkle trie, and each name (path in trie)
+belongs to one key, the one who's transaction created it.  in case of
+cross-chain conflict of new names, choose winner lexically by tx fee
+and other features.  some parts of trie namespace are for system admin
+(like key balances, blocks, etc.), whereas others are free for
+user-defined purposes, like url's.
+
+as with crdt's, trie's from different chains are merely merged by
+hierarchically considering updates from their lattice meet.
+verification only takes place along chains, not across them.
+
+there is constant mining, but explicit depreciation for tokens, with
+time constant something like a month or year. thus, tokens must be
+used, cannot store value by definition. so this is not a
+cryptocurrency, but rather, tokens are more like transient cookies.
+
+tor-like communication services for safety, by default.  like
+everything else in this platform, it is paid for with tokens.
+
+mining frequency is one hertz, per chain. upon scaling, it splits into
+two key spaces, half the difficulty and half the block reward,
+vice-versa for de-scaling.
+
+
+
+
 
 
