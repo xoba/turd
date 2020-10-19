@@ -21,6 +21,8 @@ as with crdt's, trie's from different chains are merely merged by
 hierarchically considering updates from their lattice meet.
 verification only takes place along chains, not across them.
 
+there can be counter crdt's for merging key balances in the data store.
+
 there is constant mining, but explicit depreciation for tokens, with
 time constant something like a month or year. thus, tokens must be
 used, cannot store value by definition. so this is not a

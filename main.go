@@ -17,6 +17,7 @@ import (
 	"github.com/xoba/turd/cnfg"
 	"github.com/xoba/turd/gossip"
 	"github.com/xoba/turd/infl"
+	"github.com/xoba/turd/lattice"
 	"github.com/xoba/turd/taws"
 	"github.com/xoba/turd/tnet"
 	"github.com/xoba/turd/trie"
@@ -46,6 +47,7 @@ func Run(c cnfg.Config) error {
 		"inflation": infl.Run,
 		"keys":      tnet.SharedKey,
 		"launch":    LaunchNode,
+		"lattice":   lattice.Run,
 		"listen":    Listen,
 		"trie":      trie.Run,
 	}
