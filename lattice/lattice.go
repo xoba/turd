@@ -8,14 +8,17 @@ import (
 	"os"
 	"os/exec"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/xoba/turd/cnfg"
 )
 
+// TODO: need a random seed for reproducibility
+// TODO: also test cases of verified meets
 func Run(cnfg.Config) error {
-	chain := Generate(3, 9)
-	a, b := "2.8", "1.8"
+	chain := Generate(3, 5)
+	a, b := "1.4", "2.4"
 	meet := chain.Meet(a, b)
 	return chain.ToGraphViz(map[string]string{
 		a:    "yellow",
@@ -94,6 +97,11 @@ func (l Lattice) Meet(a, b string) string {
 	sort.Slice(list, func(i, j int) bool {
 		return list[i].Time.After(list[j].Time)
 	})
+	var ids []string
+	for _, x := range list {
+		ids = append(ids, x.ID)
+	}
+	fmt.Printf("intersection: %s\n", ids)
 	return list[0].ID
 }
 
@@ -103,33 +111,45 @@ func Generate(chains, length int) Lattice {
 	}
 	add := func(n *Node) {
 		out.Nodes[n.ID] = n
-		time.Sleep(time.Millisecond)
 	}
 	newNode := func(name string) *Node {
+		time.Sleep(10 * time.Millisecond)
 		return &Node{
 			ID:   name,
 			Time: time.Now(),
 		}
 	}
-	genesis := newNode("g")
+	genesis := newNode("genesis")
 	add(genesis)
-	var lastm map[int]string
+	var last map[int]string
 	for j := 0; j < length; j++ {
 		m := make(map[int]string)
 		for i := 0; i < chains; i++ {
-			chain := newNode(fmt.Sprintf("%d.%d", i, j))
-			if lastm == nil {
-				chain.Children = append(chain.Children, genesis.ID)
+
+			// TODO: if only one child, skip the merge node
+			var children []string
+			if last == nil {
+				children = append(children, genesis.ID)
 			} else {
-				chain.Children = append(chain.Children, lastm[i])
+				children = append(children, last[i])
 				if r := rand.Intn(3); r != i {
-					chain.Children = append(chain.Children, lastm[r])
+					children = append(children, last[r])
 				}
 			}
-			m[i] = chain.ID
+			sort.Strings(children)
+
+			merge := newNode("[" + strings.Join(children, ",") + "]")
+			merge.Children = children
+			add(merge)
+
+			chain := newNode(fmt.Sprintf("%d.%d", i, j))
+			chain.Children = append(chain.Children, merge.ID)
 			add(chain)
+
+			m[i] = chain.ID
+
 		}
-		lastm = m
+		last = m
 	}
 	return out
 }
