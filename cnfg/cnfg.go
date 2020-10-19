@@ -6,4 +6,5 @@ type Config struct {
 	Port           int
 	PublicKeyFile  string
 	PrivateKeyFile string
+	Seed           int
 }

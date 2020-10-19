@@ -3,6 +3,7 @@ package lattice
 
 import (
 	"crypto/md5"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"os"
@@ -11,24 +12,46 @@ import (
 	"strings"
 	"time"
 
+	"github.com/skratchdot/open-golang/open"
 	"github.com/xoba/turd/cnfg"
 )
 
 // TODO: need a random seed for reproducibility
 // TODO: also test cases of verified meets
-func Run(cnfg.Config) error {
-	chain := Generate(3, 5)
+func Run(c cnfg.Config) error {
+	var seed int
+	if c.Seed == 0 {
+		seed = int(rand.Uint64())
+		if seed < 0 {
+			seed = -seed
+		}
+		fmt.Printf("seed = %d\n", seed)
+	} else {
+		seed = c.Seed
+	}
+	chain := Generate(rand.New(rand.NewSource(int64(seed))), 3, 5)
 	a, b := "1.4", "2.4"
 	meet := chain.Meet(a, b)
-	return chain.ToGraphViz(map[string]string{
+	if err := chain.ToGraphViz("g.svg", map[string]string{
 		a:    "yellow",
 		b:    "yellow",
 		meet: "red",
-	})
+	}); err != nil {
+		return err
+	}
+	f, err := os.Create("g.html")
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(f, `<!DOCTYPE html>
+<img src='g.svg'>
+`)
+	f.Close()
+	return open.Run("g.html")
 }
 
 // perhaps open up in a browser, highlighting specific nodes with colors
-func (l Lattice) ToGraphViz(colors map[string]string) error {
+func (l Lattice) ToGraphViz(svg string, colors map[string]string) error {
 	id := func(name string) string {
 		h := md5.New()
 		h.Write([]byte(name))
@@ -39,27 +62,37 @@ func (l Lattice) ToGraphViz(colors map[string]string) error {
 		return err
 	}
 	fmt.Fprintf(f, "digraph {\n")
-	for _, n := range l.Nodes {
-		c := colors[n.ID]
+	var ids []string
+	for k := range l.Nodes {
+		ids = append(ids, k)
+	}
+	for _, i := range ids {
+		c := colors[i]
 		if c == "" {
 			c = "white"
 		}
-		fmt.Fprintf(f, "%s [ label=%q; fillcolor=%s style=filled ];\n", id(n.ID), n.ID, c)
+		fmt.Fprintf(f, "%s [ label=%q; fillcolor=%s style=filled ];\n", id(i), i, c)
 	}
-	for _, n := range l.Nodes {
+	for _, i := range ids {
+		n := l.Nodes[i]
 		for _, c := range n.Children {
 			fmt.Fprintf(f, "%s -> %s [ label=%q ];\n", id(n.ID), id(c), "")
 		}
 	}
 	fmt.Fprintf(f, "}\n")
 	f.Close()
-	return graphviz("dot", "g.gv", "g.svg", "svg")
+	return graphviz("dot", "g.gv", svg, "svg")
 }
 
 type Node struct {
 	ID       string
-	Children []string
 	Time     time.Time // to help order, assuming timestamps approx. correct
+	Children []string
+}
+
+func (n Node) String() string {
+	buf, _ := json.Marshal(n)
+	return string(buf)
 }
 
 // a graph of nodes where every two has a unique meet (semi-lattice)
@@ -97,15 +130,18 @@ func (l Lattice) Meet(a, b string) string {
 	sort.Slice(list, func(i, j int) bool {
 		return list[i].Time.After(list[j].Time)
 	})
-	var ids []string
+	var ids []*Node
 	for _, x := range list {
-		ids = append(ids, x.ID)
+		ids = append(ids, x)
 	}
-	fmt.Printf("intersection: %s\n", ids)
+	fmt.Printf("intersection:\n")
+	for _, n := range ids {
+		fmt.Println(n)
+	}
 	return list[0].ID
 }
 
-func Generate(chains, length int) Lattice {
+func Generate(r *rand.Rand, chains, length int) Lattice {
 	out := Lattice{
 		Nodes: make(map[string]*Node),
 	}
@@ -113,10 +149,13 @@ func Generate(chains, length int) Lattice {
 		out.Nodes[n.ID] = n
 	}
 	newNode := func(name string) *Node {
+		if n, ok := out.Nodes[name]; ok {
+			return n
+		}
 		time.Sleep(10 * time.Millisecond)
 		return &Node{
 			ID:   name,
-			Time: time.Now(),
+			Time: time.Now().UTC(),
 		}
 	}
 	genesis := newNode("genesis")
@@ -132,14 +171,19 @@ func Generate(chains, length int) Lattice {
 				children = append(children, genesis.ID)
 			} else {
 				children = append(children, last[i])
-				if r := rand.Intn(3); r != i {
+				if r := r.Intn(3); r != i {
 					children = append(children, last[r])
 				}
 			}
 			sort.Strings(children)
 
-			merge := newNode("[" + strings.Join(children, ",") + "]")
-			merge.Children = children
+			var merge *Node
+			if len(children) > 1 {
+				merge = newNode("[" + strings.Join(children, ",") + "]")
+				merge.Children = children
+			} else {
+				merge = out.Nodes[children[0]]
+			}
 			add(merge)
 
 			chain := newNode(fmt.Sprintf("%d.%d", i, j))

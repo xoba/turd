@@ -31,6 +31,7 @@ func main() {
 	flag.StringVar(&c.PrivateKeyFile, "priv", "priv.dat", "private key file")
 	flag.StringVar(&c.AWSProfile, "aws", "", "aws profile")
 	flag.IntVar(&c.Port, "p", 8080, "http port to run on")
+	flag.IntVar(&c.Seed, "s", 0, "if not zero, the random seed")
 	flag.Parse()
 	if err := Run(c); err != nil {
 		fmt.Fprintln(os.Stderr, err)
