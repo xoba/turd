@@ -1,6 +1,6 @@
 *.dat
 *~
 bin
+g.gv
+g.svg
 turd
-lattice.gv
-lattice.svg
