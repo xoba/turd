@@ -9,7 +9,6 @@ import (
 	"os"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/skratchdot/open-golang/open"
 	"github.com/xoba/turd/cnfg"
@@ -18,8 +17,7 @@ import (
 
 type Node struct {
 	ID          string
-	Group       string    // e.g., like a chain identity
-	Time        time.Time // to help order, assuming timestamps approx. correct
+	Group       string // e.g., like a chain identity
 	Children    Nodeset
 	Descendants Nodeset
 }
@@ -36,6 +34,11 @@ func (n Nodeset) Sorted() (out []string) {
 
 func (n Nodeset) Add(id string) {
 	n[id] = struct{}{}
+}
+
+func (n Nodeset) Has(id string) bool {
+	_, ok := n[id]
+	return ok
 }
 
 func (n Nodeset) Remove(id string) {
@@ -63,12 +66,16 @@ func Run(c cnfg.Config) error {
 	}
 	chain := Generate(rand.New(rand.NewSource(int64(seed))), 3, 5)
 	a, b := "1.4", "2.4"
-	meet := chain.Meet(a, b)
+	names := make(map[string]string)
+	chain.BreadthFirst(a, func(id string) {
+		names[id] = fmt.Sprintf("%s / %d", id, len(names))
+	})
+	meet := "" //chain.Meet(a, b)
 	if err := chain.ToGraphViz("g.svg", map[string]string{
 		a:    "yellow",
 		b:    "yellow",
 		meet: "red",
-	}); err != nil {
+	}, names); err != nil {
 		return err
 	}
 	f, err := os.Create("g.html")
@@ -82,9 +89,53 @@ func Run(c cnfg.Config) error {
 	return open.Run("g.html")
 }
 
+func (l Lattice) BreadthFirst(root string, f func(string)) {
+	q := queue{}
+	discovered := make(map[string]bool)
+	node := func(id string) *Node {
+		return l.m[id]
+	}
+	enqueue := func(id string) {
+		if discovered[id] {
+			return
+		}
+		discovered[id] = true
+		q.enqueue(id)
+		fmt.Printf("%q; %q\n", id, q.slice)
+		f(id)
+	}
+	dequeue := func() string {
+		return q.dequeue()
+	}
+	enqueue(root)
+	for !q.empty() {
+		for _, c := range node(dequeue()).Children.Sorted() {
+			enqueue(c)
+		}
+	}
+}
+
+type queue struct {
+	slice []string
+}
+
+func (q *queue) empty() bool {
+	return len(q.slice) == 0
+}
+
+func (q *queue) enqueue(x string) {
+	q.slice = append([]string{x}, q.slice...)
+}
+
+func (q *queue) dequeue() string {
+	x := q.slice[0]
+	q.slice = q.slice[1:]
+	return x
+}
+
 // perhaps open up in a browser, highlighting specific nodes with colors
-func (l Lattice) ToGraphViz(svg string, colors map[string]string) error {
-	buf, err := gviz.Compile(l, colors)
+func (l Lattice) ToGraphViz(svg string, names, colors map[string]string) error {
+	buf, err := gviz.Compile(l, names, colors)
 	if err != nil {
 		return err
 	}
@@ -160,7 +211,7 @@ func (l Lattice) Meet(a, b string) string {
 		list = append(list, n)
 	}
 	sort.Slice(list, func(i, j int) bool {
-		return list[i].Time.After(list[j].Time)
+		panic("can't sort nodes")
 	})
 	var ids []*Node
 	for _, x := range list {
@@ -184,10 +235,8 @@ func Generate(r *rand.Rand, chains, length int) Lattice {
 		if n, ok := out.m[name]; ok {
 			return n
 		}
-		time.Sleep(10 * time.Millisecond)
 		return &Node{
 			ID:          name,
-			Time:        time.Now().UTC(),
 			Children:    make(Nodeset),
 			Descendants: make(Nodeset),
 		}
