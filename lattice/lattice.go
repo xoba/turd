@@ -51,7 +51,6 @@ func (n Nodeset) Merge(o Nodeset) {
 	}
 }
 
-// TODO: need a random seed for reproducibility
 // TODO: also test cases of verified meets
 func Run(c cnfg.Config) error {
 	var seed int
@@ -68,7 +67,7 @@ func Run(c cnfg.Config) error {
 	a, b := "1.4", "2.4"
 	names := make(map[string]string)
 	chain.BreadthFirst(a, func(id string) {
-		names[id] = fmt.Sprintf("%s / %d", id, len(names))
+		names[id] = fmt.Sprintf("%d", len(names))
 	})
 	meet := "" //chain.Meet(a, b)
 	if err := chain.ToGraphViz("g.svg", map[string]string{
@@ -124,7 +123,7 @@ func (q *queue) empty() bool {
 }
 
 func (q *queue) enqueue(x string) {
-	q.slice = append([]string{x}, q.slice...)
+	q.slice = append(q.slice, x)
 }
 
 func (q *queue) dequeue() string {
