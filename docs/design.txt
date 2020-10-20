@@ -37,7 +37,11 @@ vice-versa for de-scaling.
 
 problems:
 
-how does depreciation work within lattice joins?
+how does depreciation work within lattice joins? for off-chain
+transfers, collect up transfers in transactions and when they
+arrive at home chains, collect up balances there. so source
+chain decides on depreciation amount, target chain incorporates
+that into balance. again, this is a kind of counter crdt.
 
 
 
