@@ -43,6 +43,9 @@ arrive at home chains, collect up balances there. so source
 chain decides on depreciation amount, target chain incorporates
 that into balance. again, this is a kind of counter crdt.
 
+meet algorithm: each block references a data structure containing all
+child blocks, thus to find meet do a breadth-first traversal of one
+block's child lattice, identifying the first common block as the meet.
 
 
 
