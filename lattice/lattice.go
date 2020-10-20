@@ -15,6 +15,11 @@ import (
 	"github.com/xoba/turd/gviz"
 )
 
+// a graph of nodes where every two has a unique meet (semi-lattice)
+type Lattice struct {
+	m map[string]*Node
+}
+
 type Node struct {
 	ID          string
 	Group       string // e.g., like a chain identity
@@ -28,7 +33,7 @@ func (n Nodeset) Sorted() (out []string) {
 	for k := range n {
 		out = append(out, k)
 	}
-	sort.Strings(out)
+	sort.Sort(sort.StringSlice(out))
 	return
 }
 
@@ -52,6 +57,12 @@ func (n Nodeset) Merge(o Nodeset) {
 }
 
 // TODO: also test cases of verified meets
+// for instance: go run . -m lattice -s 617624903177646721
+// is meet non-unique among 1.2 and 2.2??? reverse sorting changes answer, a bad sign!
+// i think the answer is that choosing either 1.2 or 2.2 as meet brings together the same data;
+// so in some sense meet should be union of 1.2 and 2.2? the clincher is that 1.2 and 2.2 are not
+// ordered with respect to one another.
+// also check that meet is idempotent, commutative, and associative
 func Run(c cnfg.Config) error {
 	var seed int
 	if c.Seed == 0 {
@@ -65,11 +76,15 @@ func Run(c cnfg.Config) error {
 	}
 	chain := Generate(rand.New(rand.NewSource(int64(seed))), 3, 5)
 	a, b := "1.4", "2.4"
+
 	names := make(map[string]string)
-	chain.BreadthFirst(a, func(id string) {
-		names[id] = fmt.Sprintf("%d", len(names))
+	chain.BreadthFirstSearch(a, func(id string) bool {
+		if false {
+			names[id] = fmt.Sprintf("%d", len(names))
+		}
+		return false
 	})
-	meet := "" //chain.Meet(a, b)
+	meet := chain.Meet(a, b)
 	if err := chain.ToGraphViz("g.svg", map[string]string{
 		a:    "yellow",
 		b:    "yellow",
@@ -88,30 +103,35 @@ func Run(c cnfg.Config) error {
 	return open.Run("g.html")
 }
 
-func (l Lattice) BreadthFirst(root string, f func(string)) {
+// returns id of node that passed function returns true on
+func (l Lattice) BreadthFirstSearch(root string, f func(string) bool) string {
 	q := queue{}
 	discovered := make(map[string]bool)
 	node := func(id string) *Node {
 		return l.m[id]
 	}
-	enqueue := func(id string) {
+	enqueue := func(id string) bool {
 		if discovered[id] {
-			return
+			return true
 		}
 		discovered[id] = true
 		q.enqueue(id)
-		fmt.Printf("%q; %q\n", id, q.slice)
-		f(id)
+		return f(id)
 	}
 	dequeue := func() string {
 		return q.dequeue()
 	}
-	enqueue(root)
+	if enqueue(root) {
+		return root
+	}
 	for !q.empty() {
 		for _, c := range node(dequeue()).Children.Sorted() {
-			enqueue(c)
+			if enqueue(c) {
+				return c
+			}
 		}
 	}
+	return ""
 }
 
 type queue struct {
@@ -147,11 +167,6 @@ func (l Lattice) ToGraphViz(svg string, names, colors map[string]string) error {
 func (n Node) String() string {
 	buf, _ := json.Marshal(n)
 	return string(buf)
-}
-
-// a graph of nodes where every two has a unique meet (semi-lattice)
-type Lattice struct {
-	m map[string]*Node
 }
 
 func (l Lattice) Nodes() (out []string) {
@@ -198,29 +213,13 @@ func (l Lattice) Children(a string) map[string]*Node {
 
 // returns meet of two nodes, if any
 func (l Lattice) Meet(a, b string) string {
-	intersection := make(map[string]*Node)
-	ac := l.Children(a)
-	for k := range l.Children(b) {
-		if v, ok := ac[k]; ok {
-			intersection[k] = v
+	bn := l.m[b]
+	return l.BreadthFirstSearch(a, func(id string) bool {
+		if bn.Descendants.Has(id) {
+			return true
 		}
-	}
-	var list []*Node
-	for _, n := range intersection {
-		list = append(list, n)
-	}
-	sort.Slice(list, func(i, j int) bool {
-		panic("can't sort nodes")
+		return false
 	})
-	var ids []*Node
-	for _, x := range list {
-		ids = append(ids, x)
-	}
-	fmt.Printf("intersection:\n")
-	for _, n := range ids {
-		fmt.Println(n)
-	}
-	return list[0].ID
 }
 
 func Generate(r *rand.Rand, chains, length int) Lattice {
@@ -278,6 +277,18 @@ func Generate(r *rand.Rand, chains, length int) Lattice {
 
 		}
 		last = m
+	}
+	for _, n := range out.m {
+		n.Descendants = out.CalcDescendants(n.ID)
+	}
+	return out
+}
+
+func (l Lattice) CalcDescendants(id string) Nodeset {
+	out := make(Nodeset)
+	for c := range l.m[id].Children {
+		out.Add(c)
+		out.Merge(l.CalcDescendants(c))
 	}
 	return out
 }
