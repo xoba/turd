@@ -23,7 +23,7 @@ func Compile(g Graph, colors map[string]string) ([]byte, error) {
 	id := func(name string) string {
 		h := md5.New()
 		h.Write([]byte(name))
-		return fmt.Sprintf("N%x", h.Sum(nil))[:8]
+		return fmt.Sprintf("N%x", h.Sum(nil))
 	}
 	f := new(bytes.Buffer)
 	fmt.Fprintf(f, "digraph {\n")
