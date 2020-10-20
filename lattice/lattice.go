@@ -2,19 +2,51 @@
 package lattice
 
 import (
-	"crypto/md5"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"math/rand"
 	"os"
-	"os/exec"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/skratchdot/open-golang/open"
 	"github.com/xoba/turd/cnfg"
+	"github.com/xoba/turd/gviz"
 )
+
+type Node struct {
+	ID          string
+	Group       string    // e.g., like a chain identity
+	Time        time.Time // to help order, assuming timestamps approx. correct
+	Children    Nodeset
+	Descendants Nodeset
+}
+
+type Nodeset map[string]struct{}
+
+func (n Nodeset) Sorted() (out []string) {
+	for k := range n {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return
+}
+
+func (n Nodeset) Add(id string) {
+	n[id] = struct{}{}
+}
+
+func (n Nodeset) Remove(id string) {
+	delete(n, id)
+}
+
+func (n Nodeset) Merge(o Nodeset) {
+	for k := range o {
+		n[k] = struct{}{}
+	}
+}
 
 // TODO: need a random seed for reproducibility
 // TODO: also test cases of verified meets
@@ -52,42 +84,14 @@ func Run(c cnfg.Config) error {
 
 // perhaps open up in a browser, highlighting specific nodes with colors
 func (l Lattice) ToGraphViz(svg string, colors map[string]string) error {
-	id := func(name string) string {
-		h := md5.New()
-		h.Write([]byte(name))
-		return fmt.Sprintf("N%x", h.Sum(nil))[:8]
-	}
-	f, err := os.Create("g.gv")
+	buf, err := gviz.Compile(l, colors)
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(f, "digraph {\n")
-	var ids []string
-	for k := range l.Nodes {
-		ids = append(ids, k)
+	if err := ioutil.WriteFile("g.gv", buf, os.ModePerm); err != nil {
+		return err
 	}
-	for _, i := range ids {
-		c := colors[i]
-		if c == "" {
-			c = "white"
-		}
-		fmt.Fprintf(f, "%s [ label=%q; fillcolor=%s style=filled ];\n", id(i), i, c)
-	}
-	for _, i := range ids {
-		n := l.Nodes[i]
-		for _, c := range n.Children {
-			fmt.Fprintf(f, "%s -> %s [ label=%q ];\n", id(n.ID), id(c), "")
-		}
-	}
-	fmt.Fprintf(f, "}\n")
-	f.Close()
-	return graphviz("dot", "g.gv", svg, "svg")
-}
-
-type Node struct {
-	ID       string
-	Time     time.Time // to help order, assuming timestamps approx. correct
-	Children []string
+	return gviz.Dot("g.gv", svg)
 }
 
 func (n Node) String() string {
@@ -97,15 +101,43 @@ func (n Node) String() string {
 
 // a graph of nodes where every two has a unique meet (semi-lattice)
 type Lattice struct {
-	Nodes map[string]*Node
+	m map[string]*Node
+}
+
+func (l Lattice) Nodes() (out []string) {
+	for k := range l.m {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return
+}
+
+type edge struct {
+	from, to string
+}
+
+func (e edge) From() string {
+	return e.from
+}
+func (e edge) To() string {
+	return e.to
+}
+
+func (l Lattice) Edges() (out []gviz.Edge) {
+	for from, parent := range l.m {
+		for to := range parent.Children {
+			out = append(out, edge{from: from, to: to})
+		}
+	}
+	return
 }
 
 func (l Lattice) Children(a string) map[string]*Node {
 	out := make(map[string]*Node)
 	node := func(id string) *Node {
-		return l.Nodes[id]
+		return l.m[id]
 	}
-	for _, c := range node(a).Children {
+	for _, c := range node(a).Children.Sorted() {
 		out[c] = node(c)
 		for k, v := range l.Children(c) {
 			out[k] = v
@@ -143,19 +175,21 @@ func (l Lattice) Meet(a, b string) string {
 
 func Generate(r *rand.Rand, chains, length int) Lattice {
 	out := Lattice{
-		Nodes: make(map[string]*Node),
+		m: make(map[string]*Node),
 	}
 	add := func(n *Node) {
-		out.Nodes[n.ID] = n
+		out.m[n.ID] = n
 	}
 	newNode := func(name string) *Node {
-		if n, ok := out.Nodes[name]; ok {
+		if n, ok := out.m[name]; ok {
 			return n
 		}
 		time.Sleep(10 * time.Millisecond)
 		return &Node{
-			ID:   name,
-			Time: time.Now().UTC(),
+			ID:          name,
+			Time:        time.Now().UTC(),
+			Children:    make(Nodeset),
+			Descendants: make(Nodeset),
 		}
 	}
 	genesis := newNode("genesis")
@@ -180,14 +214,16 @@ func Generate(r *rand.Rand, chains, length int) Lattice {
 			var merge *Node
 			if len(children) > 1 {
 				merge = newNode("[" + strings.Join(children, ",") + "]")
-				merge.Children = children
+				for _, c := range children {
+					merge.Children.Add(c)
+				}
 			} else {
-				merge = out.Nodes[children[0]]
+				merge = out.m[children[0]]
 			}
 			add(merge)
 
 			chain := newNode(fmt.Sprintf("%d.%d", i, j))
-			chain.Children = append(chain.Children, merge.ID)
+			chain.Children.Add(merge.ID)
 			add(chain)
 
 			m[i] = chain.ID
@@ -196,11 +232,4 @@ func Generate(r *rand.Rand, chains, length int) Lattice {
 		last = m
 	}
 	return out
-}
-
-func graphviz(graphvizCommand, gv, out, format string) error {
-	if err := exec.Command(graphvizCommand, "-v", "-o", out, fmt.Sprintf("-T%s", format), gv).Run(); err != nil {
-		return fmt.Errorf("can't run graphviz (%s): %v", graphvizCommand, err)
-	}
-	return nil
 }
