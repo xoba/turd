@@ -1,5 +1,6 @@
-// Package lattice is for computing lattice things like meet and join
-package lattice
+// Package poset is for computing poset things like meet and join
+// (even though posets don't necessarily have unique meets etc.)
+package poset
 
 import (
 	"encoding/json"

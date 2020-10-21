@@ -17,7 +17,7 @@ import (
 	"github.com/xoba/turd/cnfg"
 	"github.com/xoba/turd/gossip"
 	"github.com/xoba/turd/infl"
-	"github.com/xoba/turd/lattice"
+	"github.com/xoba/turd/poset"
 	"github.com/xoba/turd/taws"
 	"github.com/xoba/turd/tnet"
 	"github.com/xoba/turd/trie"
@@ -26,7 +26,7 @@ import (
 
 func main() {
 	var c cnfg.Config
-	flag.StringVar(&c.Mode, "m", "trie", "mode to run")
+	flag.StringVar(&c.Mode, "m", "poset", "mode to run")
 	flag.StringVar(&c.PublicKeyFile, "pub", "pub.dat", "public key file")
 	flag.StringVar(&c.PrivateKeyFile, "priv", "priv.dat", "private key file")
 	flag.StringVar(&c.AWSProfile, "aws", "", "aws profile")
@@ -48,7 +48,7 @@ func Run(c cnfg.Config) error {
 		"inflation": infl.Run,
 		"keys":      tnet.SharedKey,
 		"launch":    LaunchNode,
-		"lattice":   lattice.Run,
+		"poset":     poset.Run,
 		"listen":    Listen,
 		"trie":      trie.Run,
 	}
