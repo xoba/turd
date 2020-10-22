@@ -22,10 +22,19 @@ type Poset struct {
 }
 
 type Node struct {
-	ID          string
-	Group       string // e.g., like a chain identity
-	Children    Nodeset
-	Descendents Nodeset
+	id, label, group string
+	Children         Nodeset
+	Descendents      Nodeset
+}
+
+func (n Node) ID() string {
+	return n.id
+}
+func (n Node) Label() string {
+	return n.label
+}
+func (n Node) Group() string {
+	return n.group
 }
 
 type Nodeset map[string]struct{}
@@ -89,7 +98,7 @@ func Run(c cnfg.Config) error {
 			b:      "yellow",
 			"join": "cyan",
 			meet:   "red",
-		}, names); err != nil {
+		}); err != nil {
 			return err
 		}
 		f, err := os.Create("g.html")
@@ -103,7 +112,7 @@ func Run(c cnfg.Config) error {
 		return open.Run("g.html")
 	}
 
-	if true {
+	if false {
 		chain.BreadthFirstSearch(a, func(id string) bool {
 			names[id] = fmt.Sprintf("%d", len(names))
 			return false
@@ -115,13 +124,11 @@ func Run(c cnfg.Config) error {
 		fmt.Printf("%s: %v\n", x, chain.m[x].Descendents)
 	}
 
-	if false {
-		join := NewNode("join")
-		chain.m[join.ID] = join
-		join.Children.Add(a)
-		join.Children.Add(b)
-		join.Descendents = chain.CalcDescendents(join.ID)
-	}
+	join := NewNode("join", "", "")
+	chain.m[join.id] = join
+	join.Children.Add(a)
+	join.Children.Add(b)
+	join.Descendents = chain.CalcDescendents(join.id)
 
 	return display()
 }
@@ -135,7 +142,7 @@ func (l Poset) BreadthFirstSearch(root string, f func(string) bool) string {
 	}
 	enqueue := func(id string) bool {
 		if discovered[id] {
-			return true
+			return false
 		}
 		discovered[id] = true
 		q.enqueue(id)
@@ -177,8 +184,8 @@ func (q *queue) dequeue() string {
 }
 
 // perhaps open up in a browser, highlighting specific nodes with colors
-func (l Poset) ToGraphViz(svg string, names, colors map[string]string) error {
-	buf, err := gviz.Compile(l, names, colors)
+func (l Poset) ToGraphViz(svg string, colors map[string]string) error {
+	buf, err := gviz.Compile(l, colors)
 	if err != nil {
 		return err
 	}
@@ -193,11 +200,13 @@ func (n Node) String() string {
 	return string(buf)
 }
 
-func (l Poset) Nodes() (out []string) {
-	for k := range l.m {
-		out = append(out, k)
+func (l Poset) Nodes() (out []gviz.Node) {
+	for _, n := range l.m {
+		out = append(out, n)
 	}
-	sort.Strings(out)
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].ID() < out[j].ID()
+	})
 	return
 }
 
@@ -247,9 +256,11 @@ func (l Poset) Meet(a, b string) string {
 	})
 }
 
-func NewNode(id string) *Node {
+func NewNode(id, label, group string) *Node {
 	return &Node{
-		ID:          id,
+		id:          id,
+		label:       label,
+		group:       group,
 		Children:    make(Nodeset),
 		Descendents: make(Nodeset),
 	}
@@ -260,15 +271,15 @@ func Generate(r *rand.Rand, chains, length int) Poset {
 		m: make(map[string]*Node),
 	}
 	add := func(n *Node) {
-		out.m[n.ID] = n
+		out.m[n.id] = n
 	}
-	newNode := func(name string) *Node {
-		if n, ok := out.m[name]; ok {
+	newNode := func(id, label, group string) *Node {
+		if n, ok := out.m[id]; ok {
 			return n
 		}
-		return NewNode(name)
+		return NewNode(id, label, group)
 	}
-	genesis := newNode("genesis")
+	genesis := newNode("g", "genesis", "")
 	add(genesis)
 	var last map[int]string
 	for j := 0; j < length; j++ {
@@ -278,7 +289,7 @@ func Generate(r *rand.Rand, chains, length int) Poset {
 			// TODO: if only one child, skip the merge node
 			var children []string
 			if last == nil {
-				children = append(children, genesis.ID)
+				children = append(children, genesis.id)
 			} else {
 				children = append(children, last[i])
 				if r := r.Intn(3); r != i {
@@ -289,7 +300,8 @@ func Generate(r *rand.Rand, chains, length int) Poset {
 
 			var merge *Node
 			if len(children) > 1 {
-				merge = newNode("[" + strings.Join(children, ",") + "]")
+				id := "[" + strings.Join(children, ",") + "]"
+				merge = newNode(id, id, "")
 				for _, c := range children {
 					merge.Children.Add(c)
 				}
@@ -298,17 +310,17 @@ func Generate(r *rand.Rand, chains, length int) Poset {
 			}
 			add(merge)
 
-			chain := newNode(fmt.Sprintf("%d.%d", i, j))
-			chain.Children.Add(merge.ID)
+			chain := newNode(fmt.Sprintf("%d.%d", i, j), fmt.Sprintf("%d", j), fmt.Sprintf("%d", i))
+			chain.Children.Add(merge.id)
 			add(chain)
 
-			m[i] = chain.ID
+			m[i] = chain.id
 
 		}
 		last = m
 	}
 	for _, n := range out.m {
-		n.Descendents = out.CalcDescendents(n.ID)
+		n.Descendents = out.CalcDescendents(n.id)
 	}
 	return out
 }
