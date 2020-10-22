@@ -17,7 +17,7 @@ import (
 )
 
 // a graph of nodes where every two has a unique meet (semi-lattice)
-type Lattice struct {
+type Poset struct {
 	m map[string]*Node
 }
 
@@ -25,7 +25,7 @@ type Node struct {
 	ID          string
 	Group       string // e.g., like a chain identity
 	Children    Nodeset
-	Descendants Nodeset
+	Descendents Nodeset
 }
 
 type Nodeset map[string]struct{}
@@ -57,6 +57,8 @@ func (n Nodeset) Merge(o Nodeset) {
 	}
 }
 
+// BUG: go run . -m poset -s 8896833665541862532 ... 1.2 should be meet, not 0.2
+
 // TODO: also test cases of verified meets
 // for instance: go run . -m lattice -s 617624903177646721
 // is meet non-unique among 1.2 and 2.2??? reverse sorting changes answer, a bad sign!
@@ -85,11 +87,19 @@ func Run(c cnfg.Config) error {
 		}
 		return false
 	})
+
+	join := NewNode("join")
+	chain.m[join.ID] = join
+	join.Children.Add(a)
+	join.Children.Add(b)
+	join.Descendents = chain.CalcDescendents(join.ID)
+
 	meet := chain.Meet(a, b)
 	if err := chain.ToGraphViz("g.svg", map[string]string{
-		a:    "yellow",
-		b:    "yellow",
-		meet: "red",
+		a:      "yellow",
+		b:      "yellow",
+		"join": "cyan",
+		meet:   "red",
 	}, names); err != nil {
 		return err
 	}
@@ -105,7 +115,7 @@ func Run(c cnfg.Config) error {
 }
 
 // returns id of node that passed function returns true on
-func (l Lattice) BreadthFirstSearch(root string, f func(string) bool) string {
+func (l Poset) BreadthFirstSearch(root string, f func(string) bool) string {
 	q := queue{}
 	discovered := make(map[string]bool)
 	node := func(id string) *Node {
@@ -154,7 +164,7 @@ func (q *queue) dequeue() string {
 }
 
 // perhaps open up in a browser, highlighting specific nodes with colors
-func (l Lattice) ToGraphViz(svg string, names, colors map[string]string) error {
+func (l Poset) ToGraphViz(svg string, names, colors map[string]string) error {
 	buf, err := gviz.Compile(l, names, colors)
 	if err != nil {
 		return err
@@ -170,7 +180,7 @@ func (n Node) String() string {
 	return string(buf)
 }
 
-func (l Lattice) Nodes() (out []string) {
+func (l Poset) Nodes() (out []string) {
 	for k := range l.m {
 		out = append(out, k)
 	}
@@ -189,7 +199,7 @@ func (e edge) To() string {
 	return e.to
 }
 
-func (l Lattice) Edges() (out []gviz.Edge) {
+func (l Poset) Edges() (out []gviz.Edge) {
 	for from, parent := range l.m {
 		for to := range parent.Children {
 			out = append(out, edge{from: from, to: to})
@@ -198,7 +208,7 @@ func (l Lattice) Edges() (out []gviz.Edge) {
 	return
 }
 
-func (l Lattice) Children(a string) map[string]*Node {
+func (l Poset) Children(a string) map[string]*Node {
 	out := make(map[string]*Node)
 	node := func(id string) *Node {
 		return l.m[id]
@@ -213,18 +223,26 @@ func (l Lattice) Children(a string) map[string]*Node {
 }
 
 // returns meet of two nodes, if any
-func (l Lattice) Meet(a, b string) string {
+func (l Poset) Meet(a, b string) string {
 	bn := l.m[b]
 	return l.BreadthFirstSearch(a, func(id string) bool {
-		if bn.Descendants.Has(id) {
+		if bn.Descendents.Has(id) {
 			return true
 		}
 		return false
 	})
 }
 
-func Generate(r *rand.Rand, chains, length int) Lattice {
-	out := Lattice{
+func NewNode(id string) *Node {
+	return &Node{
+		ID:          id,
+		Children:    make(Nodeset),
+		Descendents: make(Nodeset),
+	}
+}
+
+func Generate(r *rand.Rand, chains, length int) Poset {
+	out := Poset{
 		m: make(map[string]*Node),
 	}
 	add := func(n *Node) {
@@ -234,11 +252,7 @@ func Generate(r *rand.Rand, chains, length int) Lattice {
 		if n, ok := out.m[name]; ok {
 			return n
 		}
-		return &Node{
-			ID:          name,
-			Children:    make(Nodeset),
-			Descendants: make(Nodeset),
-		}
+		return NewNode(name)
 	}
 	genesis := newNode("genesis")
 	add(genesis)
@@ -280,16 +294,16 @@ func Generate(r *rand.Rand, chains, length int) Lattice {
 		last = m
 	}
 	for _, n := range out.m {
-		n.Descendants = out.CalcDescendants(n.ID)
+		n.Descendents = out.CalcDescendents(n.ID)
 	}
 	return out
 }
 
-func (l Lattice) CalcDescendants(id string) Nodeset {
+func (l Poset) CalcDescendents(id string) Nodeset {
 	out := make(Nodeset)
 	for c := range l.m[id].Children {
 		out.Add(c)
-		out.Merge(l.CalcDescendants(c))
+		out.Merge(l.CalcDescendents(c))
 	}
 	return out
 }
