@@ -22,9 +22,10 @@ type Poset struct {
 }
 
 type Node struct {
-	id, label, group string
-	Children         Nodeset
-	Descendents      Nodeset
+	id, label, group, shape string
+	Type                    string
+	Children                Nodeset
+	Descendents             Nodeset
 }
 
 func (n Node) ID() string {
@@ -35,6 +36,19 @@ func (n Node) Label() string {
 }
 func (n Node) Group() string {
 	return n.group
+}
+func (n Node) Shape() string {
+	switch n.Type {
+	case "top", "bottom":
+		return "Mcircle"
+	case "merge":
+		return "ellipse"
+	case "block":
+		return "box"
+	default:
+		panic("illegal: " + n.Type)
+	}
+	return n.shape
 }
 
 type Nodeset map[string]struct{}
@@ -86,8 +100,12 @@ func Run(c cnfg.Config) error {
 	} else {
 		seed = c.Seed
 	}
-	chain := Generate(rand.New(rand.NewSource(int64(seed))), 3, 5)
-	a, b := "1.4", "2.4"
+	const (
+		chains = 6
+		length = 10
+	)
+	chain := Generate(rand.New(rand.NewSource(int64(seed))), chains, length)
+	a, b := fmt.Sprintf("%d.%d", 0, length-1), fmt.Sprintf("%d.%d", 1, length-1)
 	meet := chain.Meet(a, b)
 
 	names := make(map[string]string)
@@ -120,11 +138,7 @@ func Run(c cnfg.Config) error {
 		return display()
 	}
 
-	for _, x := range []string{a, b} {
-		fmt.Printf("%s: %v\n", x, chain.m[x].Descendents)
-	}
-
-	join := NewNode("join", "", "")
+	join := NewNode("join", "", "", "top")
 	chain.m[join.id] = join
 	join.Children.Add(a)
 	join.Children.Add(b)
@@ -157,7 +171,6 @@ func (l Poset) BreadthFirstSearch(root string, f func(string) bool) string {
 	for !q.empty() {
 		for _, c := range node(dequeue()).Children.Sorted() {
 			if enqueue(c) {
-				fmt.Println("*", c)
 				return c
 			}
 		}
@@ -185,7 +198,7 @@ func (q *queue) dequeue() string {
 
 // perhaps open up in a browser, highlighting specific nodes with colors
 func (l Poset) ToGraphViz(svg string, colors map[string]string) error {
-	buf, err := gviz.Compile(l, colors)
+	buf, err := gviz.Compile(l, false, colors)
 	if err != nil {
 		return err
 	}
@@ -248,7 +261,6 @@ func (l Poset) Children(a string) map[string]*Node {
 func (l Poset) Meet(a, b string) string {
 	desc := l.m[b].Descendents
 	return l.BreadthFirstSearch(a, func(id string) bool {
-		fmt.Printf("%s: %s -> %v\n", a, id, desc.Has(id))
 		if desc.Has(id) {
 			return true
 		}
@@ -256,11 +268,18 @@ func (l Poset) Meet(a, b string) string {
 	})
 }
 
-func NewNode(id, label, group string) *Node {
+func NewNode(id, label, group, t string) *Node {
+	if id == "" {
+		panic("needs id")
+	}
+	if label == "" {
+		label = id
+	}
 	return &Node{
 		id:          id,
 		label:       label,
 		group:       group,
+		Type:        t,
 		Children:    make(Nodeset),
 		Descendents: make(Nodeset),
 	}
@@ -273,13 +292,13 @@ func Generate(r *rand.Rand, chains, length int) Poset {
 	add := func(n *Node) {
 		out.m[n.id] = n
 	}
-	newNode := func(id, label, group string) *Node {
+	newNode := func(id, label, group, t string) *Node {
 		if n, ok := out.m[id]; ok {
 			return n
 		}
-		return NewNode(id, label, group)
+		return NewNode(id, label, group, t)
 	}
-	genesis := newNode("g", "genesis", "")
+	genesis := newNode("g", "genesis", "", "bottom")
 	add(genesis)
 	var last map[int]string
 	for j := 0; j < length; j++ {
@@ -301,7 +320,7 @@ func Generate(r *rand.Rand, chains, length int) Poset {
 			var merge *Node
 			if len(children) > 1 {
 				id := "[" + strings.Join(children, ",") + "]"
-				merge = newNode(id, id, "")
+				merge = newNode(id, "m", "", "merge")
 				for _, c := range children {
 					merge.Children.Add(c)
 				}
@@ -309,8 +328,12 @@ func Generate(r *rand.Rand, chains, length int) Poset {
 				merge = out.m[children[0]]
 			}
 			add(merge)
-
-			chain := newNode(fmt.Sprintf("%d.%d", i, j), fmt.Sprintf("%d", j), fmt.Sprintf("%d", i))
+			chain := newNode(
+				fmt.Sprintf("%d.%d", i, j), // id
+				fmt.Sprintf("%d", j),       // label
+				fmt.Sprintf("%c", 'a'+i),   // group
+				"block",
+			)
 			chain.Children.Add(merge.id)
 			add(chain)
 

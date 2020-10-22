@@ -17,6 +17,7 @@ type Graph interface {
 type Node interface {
 	ID() string
 	Label() string
+	Shape() string
 	Group() string
 }
 
@@ -26,23 +27,25 @@ type Edge interface {
 }
 
 // Compile creates a gv output
-func Compile(g Graph, colors map[string]string) ([]byte, error) {
+func Compile(g Graph, clusters bool, colors map[string]string) ([]byte, error) {
 	id := func(name string) string {
 		h := md5.New()
 		h.Write([]byte(name))
 		return fmt.Sprintf("N%x", h.Sum(nil))
 	}
 	f := new(bytes.Buffer)
-	fmt.Fprintf(f, "digraph {\n")
-	//fmt.Fprintf(f, "rankdir = LR\n")
+	fmt.Fprintf(f, "digraph g {\n")
+	//fmt.Fprintln(f, "rankdir=LR")
 	groups := make(map[string][]Node)
 	for _, n := range g.Nodes() {
 		groups[n.Group()] = append(groups[n.Group()], n)
 	}
 	var x int
 	for _, v := range groups {
-		//fmt.Fprintf(f, "subgraph cluster_%d {\n", x)
-		x++
+		if clusters {
+			fmt.Fprintf(f, "subgraph cluster_%d {\n", x)
+			x++
+		}
 		for _, n := range v {
 			c := colors[n.ID()]
 			if c == "" {
@@ -52,9 +55,16 @@ func Compile(g Graph, colors map[string]string) ([]byte, error) {
 			if g := n.Group(); g != "" {
 				label = g + "/" + label
 			}
-			fmt.Fprintf(f, "%s [ label=%q; fillcolor=%s style=filled ];\n", id(n.ID()), label, c)
+			fmt.Fprintf(f, "%s [ label=%q; shape=%s; fillcolor=%s style=filled ];\n",
+				id(n.ID()),
+				label,
+				n.Shape(),
+				c,
+			)
 		}
-		//fmt.Fprintf(f, "}\n")
+		if clusters {
+			fmt.Fprintf(f, "}\n")
+		}
 	}
 	for _, e := range g.Edges() {
 		fmt.Fprintf(f, "%s -> %s;\n", id(e.From()), id(e.To()))
