@@ -79,39 +79,51 @@ func Run(c cnfg.Config) error {
 	}
 	chain := Generate(rand.New(rand.NewSource(int64(seed))), 3, 5)
 	a, b := "1.4", "2.4"
+	meet := chain.Meet(a, b)
 
 	names := make(map[string]string)
-	chain.BreadthFirstSearch(a, func(id string) bool {
-		if false {
-			names[id] = fmt.Sprintf("%d", len(names))
+
+	display := func() error {
+		if err := chain.ToGraphViz("g.svg", map[string]string{
+			a:      "yellow",
+			b:      "yellow",
+			"join": "cyan",
+			meet:   "red",
+		}, names); err != nil {
+			return err
 		}
-		return false
-	})
-
-	join := NewNode("join")
-	chain.m[join.ID] = join
-	join.Children.Add(a)
-	join.Children.Add(b)
-	join.Descendents = chain.CalcDescendents(join.ID)
-
-	meet := chain.Meet(a, b)
-	if err := chain.ToGraphViz("g.svg", map[string]string{
-		a:      "yellow",
-		b:      "yellow",
-		"join": "cyan",
-		meet:   "red",
-	}, names); err != nil {
-		return err
-	}
-	f, err := os.Create("g.html")
-	if err != nil {
-		return err
-	}
-	fmt.Fprintf(f, `<!DOCTYPE html>
+		f, err := os.Create("g.html")
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(f, `<!DOCTYPE html>
 <img src='g.svg'>
 `)
-	f.Close()
-	return open.Run("g.html")
+		f.Close()
+		return open.Run("g.html")
+	}
+
+	if true {
+		chain.BreadthFirstSearch(a, func(id string) bool {
+			names[id] = fmt.Sprintf("%d", len(names))
+			return false
+		})
+		return display()
+	}
+
+	for _, x := range []string{a, b} {
+		fmt.Printf("%s: %v\n", x, chain.m[x].Descendents)
+	}
+
+	if false {
+		join := NewNode("join")
+		chain.m[join.ID] = join
+		join.Children.Add(a)
+		join.Children.Add(b)
+		join.Descendents = chain.CalcDescendents(join.ID)
+	}
+
+	return display()
 }
 
 // returns id of node that passed function returns true on
@@ -138,6 +150,7 @@ func (l Poset) BreadthFirstSearch(root string, f func(string) bool) string {
 	for !q.empty() {
 		for _, c := range node(dequeue()).Children.Sorted() {
 			if enqueue(c) {
+				fmt.Println("*", c)
 				return c
 			}
 		}
@@ -224,9 +237,10 @@ func (l Poset) Children(a string) map[string]*Node {
 
 // returns meet of two nodes, if any
 func (l Poset) Meet(a, b string) string {
-	bn := l.m[b]
+	desc := l.m[b].Descendents
 	return l.BreadthFirstSearch(a, func(id string) bool {
-		if bn.Descendents.Has(id) {
+		fmt.Printf("%s: %s -> %v\n", a, id, desc.Has(id))
+		if desc.Has(id) {
 			return true
 		}
 		return false
