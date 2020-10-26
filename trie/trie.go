@@ -280,8 +280,17 @@ func (t *Trie) computeStats() *Stats {
 
 func (t *Trie) computeHash() []byte {
 	var list [][]byte
-	add := func(x []byte) {
-		list = append(list, x)
+	add := func(x interface{}) {
+		switch t := x.(type) {
+		case nil:
+			list = append(list, nil)
+		case []byte:
+			list = append(list, t)
+		case int:
+			list = append(list, big.NewInt(int64(t)).Bytes())
+		default:
+			panic(fmt.Errorf("unsupported type %T", t))
+		}
 	}
 	if t.KeyValue == nil {
 		add(nil)
@@ -293,7 +302,7 @@ func (t *Trie) computeHash() []byte {
 		if x == nil {
 			continue
 		}
-		add([]byte{byte(i)})
+		add(i)
 		add(x.Hash())
 	}
 	buf, err := asn1.Marshal(list)
