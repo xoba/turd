@@ -22,7 +22,7 @@ func (m mapdb) Delete(key []byte) {
 	delete(m, string(key))
 }
 
-func (m mapdb) Do(f func(*KeyValue)) {
+func (m mapdb) Search(f func(*KeyValue) bool) *KeyValue {
 	var list []*KeyValue
 	for k, v := range m {
 		list = append(list, &KeyValue{
@@ -34,8 +34,11 @@ func (m mapdb) Do(f func(*KeyValue)) {
 		return bytes.Compare(list[i].Key, list[j].Key) == -1
 	})
 	for _, kv := range list {
-		f(kv)
+		if f(kv) {
+			return kv
+		}
 	}
+	return nil
 }
 
 func (m mapdb) Stats() *Stats {

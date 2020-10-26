@@ -19,7 +19,8 @@ type Database interface {
 	Get([]byte) ([]byte, bool)
 	Delete([]byte)
 	Stats() *Stats
-	Do(func(kv *KeyValue))
+	// returns kv for whichever first search function returns true
+	Search(func(kv *KeyValue) bool) *KeyValue
 	// hash is implementation-dependent, but based only on what is gettable in the db
 	Hash() []byte
 }
@@ -29,11 +30,11 @@ func New() *Trie {
 }
 
 type Trie struct {
-	kv     *KeyValue
+	*KeyValue
+	Merkle []byte
+	Next   [256]*Trie
 	dirty  bool
 	stats  *Stats
-	merkle []byte
-	next   [256]*Trie
 }
 
 func (t *Trie) IsDirty() bool {
@@ -46,7 +47,7 @@ func (t *Trie) IsClean() bool {
 
 func (t *Trie) MarkDirty() {
 	t.dirty = true
-	t.merkle = nil
+	t.Merkle = nil
 	t.stats = nil
 }
 
@@ -78,13 +79,14 @@ func (s *Stats) IncSize(i int) {
 }
 
 type Iterable interface {
-	Do(func(kv *KeyValue))
+	Search(func(kv *KeyValue) bool) *KeyValue
 }
 
 func String(i Iterable) string {
 	var list []*KeyValue
-	i.Do(func(kv *KeyValue) {
+	i.Search(func(kv *KeyValue) bool {
 		list = append(list, kv)
+		return false
 	})
 	buf, _ := json.Marshal(list)
 	return string(buf)
@@ -255,19 +257,19 @@ func (t *Trie) clean() {
 	if t.IsClean() {
 		return
 	}
-	t.merkle = t.computeHash()
+	t.Merkle = t.computeHash()
 	t.stats = t.computeStats()
 	t.MarkClean()
 }
 
 func (t *Trie) computeStats() *Stats {
 	var s Stats
-	if t.kv != nil {
+	if t.KeyValue != nil {
 		s.Count = inc(s.Count, 1)
-		s.Size = inc(s.Size, len(t.kv.Key))
-		s.Size = inc(s.Size, len(t.kv.Value))
+		s.Size = inc(s.Size, len(t.KeyValue.Key))
+		s.Size = inc(s.Size, len(t.KeyValue.Value))
 	}
-	for _, x := range t.next {
+	for _, x := range t.Next {
 		if x == nil {
 			continue
 		}
@@ -281,13 +283,13 @@ func (t *Trie) computeHash() []byte {
 	add := func(x []byte) {
 		list = append(list, x)
 	}
-	if t.kv == nil {
+	if t.KeyValue == nil {
 		add(nil)
 	} else {
-		add(t.kv.Key)
-		add(t.kv.Value)
+		add(t.KeyValue.Key)
+		add(t.KeyValue.Value)
 	}
-	for i, x := range t.next {
+	for i, x := range t.Next {
 		if x == nil {
 			continue
 		}
@@ -296,8 +298,8 @@ func (t *Trie) computeHash() []byte {
 	}
 	buf, err := asn1.Marshal(list)
 	check(err)
-	t.merkle = thash.Hash(buf)
-	return t.merkle
+	t.Merkle = thash.Hash(buf)
+	return t.Merkle
 }
 
 func (t *Trie) Stats() *Stats {
@@ -311,15 +313,11 @@ func (t *Trie) Hash() []byte {
 	if t.IsDirty() {
 		t.clean()
 	}
-	return t.merkle
+	return t.Merkle
 }
 
 type KeyValue struct {
 	Key, Value []byte
-}
-
-type StringKeyValue struct {
-	Key, Value string
 }
 
 func (kv KeyValue) xHash() ([]byte, error) {
@@ -332,23 +330,29 @@ func (kv KeyValue) xHash() ([]byte, error) {
 
 func (t *Trie) String() string {
 	var list []string
-	t.Do(func(kv *KeyValue) {
+	t.Search(func(kv *KeyValue) bool {
 		list = append(list, fmt.Sprintf("%q:%q", string(kv.Key), string(kv.Value)))
+		return false
 	})
 	return strings.Join(list, ", ")
 }
 
-// TODO: "Do" should take a range arguemnt, and handler should return bool
-func (t *Trie) Do(f func(kv *KeyValue)) {
-	for _, x := range t.next {
+// TODO: "Do" should take a range argument, and handler should return bool
+func (t *Trie) Search(f func(kv *KeyValue) bool) *KeyValue {
+	for _, x := range t.Next {
 		if x == nil {
 			continue
 		}
-		if x.kv != nil {
-			f(x.kv)
+		if x.KeyValue != nil {
+			if f(x.KeyValue) {
+				return x.KeyValue
+			}
 		}
-		x.Do(f)
+		if r := x.Search(f); r != nil {
+			return r
+		}
 	}
+	return nil
 }
 
 // FIX: returns ("",true) for non-leaf nodes
@@ -358,32 +362,32 @@ func (t *Trie) Get(key []byte) ([]byte, bool) {
 	}
 	current := t
 	for _, b := range key {
-		if x := current.next[b]; x != nil {
+		if x := current.Next[b]; x != nil {
 			current = x
 		} else {
 			return nil, false
 		}
 	}
-	if current.kv == nil {
+	if current.KeyValue == nil {
 		return nil, false
 	}
-	return current.kv.Value, true
+	return current.KeyValue.Value, true
 }
 
 func (t *Trie) Set(key, value []byte) {
 	t.MarkDirty()
 	current := t
 	for _, b := range key {
-		if x := current.next[b]; x != nil {
+		if x := current.Next[b]; x != nil {
 			current = x
 		} else {
 			newNode := New()
-			current.next[b] = newNode
+			current.Next[b] = newNode
 			current = newNode
 		}
 		current.MarkDirty()
 	}
-	current.kv = &KeyValue{Key: key, Value: value}
+	current.KeyValue = &KeyValue{Key: key, Value: value}
 }
 
 func inc(i *big.Int, v int) *big.Int {
@@ -399,14 +403,14 @@ func (t *Trie) Delete(key []byte) {
 	t.MarkDirty()
 	current := t
 	for _, b := range key {
-		if x := current.next[b]; x != nil {
+		if x := current.Next[b]; x != nil {
 			current = x
 		} else {
 			return
 		}
 		current.MarkDirty()
 	}
-	current.kv = nil
+	current.KeyValue = nil
 	t.Prune()
 }
 
@@ -419,16 +423,16 @@ func (t *Trie) Prune() bool {
 		return false
 	}
 	var children int
-	for i, c := range t.next {
+	for i, c := range t.Next {
 		if c == nil {
 			continue
 		}
 		children++
 		if c.Prune() {
-			t.next[i] = nil
+			t.Next[i] = nil
 		}
 	}
-	if t.kv != nil {
+	if t.KeyValue != nil {
 		return false
 	}
 	if children > 0 {

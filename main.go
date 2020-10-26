@@ -15,6 +15,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/xoba/turd/cnfg"
+	"github.com/xoba/turd/dd"
 	"github.com/xoba/turd/gossip"
 	"github.com/xoba/turd/infl"
 	"github.com/xoba/turd/poset"
@@ -42,6 +43,7 @@ func main() {
 func Run(c cnfg.Config) error {
 	modes := map[string]func(cnfg.Config) error{
 		"connect":   Connect,
+		"dd":        dd.Run,
 		"gossip":    gossip.Run,
 		"hnode":     RunHTMLNode,
 		"infbig":    infl.RunBig,

@@ -101,7 +101,7 @@ func Run(c cnfg.Config) error {
 		seed = c.Seed
 	}
 	const (
-		chains = 6
+		chains = 5
 		length = 10
 	)
 	chain := Generate(rand.New(rand.NewSource(int64(seed))), chains, length)

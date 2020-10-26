@@ -7,9 +7,13 @@ type StringDatabase interface {
 	Get(string) (string, bool)
 	Delete(string)
 	Stats() *Stats
-	Do(func(kv *StringKeyValue))
+	Search(func(kv *StringKeyValue) bool) *StringKeyValue
 	// hash is implementation-dependent, but based only on key/values in the db
 	Hash() []byte
+}
+
+type StringKeyValue struct {
+	Key, Value string
 }
 
 type stringDB struct {
@@ -33,13 +37,17 @@ func (db stringDB) Get(key string) (string, bool) {
 func (db stringDB) Delete(key string) {
 	db.x.Delete([]byte(key))
 }
-func (db stringDB) Do(f func(kv *StringKeyValue)) {
-	db.x.Do(func(kv *KeyValue) {
-		f(&StringKeyValue{
+func (db stringDB) Search(f func(kv *StringKeyValue) bool) *StringKeyValue {
+	v := db.x.Search(func(kv *KeyValue) bool {
+		return f(&StringKeyValue{
 			Key:   string(kv.Key),
 			Value: string(kv.Value),
 		})
 	})
+	if v == nil {
+		return nil
+	}
+	return &StringKeyValue{Key: string(v.Key), Value: string(v.Value)}
 }
 func (db stringDB) Hash() []byte {
 	h := db.x.Hash()
