@@ -1,6 +1,8 @@
 package trie
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type StringDatabase interface {
 	Set(string, string) StringDatabase
@@ -55,4 +57,8 @@ func (db stringDB) String() string {
 
 func (db stringDB) Hash() []byte {
 	return db.x.Hash()
+}
+
+func (db stringDB) Unwrap() Database {
+	return db.x
 }

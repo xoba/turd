@@ -2,12 +2,12 @@ package trie
 
 import (
 	"encoding/asn1"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"math/big"
 	"math/rand"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
@@ -92,16 +92,6 @@ func (s *Stats) IncCount(i int) {
 
 func (s *Stats) IncSize(i int) {
 	s.Size = inc(s.Size, i)
-}
-
-func String(i Searchable) string {
-	var list []*KeyValue
-	i.Search(func(kv *KeyValue) bool {
-		list = append(list, kv)
-		return false
-	})
-	buf, _ := json.Marshal(list)
-	return string(buf)
 }
 
 func TestPaths(cnfg.Config) error {
@@ -229,13 +219,20 @@ func computeHash(t *Trie) []byte {
 	return thash.Hash(buf)
 }
 
-func (t *Trie) String() string {
+func String(t Searchable) string {
 	var list []string
 	t.Search(func(kv *KeyValue) bool {
 		list = append(list, fmt.Sprintf("%q:%q", string(kv.Key), string(kv.Value)))
 		return false
 	})
+	sort.Slice(list, func(i, j int) bool {
+		return list[i] < list[j]
+	})
 	return strings.Join(list, ", ")
+}
+
+func (t *Trie) String() string {
+	return String(t)
 }
 
 // TODO: "Do" should take a range argument, and handler should return bool
@@ -280,6 +277,7 @@ func (t *Trie) Set(key, value []byte) Database {
 
 func TestCOW() error {
 	t := New()
+	//t := make(mapdb)
 	s := NewStrings(t)
 	var steps []StringDatabase
 	show := func(db StringDatabase) {
@@ -291,16 +289,17 @@ func TestCOW() error {
 		s = s2
 		show(s)
 	}
-	step("a", "b")
-	step("a/x", "c")
+	step("/a", "b")
+	step("/ab", "xyz")
+	step("/a/x", "c")
 	for i := 0; i < 5; i++ {
-		step(fmt.Sprintf("a/x/%d", i), fmt.Sprintf("howdy %d", i))
+		step(fmt.Sprintf("/a/x/%d", i), fmt.Sprintf("howdy %d", i))
 	}
 	for _, db := range steps {
 		show(db)
 	}
-
-	return t.ToGviz("trie.svg")
+	u := s.(stringDB).Unwrap()
+	return ToGviz(u.(*Trie), "trie.svg")
 }
 
 func (t *Trie) set(key []byte, kv *KeyValue) *Trie {
@@ -359,8 +358,8 @@ func (t *Trie) Delete(key []byte) {
 	t.Prune()
 }
 
-func (t *Trie) ToGviz(file string) error {
-	gv, err := gviz.Compile(t, nil)
+func ToGviz(g gviz.Graph, file string) error {
+	gv, err := gviz.Compile(g, nil)
 	if err != nil {
 		return err
 	}
@@ -372,25 +371,79 @@ func (t *Trie) ToGviz(file string) error {
 }
 
 func (t *Trie) Nodes() (out []gviz.Node) {
-	out = append(out, t)
+	return t.nodes(nil)
+}
+
+func (t *Trie) nodes(parent []byte) (out []gviz.Node) {
+	n := node{
+		id: fmt.Sprintf("%x", t.Merkle),
+	}
+	if t.KeyValue == nil {
+		n.shape = "ellipse"
+		n.label = string(parent)
+	} else {
+		n.label = fmt.Sprintf("%s = %s", string(t.KeyValue.Key), string(t.KeyValue.Value))
+	}
+	if n.label == "" {
+		n.label = "nil"
+	}
+	out = append(out, n)
+	for i, n := range t.Next {
+		if n == nil {
+			continue
+		}
+		child := byte(i)
+		p2 := parent
+		p2 = append(p2, child)
+		out = append(out, n.nodes(p2)...)
+	}
 	return
 }
 
-func (t *Trie) ID() string {
-	return fmt.Sprintf("%x", t.Merkle)
-}
-func (t *Trie) Group() string {
-	return ""
-}
-func (t *Trie) Shape() string {
-	return ""
-}
-func (t *Trie) Label() string {
-	return t.ID()[:4]
+type node struct {
+	id, label, shape string
 }
 
-func (t *Trie) Edges() []gviz.Edge {
-	return nil
+func (n node) ID() string {
+	return n.id
+}
+func (n node) Label() string {
+	return n.label
+}
+
+func (t node) Group() string {
+	return ""
+}
+func (t node) Shape() string {
+	return t.shape
+}
+
+func (t *Trie) Edges() (out []gviz.Edge) {
+	id := func(t *Trie) string {
+		return fmt.Sprintf("%x", t.Merkle)
+	}
+	for _, n := range t.Next {
+		if n == nil {
+			continue
+		}
+		out = append(out, edge{
+			from: id(t),
+			to:   id(n),
+		})
+		out = append(out, n.Edges()...)
+	}
+	return
+}
+
+type edge struct {
+	from, to string
+}
+
+func (e edge) From() string {
+	return e.from
+}
+func (e edge) To() string {
+	return e.to
 }
 
 // Prune returns true if this trie node can be discarded

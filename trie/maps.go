@@ -4,13 +4,24 @@ import (
 	"bytes"
 	"sort"
 
+	"github.com/xoba/turd/gviz"
 	"github.com/xoba/turd/thash"
 )
 
 type mapdb map[string][]byte
 
-func (m mapdb) Set(key []byte, value []byte) {
-	m[string(key)] = value
+func (m mapdb) copy() mapdb {
+	x := make(mapdb)
+	for k, v := range m {
+		x[k] = v
+	}
+	return x
+}
+
+func (m mapdb) Set(key []byte, value []byte) Database {
+	x := m.copy()
+	x[string(key)] = value
+	return x
 }
 
 func (m mapdb) Get(key []byte) ([]byte, bool) {
@@ -51,6 +62,17 @@ func (m mapdb) Stats() *Stats {
 	return &s
 }
 
+func (m mapdb) String() string {
+	return String(m)
+}
+
 func (m mapdb) Hash() []byte {
 	return thash.Hash([]byte(String(m)))
+}
+
+func (m mapdb) Nodes() []gviz.Node {
+	return nil
+}
+func (m mapdb) Edges() []gviz.Edge {
+	return nil
 }
