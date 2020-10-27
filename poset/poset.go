@@ -102,7 +102,7 @@ func Run(c cnfg.Config) error {
 	}
 	const (
 		chains = 5
-		length = 10
+		length = 7
 	)
 	chain := Generate(rand.New(rand.NewSource(int64(seed))), chains, length)
 	a, b := fmt.Sprintf("%d.%d", 0, length-1), fmt.Sprintf("%d.%d", 1, length-1)
@@ -131,7 +131,7 @@ func Run(c cnfg.Config) error {
 	}
 
 	if false {
-		chain.BreadthFirstSearch(a, func(id string) bool {
+		BreadthFirstSearch(chain, a, func(id string) bool {
 			names[id] = fmt.Sprintf("%d", len(names))
 			return false
 		})
@@ -147,29 +147,29 @@ func Run(c cnfg.Config) error {
 	return display()
 }
 
-// returns id of node that passed function returns true on
-func (l Poset) BreadthFirstSearch(root string, f func(string) bool) string {
-	q := queue{}
-	discovered := make(map[string]bool)
-	node := func(id string) *Node {
-		return l.m[id]
-	}
+func (p Poset) Children(id string) []string {
+	return p.m[id].Children.Sorted()
+}
+
+type HasChildren interface {
+	// GetChildren returns the sorted children of given node
+	Children(string) []string
+}
+
+func BreadthFirstSearch(p HasChildren, root string, stop func(string) bool) string {
+	q := newQueue()
 	enqueue := func(id string) bool {
-		if discovered[id] {
+		if !q.enqueue(id) {
 			return false
 		}
-		discovered[id] = true
-		q.enqueue(id)
-		return f(id)
+		return stop(id)
 	}
-	dequeue := func() string {
-		return q.dequeue()
-	}
+
 	if enqueue(root) {
 		return root
 	}
 	for !q.empty() {
-		for _, c := range node(dequeue()).Children.Sorted() {
+		for _, c := range p.Children(q.dequeue()) {
 			if enqueue(c) {
 				return c
 			}
@@ -179,15 +179,28 @@ func (l Poset) BreadthFirstSearch(root string, f func(string) bool) string {
 }
 
 type queue struct {
-	slice []string
+	discovered map[string]bool
+	slice      []string
+}
+
+func newQueue() *queue {
+	return &queue{
+		discovered: make(map[string]bool),
+	}
 }
 
 func (q *queue) empty() bool {
 	return len(q.slice) == 0
 }
 
-func (q *queue) enqueue(x string) {
-	q.slice = append(q.slice, x)
+// enqueue if it hasn't been enqueued before, returns whether queued
+func (q *queue) enqueue(id string) bool {
+	if q.discovered[id] {
+		return false
+	}
+	q.discovered[id] = true
+	q.slice = append(q.slice, id)
+	return true
 }
 
 func (q *queue) dequeue() string {
@@ -243,24 +256,10 @@ func (l Poset) Edges() (out []gviz.Edge) {
 	return
 }
 
-func (l Poset) Children(a string) map[string]*Node {
-	out := make(map[string]*Node)
-	node := func(id string) *Node {
-		return l.m[id]
-	}
-	for _, c := range node(a).Children.Sorted() {
-		out[c] = node(c)
-		for k, v := range l.Children(c) {
-			out[k] = v
-		}
-	}
-	return out
-}
-
-// returns meet of two nodes, if any
+// returns meet of two nodes, if any, or one if many
 func (l Poset) Meet(a, b string) string {
 	desc := l.m[b].Descendents
-	return l.BreadthFirstSearch(a, func(id string) bool {
+	return BreadthFirstSearch(l, a, func(id string) bool {
 		if desc.Has(id) {
 			return true
 		}
@@ -311,8 +310,8 @@ func Generate(r *rand.Rand, chains, length int) Poset {
 				children = append(children, genesis.id)
 			} else {
 				children = append(children, last[i])
-				if r := r.Intn(3); r != i {
-					children = append(children, last[r])
+				if k := r.Intn(chains); k != i {
+					children = append(children, last[k])
 				}
 			}
 			sort.Strings(children)
