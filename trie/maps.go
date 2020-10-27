@@ -22,7 +22,7 @@ func (m mapdb) Delete(key []byte) {
 	delete(m, string(key))
 }
 
-func (m mapdb) Search(f func(*KeyValue) bool) *KeyValue {
+func (m mapdb) Search(f SearchFunc) *KeyValue {
 	var list []*KeyValue
 	for k, v := range m {
 		list = append(list, &KeyValue{

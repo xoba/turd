@@ -6,10 +6,7 @@ type StringDatabase interface {
 	Set(string, string)
 	Get(string) (string, bool)
 	Delete(string)
-	Stats() *Stats
 	Search(func(kv *StringKeyValue) bool) *StringKeyValue
-	// hash is implementation-dependent, but based only on key/values in the db
-	Hash() []byte
 }
 
 type StringKeyValue struct {
@@ -37,6 +34,7 @@ func (db stringDB) Get(key string) (string, bool) {
 func (db stringDB) Delete(key string) {
 	db.x.Delete([]byte(key))
 }
+
 func (db stringDB) Search(f func(kv *StringKeyValue) bool) *StringKeyValue {
 	v := db.x.Search(func(kv *KeyValue) bool {
 		return f(&StringKeyValue{
@@ -48,17 +46,6 @@ func (db stringDB) Search(f func(kv *StringKeyValue) bool) *StringKeyValue {
 		return nil
 	}
 	return &StringKeyValue{Key: string(v.Key), Value: string(v.Value)}
-}
-func (db stringDB) Hash() []byte {
-	h := db.x.Hash()
-	if n := db.hashLen; n > 0 {
-		h = h[:n]
-	}
-	return h
-}
-
-func (db stringDB) Stats() *Stats {
-	return db.x.Stats()
 }
 
 func (db stringDB) String() string {
