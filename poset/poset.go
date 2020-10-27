@@ -3,6 +3,7 @@
 package poset
 
 import (
+	"container/list"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -179,18 +180,19 @@ func BreadthFirstSearch(p HasChildren, root string, stop func(string) bool) stri
 }
 
 type queue struct {
+	list       *list.List
 	discovered map[string]bool
-	slice      []string
 }
 
 func newQueue() *queue {
 	return &queue{
+		list:       list.New(),
 		discovered: make(map[string]bool),
 	}
 }
 
 func (q *queue) empty() bool {
-	return len(q.slice) == 0
+	return q.list.Len() == 0
 }
 
 // enqueue if it hasn't been enqueued before, returns whether queued
@@ -199,14 +201,14 @@ func (q *queue) enqueue(id string) bool {
 		return false
 	}
 	q.discovered[id] = true
-	q.slice = append(q.slice, id)
+	q.list.PushBack(id)
 	return true
 }
 
 func (q *queue) dequeue() string {
-	x := q.slice[0]
-	q.slice = q.slice[1:]
-	return x
+	e := q.list.Front()
+	q.list.Remove(e)
+	return e.Value.(string)
 }
 
 // perhaps open up in a browser, highlighting specific nodes with colors
