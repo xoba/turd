@@ -25,16 +25,29 @@ type Database interface {
 	Hash() []byte
 }
 
+type KeyValue struct {
+	Key, Value []byte
+}
+
 func New() *Trie {
 	return &Trie{dirty: true}
 }
 
+// TODO: make it copy-on-write
 type Trie struct {
 	*KeyValue
 	Merkle []byte
 	Next   [256]*Trie
 	dirty  bool
 	stats  *Stats
+}
+
+type Stats struct {
+	Count, Size *big.Int
+}
+
+type Iterable interface {
+	Search(func(kv *KeyValue) bool) *KeyValue
 }
 
 func (t *Trie) IsDirty() bool {
@@ -55,10 +68,6 @@ func (t *Trie) MarkClean() {
 	t.dirty = false
 }
 
-type Stats struct {
-	Count, Size *big.Int
-}
-
 func (s *Stats) Inc(o *Stats) {
 	if s.Count == nil {
 		s.Count = big.NewInt(0)
@@ -76,10 +85,6 @@ func (s *Stats) IncCount(i int) {
 
 func (s *Stats) IncSize(i int) {
 	s.Size = inc(s.Size, i)
-}
-
-type Iterable interface {
-	Search(func(kv *KeyValue) bool) *KeyValue
 }
 
 func String(i Iterable) string {
@@ -104,6 +109,11 @@ func TestPaths(cnfg.Config) error {
 	add("/a/z/123")
 	add("/b")
 	fmt.Println(db)
+
+	const key = "/a/z"
+	r, ok := db.Get(key)
+	fmt.Printf("get(%q) = %q, %v\n", key, r, ok)
+
 	return nil
 }
 
@@ -325,10 +335,6 @@ func (t *Trie) Hash() []byte {
 	return t.Merkle
 }
 
-type KeyValue struct {
-	Key, Value []byte
-}
-
 func (kv KeyValue) xHash() ([]byte, error) {
 	buf, err := asn1.Marshal(kv)
 	if err != nil {
@@ -364,7 +370,6 @@ func (t *Trie) Search(f func(kv *KeyValue) bool) *KeyValue {
 	return nil
 }
 
-// FIX: returns ("",true) for non-leaf nodes
 func (t *Trie) Get(key []byte) ([]byte, bool) {
 	if len(key) == 0 {
 		return nil, false
