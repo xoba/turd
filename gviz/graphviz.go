@@ -27,7 +27,10 @@ type Edge interface {
 }
 
 // Compile creates a gv output
-func Compile(g Graph, clusters bool, colors map[string]string) ([]byte, error) {
+func Compile(g Graph, colors map[string]string) ([]byte, error) {
+	if colors == nil {
+		colors = make(map[string]string)
+	}
 	id := func(name string) string {
 		h := md5.New()
 		h.Write([]byte(name))
@@ -35,35 +38,33 @@ func Compile(g Graph, clusters bool, colors map[string]string) ([]byte, error) {
 	}
 	f := new(bytes.Buffer)
 	fmt.Fprintf(f, "digraph g {\n")
-	//fmt.Fprintln(f, "rankdir=LR")
 	groups := make(map[string][]Node)
 	for _, n := range g.Nodes() {
 		groups[n.Group()] = append(groups[n.Group()], n)
 	}
-	var x int
 	for _, v := range groups {
-		if clusters {
-			fmt.Fprintf(f, "subgraph cluster_%d {\n", x)
-			x++
-		}
 		for _, n := range v {
 			c := colors[n.ID()]
 			if c == "" {
 				c = "white"
 			}
 			label := n.Label()
+			if label == "" {
+				label = n.ID()
+			}
 			if g := n.Group(); g != "" {
 				label = g + "/" + label
+			}
+			shape := n.Shape()
+			if shape == "" {
+				shape = "box"
 			}
 			fmt.Fprintf(f, "%s [ label=%q; shape=%s; fillcolor=%s style=filled ];\n",
 				id(n.ID()),
 				label,
-				n.Shape(),
+				shape,
 				c,
 			)
-		}
-		if clusters {
-			fmt.Fprintf(f, "}\n")
 		}
 	}
 	for _, e := range g.Edges() {

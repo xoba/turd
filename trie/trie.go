@@ -4,19 +4,23 @@ import (
 	"encoding/asn1"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"math/big"
 	"math/rand"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/xoba/turd/cnfg"
+	"github.com/xoba/turd/gviz"
 	"github.com/xoba/turd/thash"
 )
 
 type Database interface {
-	Set([]byte, []byte)
+	Set([]byte, []byte) Database
 	Get([]byte) ([]byte, bool)
 	Delete([]byte)
+	Hash() []byte
 	Searchable
 }
 
@@ -27,7 +31,9 @@ type KeyValue struct {
 }
 
 func New() *Trie {
-	return &Trie{}
+	t := &Trie{}
+	t.Merkle = computeHash(t)
+	return t
 }
 
 // TODO: make it copy-on-write
@@ -37,12 +43,24 @@ type Trie struct {
 	Next   [256]*Trie
 }
 
+// Copy without merkle hash
+func (t *Trie) Copy() *Trie {
+	return &Trie{
+		KeyValue: t.KeyValue,
+		Next:     t.Next,
+	}
+}
+
 type Stats struct {
 	Count, Size *big.Int
 }
 
 type Searchable interface {
 	Search(SearchFunc) *KeyValue
+}
+
+func (t *Trie) Hash() []byte {
+	return t.Merkle
 }
 
 func (t *Trie) IsDirty() bool {
@@ -108,6 +126,8 @@ func TestPaths(cnfg.Config) error {
 }
 
 func Run(c cnfg.Config) error {
+	return TestCOW()
+
 	if err := TestPaths(c); err != nil {
 		return err
 	}
@@ -162,7 +182,7 @@ func Run2(cnfg.Config) error {
 			}
 		}
 	}
-	fmt.Printf("trie hash: 0x%x\n", t.computeHash())
+	fmt.Printf("trie hash: 0x%x\n", t.Merkle)
 	fmt.Printf("%v per iteration\n", time.Since(start)/n)
 	return nil
 }
@@ -173,20 +193,17 @@ func check(e error) {
 	}
 }
 
-func (t *Trie) clean() {
-	if t.IsClean() {
-		return
-	}
-	t.Merkle = t.computeHash()
-}
-
-func (t *Trie) computeHash() []byte {
+// not recursive, doesn't change Trie
+func computeHash(t *Trie) []byte {
 	var list [][]byte
 	add := func(x interface{}) {
 		switch t := x.(type) {
 		case nil:
 			list = append(list, nil)
 		case []byte:
+			if len(t) == 0 {
+				panic("empty byte buffer")
+			}
 			list = append(list, t)
 		case int:
 			list = append(list, big.NewInt(int64(t)).Bytes())
@@ -205,20 +222,11 @@ func (t *Trie) computeHash() []byte {
 			continue
 		}
 		add(i)
-		add(x.computeHash())
+		add(x.Merkle)
 	}
 	buf, err := asn1.Marshal(list)
 	check(err)
-	t.Merkle = thash.Hash(buf)
-	return t.Merkle
-}
-
-func (kv KeyValue) xHash() ([]byte, error) {
-	buf, err := asn1.Marshal(kv)
-	if err != nil {
-		return nil, err
-	}
-	return thash.Hash(buf), nil
+	return thash.Hash(buf)
 }
 
 func (t *Trie) String() string {
@@ -266,7 +274,52 @@ func (t *Trie) Get(key []byte) ([]byte, bool) {
 	return current.KeyValue.Value, true
 }
 
-func (t *Trie) Set(key, value []byte) {
+func (t *Trie) Set(key, value []byte) Database {
+	return t.set(key, &KeyValue{Key: key, Value: value})
+}
+
+func TestCOW() error {
+	t := New()
+	s := NewStrings(t)
+	var steps []StringDatabase
+	show := func(db StringDatabase) {
+		fmt.Printf("%x; %v\n", db.Hash(), db)
+	}
+	step := func(key, value string) {
+		s2 := s.Set(key, value)
+		steps = append(steps, s2)
+		s = s2
+		show(s)
+	}
+	step("a", "b")
+	step("a/x", "c")
+	for i := 0; i < 5; i++ {
+		step(fmt.Sprintf("a/x/%d", i), fmt.Sprintf("howdy %d", i))
+	}
+	for _, db := range steps {
+		show(db)
+	}
+
+	return t.ToGviz("trie.svg")
+}
+
+func (t *Trie) set(key []byte, kv *KeyValue) *Trie {
+	t = t.Copy()
+	if len(key) == 0 {
+		t.KeyValue = kv
+	} else {
+		b0 := key[0]
+		child := t.Next[b0]
+		if child == nil {
+			child = New()
+		}
+		t.Next[b0] = child.set(key[1:], kv)
+	}
+	t.Merkle = computeHash(t)
+	return t
+}
+
+func (t *Trie) OLD_Set(key, value []byte) {
 	t.MarkDirty()
 	current := t
 	for _, b := range key {
@@ -307,9 +360,40 @@ func (t *Trie) Delete(key []byte) {
 }
 
 func (t *Trie) ToGviz(file string) error {
-	return fmt.Errorf("ToGviz unimplemented")
+	gv, err := gviz.Compile(t, nil)
+	if err != nil {
+		return err
+	}
+	const in = "g.gv"
+	if err := ioutil.WriteFile(in, gv, os.ModePerm); err != nil {
+		return err
+	}
+	return gviz.Dot(in, file)
 }
 
+func (t *Trie) Nodes() (out []gviz.Node) {
+	out = append(out, t)
+	return
+}
+
+func (t *Trie) ID() string {
+	return fmt.Sprintf("%x", t.Merkle)
+}
+func (t *Trie) Group() string {
+	return ""
+}
+func (t *Trie) Shape() string {
+	return ""
+}
+func (t *Trie) Label() string {
+	return t.ID()[:4]
+}
+
+func (t *Trie) Edges() []gviz.Edge {
+	return nil
+}
+
+// Prune returns true if this trie node can be discarded
 func (t *Trie) Prune() bool {
 	if t.IsClean() {
 		return false
@@ -331,20 +415,4 @@ func (t *Trie) Prune() bool {
 		return false
 	}
 	return true
-}
-
-func (t *Trie) OLD_Set(key, value []byte) {
-	t.MarkDirty()
-	current := t
-	for _, b := range key {
-		if x := current.Next[b]; x != nil {
-			current = x
-		} else {
-			newNode := New()
-			current.Next[b] = newNode
-			current = newNode
-		}
-		current.MarkDirty()
-	}
-	current.KeyValue = &KeyValue{Key: key, Value: value}
 }

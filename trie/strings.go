@@ -3,9 +3,10 @@ package trie
 import "fmt"
 
 type StringDatabase interface {
-	Set(string, string)
+	Set(string, string) StringDatabase
 	Get(string) (string, bool)
 	Delete(string)
+	Hash() []byte
 	Search(func(kv *StringKeyValue) bool) *StringKeyValue
 }
 
@@ -22,8 +23,8 @@ func NewStrings(db Database) StringDatabase {
 	return stringDB{hashLen: 8, x: db}
 }
 
-func (db stringDB) Set(key string, value string) {
-	db.x.Set([]byte(key), []byte(value))
+func (db stringDB) Set(key string, value string) StringDatabase {
+	return NewStrings(db.x.Set([]byte(key), []byte(value)))
 }
 
 func (db stringDB) Get(key string) (string, bool) {
@@ -50,4 +51,8 @@ func (db stringDB) Search(f func(kv *StringKeyValue) bool) *StringKeyValue {
 
 func (db stringDB) String() string {
 	return fmt.Sprintf("%v", db.x)
+}
+
+func (db stringDB) Hash() []byte {
+	return db.x.Hash()
 }
