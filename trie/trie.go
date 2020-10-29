@@ -2,26 +2,42 @@ package trie
 
 import (
 	"encoding/asn1"
+	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"math/big"
-	"math/rand"
 	"os"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/xoba/turd/cnfg"
 	"github.com/xoba/turd/gviz"
 	"github.com/xoba/turd/thash"
 )
 
+func Run(c cnfg.Config) error {
+	return TestCOW()
+}
+
+// returned or wrapped to indicate key not found
+var NotFound = errors.New("key not found")
+
 type Database interface {
-	Set([]byte, []byte) Database
-	Get([]byte) ([]byte, bool)
-	Delete([]byte)
-	Hash() []byte
+	Set([]byte, []byte) (Database, error)
+	Get([]byte) ([]byte, error)
+	Delete([]byte) (Database, error)
+	Hash() ([]byte, error)
 	Searchable
+	Visualizable
+}
+
+type Visualizable interface {
+	ToGviz(string) error
+}
+
+type Searchable interface {
+	Search(SearchFunc) (*KeyValue, error)
 }
 
 type SearchFunc func(kv *KeyValue) bool
@@ -30,10 +46,12 @@ type KeyValue struct {
 	Key, Value []byte
 }
 
-func New() *Trie {
-	t := &Trie{}
-	t.Merkle = computeHash(t)
-	return t
+func New() (*Trie, error) {
+	var t Trie
+	if err := t.computeHash(); err != nil {
+		return nil, err
+	}
+	return &t, nil
 }
 
 // TODO: make it copy-on-write
@@ -55,24 +73,11 @@ type Stats struct {
 	Count, Size *big.Int
 }
 
-type Searchable interface {
-	Search(SearchFunc) *KeyValue
-}
-
-func (t *Trie) Hash() []byte {
-	return t.Merkle
-}
-
-func (t *Trie) IsDirty() bool {
-	return len(t.Merkle) == 0
-}
-
-func (t *Trie) IsClean() bool {
-	return !t.IsDirty()
-}
-
-func (t *Trie) MarkDirty() {
-	t.Merkle = nil
+func (t *Trie) Hash() ([]byte, error) {
+	if err := t.computeHash(); err != nil {
+		return nil, err
+	}
+	return t.Merkle, nil
 }
 
 func (s *Stats) Inc(o *Stats) {
@@ -95,7 +100,11 @@ func (s *Stats) IncSize(i int) {
 }
 
 func TestPaths(cnfg.Config) error {
-	db := NewStrings(New())
+	t, err := New()
+	if err != nil {
+		return err
+	}
+	db := NewStrings(t)
 	add := func(p string) {
 		db.Set(p, "value for "+p)
 	}
@@ -115,76 +124,11 @@ func TestPaths(cnfg.Config) error {
 	return nil
 }
 
-func Run(c cnfg.Config) error {
-	return TestCOW()
-
-	if err := TestPaths(c); err != nil {
-		return err
+// recursively computes and sets merkles if unset
+func (t *Trie) computeHash() error {
+	if len(t.Merkle) > 0 {
+		return nil
 	}
-	if err := Run2(c); err != nil {
-		return err
-	}
-	return nil
-}
-
-func Run2(cnfg.Config) error {
-	rand.Seed(0)
-	const (
-		idlen = 16
-		n     = 7000
-	)
-	var ids []KeyValue
-	{
-		for i := 0; i < n; i++ {
-			buf := make([]byte, idlen)
-			rand.Read(buf)
-			ids = append(ids, KeyValue{
-				Key:   buf,
-				Value: buf,
-			})
-		}
-	}
-	if true {
-		rand.Seed(time.Now().UTC().UnixNano())
-		rand.Shuffle(len(ids), func(i, j int) {
-			ids[i], ids[j] = ids[j], ids[i]
-		})
-	}
-	t := New()
-	all := make(map[string]string)
-	m := make(map[string]bool)
-	start := time.Now()
-	for _, kv := range ids {
-		id, prefix := kv.Key, kv.Value
-		all[string(id)] = string(prefix)
-		m[string(prefix)] = true
-		t.Set(prefix, id)
-	}
-	for id, prefix := range all {
-		_, ok := t.Get([]byte(prefix))
-		if !ok {
-			return fmt.Errorf("doesn't have %q", prefix)
-		}
-		for i := 1; i < len(id); i++ {
-			p2 := id[:i]
-			if _, ok := t.Get([]byte(p2)); ok != m[p2] {
-				return fmt.Errorf("mismatch")
-			}
-		}
-	}
-	fmt.Printf("trie hash: 0x%x\n", t.Merkle)
-	fmt.Printf("%v per iteration\n", time.Since(start)/n)
-	return nil
-}
-
-func check(e error) {
-	if e != nil {
-		panic(e)
-	}
-}
-
-// not recursive, doesn't change Trie
-func computeHash(t *Trie) []byte {
 	var list [][]byte
 	add := func(x interface{}) {
 		switch t := x.(type) {
@@ -212,11 +156,17 @@ func computeHash(t *Trie) []byte {
 			continue
 		}
 		add(i)
+		if err := x.computeHash(); err != nil {
+			return err
+		}
 		add(x.Merkle)
 	}
 	buf, err := asn1.Marshal(list)
-	check(err)
-	return thash.Hash(buf)
+	if err != nil {
+		return err
+	}
+	t.Merkle = thash.Hash(buf)
+	return nil
 }
 
 func String(t Searchable) string {
@@ -236,73 +186,109 @@ func (t *Trie) String() string {
 }
 
 // TODO: "Do" should take a range argument, and handler should return bool
-func (t *Trie) Search(f SearchFunc) *KeyValue {
+func (t *Trie) Search(f SearchFunc) (*KeyValue, error) {
 	for _, x := range t.Next {
 		if x == nil {
 			continue
 		}
 		if x.KeyValue != nil {
 			if f(x.KeyValue) {
-				return x.KeyValue
+				return x.KeyValue, nil
 			}
 		}
-		if r := x.Search(f); r != nil {
-			return r
+		r, err := x.Search(f)
+		if err != nil {
+			return nil, err
+		}
+		if r != nil {
+			return r, nil
 		}
 	}
-	return nil
+	return nil, NotFound
 }
 
-func (t *Trie) Get(key []byte) ([]byte, bool) {
+func (t *Trie) Get(key []byte) ([]byte, error) {
 	if len(key) == 0 {
-		return nil, false
+		return nil, fmt.Errorf("nil key")
 	}
 	current := t
 	for _, b := range key {
 		if x := current.Next[b]; x != nil {
 			current = x
 		} else {
-			return nil, false
+			return nil, NotFound
 		}
 	}
 	if current.KeyValue == nil {
-		return nil, false
+		return nil, NotFound
 	}
-	return current.KeyValue.Value, true
+	return current.KeyValue.Value, nil
 }
 
-func (t *Trie) Set(key, value []byte) Database {
-	return t.set(key, &KeyValue{Key: key, Value: value})
+func (t *Trie) Set(key, value []byte) (Database, error) {
+	if len(key) == 0 {
+		return nil, fmt.Errorf("nil key")
+	}
+	d, err := t.set(key, &KeyValue{Key: key, Value: value})
+	if err != nil {
+		return nil, err
+	}
+	return d, nil
 }
 
 func TestCOW() error {
-	t := New()
-	//t := make(mapdb)
-	s := NewStrings(t)
-	var steps []StringDatabase
-	show := func(db StringDatabase) {
-		fmt.Printf("%x; %v\n", db.Hash(), db)
+	var db Database
+	if true {
+		t, err := New()
+		if err != nil {
+			return err
+		}
+		db = t
+	} else {
+		db = make(mapdb)
 	}
-	step := func(key, value string) {
-		s2 := s.Set(key, value)
+	s := NewStrings(db)
+	var steps []StringDatabase
+	show := func(db StringDatabase) error {
+		h, err := db.Hash()
+		if err != nil {
+			return err
+		}
+		fmt.Printf("%x; %v\n", h, db)
+		return nil
+	}
+	step := func(key, value string) error {
+		s2, err := s.Set(key, value)
+		if err != nil {
+			return err
+		}
 		steps = append(steps, s2)
 		s = s2
 		show(s)
+		return nil
 	}
-	step("/a", "b")
-	step("/ab", "xyz")
-	step("/a/x", "c")
+	log := func(e error) {
+		if e != nil {
+			log.Fatal(e)
+		}
+	}
+	log(step("/a", "b"))
+	log(step("/ab", "xyz"))
+	log(step("/a/x", "c"))
 	for i := 0; i < 5; i++ {
-		step(fmt.Sprintf("/a/x/%d", i), fmt.Sprintf("howdy %d", i))
+		log(step(fmt.Sprintf("/a/x/%d", i), fmt.Sprintf("howdy %d", i)))
 	}
 	for _, db := range steps {
-		show(db)
+		log(show(db))
 	}
-	u := s.(stringDB).Unwrap()
-	return ToGviz(u.(*Trie), "trie.svg")
+	return s.ToGviz("trie.svg")
 }
 
-func (t *Trie) set(key []byte, kv *KeyValue) *Trie {
+func (t *Trie) ToGviz(file string) error {
+	return ToGviz(t, file)
+}
+
+func (t *Trie) set(key []byte, kv *KeyValue) (*Trie, error) {
 	t = t.Copy()
 	if len(key) == 0 {
 		t.KeyValue = kv
@@ -310,28 +296,22 @@ func (t *Trie) set(key []byte, kv *KeyValue) *Trie {
 		b0 := key[0]
 		child := t.Next[b0]
 		if child == nil {
-			child = New()
+			c, err := New()
+			if err != nil {
+				return nil, err
+			}
+			child = c
 		}
-		t.Next[b0] = child.set(key[1:], kv)
-	}
-	t.Merkle = computeHash(t)
-	return t
-}
-
-func (t *Trie) OLD_Set(key, value []byte) {
-	t.MarkDirty()
-	current := t
-	for _, b := range key {
-		if x := current.Next[b]; x != nil {
-			current = x
-		} else {
-			newNode := New()
-			current.Next[b] = newNode
-			current = newNode
+		c, err := child.set(key[1:], kv)
+		if err != nil {
+			return nil, err
 		}
-		current.MarkDirty()
+		t.Next[b0] = c
 	}
-	current.KeyValue = &KeyValue{Key: key, Value: value}
+	if err := t.computeHash(); err != nil {
+		return nil, err
+	}
+	return t, nil
 }
 
 func inc(i *big.Int, v int) *big.Int {
@@ -341,21 +321,6 @@ func inc(i *big.Int, v int) *big.Int {
 	var x big.Int
 	x.Add(i, big.NewInt(int64(v)))
 	return &x
-}
-
-func (t *Trie) Delete(key []byte) {
-	t.MarkDirty()
-	current := t
-	for _, b := range key {
-		if x := current.Next[b]; x != nil {
-			current = x
-		} else {
-			return
-		}
-		current.MarkDirty()
-	}
-	current.KeyValue = nil
-	t.Prune()
 }
 
 func ToGviz(g gviz.Graph, file string) error {
@@ -444,6 +409,36 @@ func (e edge) From() string {
 }
 func (e edge) To() string {
 	return e.to
+}
+
+func (t *Trie) IsDirty() bool {
+	return len(t.Merkle) == 0
+}
+
+func (t *Trie) IsClean() bool {
+	return !t.IsDirty()
+}
+
+func (t *Trie) MarkDirty() {
+	t.Merkle = nil
+}
+
+// TODO: this has to be COW too
+func (t *Trie) Delete(key []byte) (Database, error) {
+	panic("unimplemented")
+	/*
+		t.MarkDirty()
+		current := t
+		for _, b := range key {
+			if x := current.Next[b]; x != nil {
+				current = x
+			} else {
+				return
+			}
+			current.MarkDirty()
+		}
+		current.KeyValue = nil
+		t.Prune()*/
 }
 
 // Prune returns true if this trie node can be discarded

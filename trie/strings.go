@@ -5,11 +5,12 @@ import (
 )
 
 type StringDatabase interface {
-	Set(string, string) StringDatabase
-	Get(string) (string, bool)
-	Delete(string)
-	Hash() []byte
-	Search(func(kv *StringKeyValue) bool) *StringKeyValue
+	Set(string, string) (StringDatabase, error)
+	Get(string) (string, error)
+	Delete(string) (StringDatabase, error)
+	Hash() ([]byte, error)
+	Search(func(kv *StringKeyValue) bool) (*StringKeyValue, error)
+	Visualizable
 }
 
 type StringKeyValue struct {
@@ -25,40 +26,51 @@ func NewStrings(db Database) StringDatabase {
 	return stringDB{hashLen: 8, x: db}
 }
 
-func (db stringDB) Set(key string, value string) StringDatabase {
-	return NewStrings(db.x.Set([]byte(key), []byte(value)))
+func (db stringDB) ToGviz(file string) error {
+	return db.x.ToGviz(file)
 }
 
-func (db stringDB) Get(key string) (string, bool) {
-	v, ok := db.x.Get([]byte(key))
-	return string(v), ok
+func (db stringDB) Set(key string, value string) (StringDatabase, error) {
+	x, err := db.x.Set([]byte(key), []byte(value))
+	if err != nil {
+		return nil, err
+	}
+	return NewStrings(x), nil
 }
 
-func (db stringDB) Delete(key string) {
-	db.x.Delete([]byte(key))
+func (db stringDB) Get(key string) (string, error) {
+	v, err := db.x.Get([]byte(key))
+	if err != nil {
+		return "", err
+	}
+	return string(v), nil
 }
 
-func (db stringDB) Search(f func(kv *StringKeyValue) bool) *StringKeyValue {
-	v := db.x.Search(func(kv *KeyValue) bool {
+func (db stringDB) Delete(key string) (StringDatabase, error) {
+	x, err := db.x.Delete([]byte(key))
+	if err != nil {
+		return nil, err
+	}
+	return NewStrings(x), nil
+}
+
+func (db stringDB) Search(f func(kv *StringKeyValue) bool) (*StringKeyValue, error) {
+	v, err := db.x.Search(func(kv *KeyValue) bool {
 		return f(&StringKeyValue{
 			Key:   string(kv.Key),
 			Value: string(kv.Value),
 		})
 	})
-	if v == nil {
-		return nil
+	if err != nil {
+		return nil, err
 	}
-	return &StringKeyValue{Key: string(v.Key), Value: string(v.Value)}
+	return &StringKeyValue{Key: string(v.Key), Value: string(v.Value)}, nil
 }
 
 func (db stringDB) String() string {
 	return fmt.Sprintf("%v", db.x)
 }
 
-func (db stringDB) Hash() []byte {
+func (db stringDB) Hash() ([]byte, error) {
 	return db.x.Hash()
-}
-
-func (db stringDB) Unwrap() Database {
-	return db.x
 }
