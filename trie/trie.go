@@ -43,7 +43,7 @@ type Database interface {
 }
 
 type Visualizable interface {
-	ToGviz(string) error
+	ToGviz(file, title string) error
 }
 
 type Searchable interface {
@@ -206,7 +206,19 @@ func TestCOW(c cnfg.Config) error {
 		db = make(mapdb)
 	}
 	s := NewStrings(db)
-	var steps []StringDatabase
+	type step struct {
+		db    StringDatabase
+		title string
+	}
+
+	var steps []step
+	add := func(title string) {
+		steps = append(steps, step{
+			db:    s,
+			title: title,
+		})
+	}
+	add("empty")
 	show := func(db StringDatabase) error {
 		h, err := db.Hash()
 		if err != nil {
@@ -215,23 +227,23 @@ func TestCOW(c cnfg.Config) error {
 		fmt.Printf("%x; %v\n", h, db)
 		return nil
 	}
-	step := func(key, value string) error {
+	set := func(key, value string) error {
 		s2, err := s.Set(key, value)
 		if err != nil {
 			return err
 		}
-		steps = append(steps, s2)
 		s = s2
+		add("set " + key)
 		show(s)
 		return nil
 	}
 	del := func(key string) error {
-		if x, err := s.Delete("/c/1/2/3/4"); err != nil {
+		if x, err := s.Delete(key); err != nil {
 			return err
 		} else {
 			s = x
 		}
-		steps = append(steps, s)
+		add("del " + key)
 		return nil
 	}
 	log := func(e error) {
@@ -239,37 +251,40 @@ func TestCOW(c cnfg.Config) error {
 			log.Fatal(e)
 		}
 	}
-	log(step("/a", "b"))
-	log(step("/c", "d"))
+	log(set("/a", "b"))
+	log(set("/c", "d"))
 	for i := 0; i < 10; i++ {
-		log(step("/c/1/2/3/4", "long"))
+		log(set("/c/1/2/3/4", "long"))
 	}
-	log(step("/ab", "xyz"))
-	log(step("/a/x", "c"))
+	log(set("/ab", "xyz"))
+	log(set("/a/x", "c"))
 	if c.Delete {
 		log(del("/c/1/2/3/4"))
 	}
 	for i := 0; i < 5; i++ {
-		log(step(fmt.Sprintf("/a/x/%d", i), fmt.Sprintf("howdy %d", i)))
+		log(set(fmt.Sprintf("/a/x/%d", i), fmt.Sprintf("howdy %d", i)))
 	}
-	viz := func(s StringDatabase, i int) error {
+	if c.Delete {
+		log(del("/a/x"))
+	}
+	viz := func(s step, i int) error {
 		file := fmt.Sprintf("trie_%d.svg", i)
-		if err := s.ToGviz(file); err != nil {
+		if err := s.db.ToGviz(file, s.title); err != nil {
 			return err
 		}
 		return open.Run(file)
 	}
-	for i, db := range steps {
-		log(show(db))
-		if err := viz(db, i); err != nil {
+	for i, s := range steps {
+		log(show(s.db))
+		if err := viz(s, i); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (t *Trie) ToGviz(file string) error {
-	return ToGviz(t, file)
+func (t *Trie) ToGviz(file, title string) error {
+	return ToGviz(t, file, title)
 }
 
 func (t *Trie) Delete(key []byte) (Database, error) {
@@ -286,7 +301,7 @@ func (t *Trie) del(key []byte) (*Trie, error) {
 		prefix := key[0]
 		c := t.Next[prefix]
 		if c == nil {
-			return nil, NotFound
+			return nil, fmt.Errorf("%s: %w", string(key), NotFound)
 		}
 		c2, err := c.del(key[1:])
 		if err != nil {
@@ -352,8 +367,8 @@ func zero(i *big.Int) bool {
 	return i.Cmp(big.NewInt(0)) == 0
 }
 
-func ToGviz(g gviz.Graph, file string) error {
-	gv, err := gviz.Compile(g, nil)
+func ToGviz(g gviz.Graph, file, title string) error {
+	gv, err := gviz.Compile(g, title, nil)
 	if err != nil {
 		return err
 	}

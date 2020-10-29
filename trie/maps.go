@@ -99,6 +99,6 @@ func (m mapdb) Edges() (out []gviz.Edge) {
 	return
 }
 
-func (m mapdb) ToGviz(file string) error {
-	return ToGviz(m, file)
+func (m mapdb) ToGviz(file, title string) error {
+	return ToGviz(m, file, title)
 }

@@ -213,7 +213,7 @@ func (q *queue) dequeue() string {
 
 // perhaps open up in a browser, highlighting specific nodes with colors
 func (l Poset) ToGraphViz(svg string, colors map[string]string) error {
-	buf, err := gviz.Compile(l, colors)
+	buf, err := gviz.Compile(l, svg, colors)
 	if err != nil {
 		return err
 	}

@@ -27,7 +27,7 @@ type Edge interface {
 }
 
 // Compile creates a gv output
-func Compile(g Graph, colors map[string]string) ([]byte, error) {
+func Compile(g Graph, title string, colors map[string]string) ([]byte, error) {
 	if colors == nil {
 		colors = make(map[string]string)
 	}
@@ -38,6 +38,11 @@ func Compile(g Graph, colors map[string]string) ([]byte, error) {
 	}
 	f := new(bytes.Buffer)
 	fmt.Fprintf(f, "digraph g {\n")
+	if len(title) > 0 {
+		fmt.Fprintf(f, `    labelloc="t";
+    label=%q;
+`, title)
+	}
 	groups := make(map[string][]Node)
 	for _, n := range g.Nodes() {
 		groups[n.Group()] = append(groups[n.Group()], n)

@@ -26,8 +26,8 @@ func NewStrings(db Database) StringDatabase {
 	return stringDB{hashLen: 8, x: db}
 }
 
-func (db stringDB) ToGviz(file string) error {
-	return db.x.ToGviz(file)
+func (db stringDB) ToGviz(file, title string) error {
+	return db.x.ToGviz(file, title)
 }
 
 func (db stringDB) Set(key string, value string) (StringDatabase, error) {
