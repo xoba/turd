@@ -225,6 +225,15 @@ func TestCOW(c cnfg.Config) error {
 		show(s)
 		return nil
 	}
+	del := func(key string) error {
+		if x, err := s.Delete("/c/1/2/3/4"); err != nil {
+			return err
+		} else {
+			s = x
+		}
+		steps = append(steps, s)
+		return nil
+	}
 	log := func(e error) {
 		if e != nil {
 			log.Fatal(e)
@@ -238,22 +247,25 @@ func TestCOW(c cnfg.Config) error {
 	log(step("/ab", "xyz"))
 	log(step("/a/x", "c"))
 	if c.Delete {
-		if x, err := s.Delete("/c/1/2/3/4"); err != nil {
-			return err
-		} else {
-			s = x
-		}
+		log(del("/c/1/2/3/4"))
 	}
 	for i := 0; i < 5; i++ {
 		log(step(fmt.Sprintf("/a/x/%d", i), fmt.Sprintf("howdy %d", i)))
 	}
-	for _, db := range steps {
+	viz := func(s StringDatabase, i int) error {
+		file := fmt.Sprintf("trie_%d.svg", i)
+		if err := s.ToGviz(file); err != nil {
+			return err
+		}
+		return open.Run(file)
+	}
+	for i, db := range steps {
 		log(show(db))
+		if err := viz(db, i); err != nil {
+			return err
+		}
 	}
-	if err := s.ToGviz("trie.svg"); err != nil {
-		return err
-	}
-	return open.Run("trie.svg")
+	return nil
 }
 
 func (t *Trie) ToGviz(file string) error {
