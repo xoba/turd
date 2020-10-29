@@ -62,16 +62,6 @@ func (m mapdb) Search(f SearchFunc) (*KeyValue, error) {
 	return nil, NotFound
 }
 
-func (m mapdb) Stats() *Stats {
-	var s Stats
-	s.IncCount(len(m))
-	for k, v := range m {
-		s.IncSize(len(k))
-		s.IncSize(len(v))
-	}
-	return &s
-}
-
 func (m mapdb) String() string {
 	return String(m)
 }

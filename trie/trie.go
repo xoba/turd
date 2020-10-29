@@ -11,18 +11,28 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/skratchdot/open-golang/open"
 	"github.com/xoba/turd/cnfg"
 	"github.com/xoba/turd/gviz"
 	"github.com/xoba/turd/thash"
 )
 
+type Trie struct {
+	*KeyValue
+	Merkle []byte
+	Next   [256]*Trie
+	Count  *big.Int // number of kv pairs in this and all descendants
+}
+
 func Run(c cnfg.Config) error {
-	return TestCOW()
+	return TestCOW(c)
 }
 
 // returned or wrapped to indicate key not found
 var NotFound = errors.New("key not found")
+var EmptyKey = errors.New("empty key")
 
+// copy-on-write database
 type Database interface {
 	Set([]byte, []byte) (Database, error)
 	Get([]byte) ([]byte, error)
@@ -37,6 +47,7 @@ type Visualizable interface {
 }
 
 type Searchable interface {
+	// error indicates not found or worse, else keyvalue is non-nil
 	Search(SearchFunc) (*KeyValue, error)
 }
 
@@ -48,17 +59,10 @@ type KeyValue struct {
 
 func New() (*Trie, error) {
 	var t Trie
-	if err := t.computeHash(); err != nil {
+	if err := t.update(); err != nil {
 		return nil, err
 	}
 	return &t, nil
-}
-
-// TODO: make it copy-on-write
-type Trie struct {
-	*KeyValue
-	Merkle []byte
-	Next   [256]*Trie
 }
 
 // Copy without merkle hash
@@ -69,63 +73,15 @@ func (t *Trie) Copy() *Trie {
 	}
 }
 
-type Stats struct {
-	Count, Size *big.Int
-}
-
 func (t *Trie) Hash() ([]byte, error) {
-	if err := t.computeHash(); err != nil {
+	if err := t.update(); err != nil {
 		return nil, err
 	}
 	return t.Merkle, nil
 }
 
-func (s *Stats) Inc(o *Stats) {
-	if s.Count == nil {
-		s.Count = big.NewInt(0)
-	}
-	if s.Size == nil {
-		s.Size = big.NewInt(0)
-	}
-	s.Count.Add(s.Count, o.Count)
-	s.Size.Add(s.Size, o.Size)
-}
-
-func (s *Stats) IncCount(i int) {
-	s.Count = inc(s.Count, i)
-}
-
-func (s *Stats) IncSize(i int) {
-	s.Size = inc(s.Size, i)
-}
-
-func TestPaths(cnfg.Config) error {
-	t, err := New()
-	if err != nil {
-		return err
-	}
-	db := NewStrings(t)
-	add := func(p string) {
-		db.Set(p, "value for "+p)
-	}
-	add("/a")
-	add("/a/x")
-	add("/a/y")
-	add("/a/z")
-	add("/a/z/123")
-	add("/b")
-	fmt.Println(db)
-
-	for _, key := range strings.Split("/a,/a/q,/a/z", ",") {
-		r, ok := db.Get(key)
-		fmt.Printf("get(%q) = %q, %v\n", key, r, ok)
-	}
-
-	return nil
-}
-
-// recursively computes and sets merkles if unset
-func (t *Trie) computeHash() error {
+// recursively computes and sets count and merkles if unset
+func (t *Trie) update() error {
 	if len(t.Merkle) > 0 {
 		return nil
 	}
@@ -151,21 +107,27 @@ func (t *Trie) computeHash() error {
 		add(t.KeyValue.Key)
 		add(t.KeyValue.Value)
 	}
+	count := big.NewInt(0)
+	if t.KeyValue != nil {
+		count = inc(count, 1)
+	}
 	for i, x := range t.Next {
 		if x == nil {
 			continue
 		}
 		add(i)
-		if err := x.computeHash(); err != nil {
+		if err := x.update(); err != nil {
 			return err
 		}
 		add(x.Merkle)
+		count = sum(count, x.Count)
 	}
 	buf, err := asn1.Marshal(list)
 	if err != nil {
 		return err
 	}
 	t.Merkle = thash.Hash(buf)
+	t.Count = count
 	return nil
 }
 
@@ -209,7 +171,7 @@ func (t *Trie) Search(f SearchFunc) (*KeyValue, error) {
 
 func (t *Trie) Get(key []byte) ([]byte, error) {
 	if len(key) == 0 {
-		return nil, fmt.Errorf("nil key")
+		return nil, EmptyKey
 	}
 	current := t
 	for _, b := range key {
@@ -227,16 +189,12 @@ func (t *Trie) Get(key []byte) ([]byte, error) {
 
 func (t *Trie) Set(key, value []byte) (Database, error) {
 	if len(key) == 0 {
-		return nil, fmt.Errorf("nil key")
+		return nil, EmptyKey
 	}
-	d, err := t.set(key, &KeyValue{Key: key, Value: value})
-	if err != nil {
-		return nil, err
-	}
-	return d, nil
+	return t.set(key, &KeyValue{Key: key, Value: value})
 }
 
-func TestCOW() error {
+func TestCOW(c cnfg.Config) error {
 	var db Database
 	if true {
 		t, err := New()
@@ -273,24 +231,72 @@ func TestCOW() error {
 		}
 	}
 	log(step("/a", "b"))
+	log(step("/c", "d"))
+	for i := 0; i < 10; i++ {
+		log(step("/c/1/2/3/4", "long"))
+	}
 	log(step("/ab", "xyz"))
 	log(step("/a/x", "c"))
+	if c.Delete {
+		if x, err := s.Delete("/c/1/2/3/4"); err != nil {
+			return err
+		} else {
+			s = x
+		}
+	}
 	for i := 0; i < 5; i++ {
 		log(step(fmt.Sprintf("/a/x/%d", i), fmt.Sprintf("howdy %d", i)))
 	}
 	for _, db := range steps {
 		log(show(db))
 	}
-	return s.ToGviz("trie.svg")
+	if err := s.ToGviz("trie.svg"); err != nil {
+		return err
+	}
+	return open.Run("trie.svg")
 }
 
 func (t *Trie) ToGviz(file string) error {
 	return ToGviz(t, file)
 }
 
+func (t *Trie) Delete(key []byte) (Database, error) {
+	if len(key) == 0 {
+		return nil, EmptyKey
+	}
+	t, err := t.del(key)
+	return t, err
+}
+
+func (t *Trie) del(key []byte) (*Trie, error) {
+	t = t.Copy()
+	if len(key) > 0 {
+		prefix := key[0]
+		c := t.Next[prefix]
+		if c == nil {
+			return nil, NotFound
+		}
+		c2, err := c.del(key[1:])
+		if err != nil {
+			return nil, err
+		}
+		t.Next[prefix] = c2
+		if c2 != nil && zero(c2.Count) {
+			// prune this branch
+			t.Next[prefix] = nil
+		}
+		if err := t.update(); err != nil {
+			return nil, err
+		}
+		return t, nil
+	}
+	return nil, nil
+}
+
 func (t *Trie) set(key []byte, kv *KeyValue) (*Trie, error) {
 	t = t.Copy()
 	if len(key) == 0 {
+		t.Count = big.NewInt(1)
 		t.KeyValue = kv
 	} else {
 		b0 := key[0]
@@ -308,12 +314,13 @@ func (t *Trie) set(key []byte, kv *KeyValue) (*Trie, error) {
 		}
 		t.Next[b0] = c
 	}
-	if err := t.computeHash(); err != nil {
+	if err := t.update(); err != nil {
 		return nil, err
 	}
 	return t, nil
 }
 
+// increments i by v
 func inc(i *big.Int, v int) *big.Int {
 	if i == nil {
 		i = big.NewInt(0)
@@ -321,6 +328,16 @@ func inc(i *big.Int, v int) *big.Int {
 	var x big.Int
 	x.Add(i, big.NewInt(int64(v)))
 	return &x
+}
+
+func sum(i, j *big.Int) *big.Int {
+	var out big.Int
+	out.Add(i, j)
+	return &out
+}
+
+func zero(i *big.Int) bool {
+	return i.Cmp(big.NewInt(0)) == 0
 }
 
 func ToGviz(g gviz.Graph, file string) error {
@@ -343,14 +360,20 @@ func (t *Trie) nodes(parent []byte) (out []gviz.Node) {
 	n := node{
 		id: fmt.Sprintf("%x", t.Merkle),
 	}
+	label := func(x string) string {
+		if x == "" {
+			x = "nil"
+		}
+		return fmt.Sprintf("%s (%d; x%x)", x, t.Count, t.Merkle[:2])
+	}
 	if t.KeyValue == nil {
 		n.shape = "ellipse"
-		n.label = string(parent)
+		n.label = label(string(parent))
 	} else {
-		n.label = fmt.Sprintf("%s = %s", string(t.KeyValue.Key), string(t.KeyValue.Value))
-	}
-	if n.label == "" {
-		n.label = "nil"
+		n.label = label(fmt.Sprintf("%s = %s",
+			string(t.KeyValue.Key),
+			string(t.KeyValue.Value),
+		))
 	}
 	out = append(out, n)
 	for i, n := range t.Next {
@@ -409,58 +432,4 @@ func (e edge) From() string {
 }
 func (e edge) To() string {
 	return e.to
-}
-
-func (t *Trie) IsDirty() bool {
-	return len(t.Merkle) == 0
-}
-
-func (t *Trie) IsClean() bool {
-	return !t.IsDirty()
-}
-
-func (t *Trie) MarkDirty() {
-	t.Merkle = nil
-}
-
-// TODO: this has to be COW too
-func (t *Trie) Delete(key []byte) (Database, error) {
-	panic("unimplemented")
-	/*
-		t.MarkDirty()
-		current := t
-		for _, b := range key {
-			if x := current.Next[b]; x != nil {
-				current = x
-			} else {
-				return
-			}
-			current.MarkDirty()
-		}
-		current.KeyValue = nil
-		t.Prune()*/
-}
-
-// Prune returns true if this trie node can be discarded
-func (t *Trie) Prune() bool {
-	if t.IsClean() {
-		return false
-	}
-	var children int
-	for i, c := range t.Next {
-		if c == nil {
-			continue
-		}
-		children++
-		if c.Prune() {
-			t.Next[i] = nil
-		}
-	}
-	if t.KeyValue != nil {
-		return false
-	}
-	if children > 0 {
-		return false
-	}
-	return true
 }

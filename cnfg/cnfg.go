@@ -7,4 +7,5 @@ type Config struct {
 	PublicKeyFile  string
 	PrivateKeyFile string
 	Seed           int
+	Delete         bool
 }
