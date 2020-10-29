@@ -295,6 +295,7 @@ func (t *Trie) Delete(key []byte) (Database, error) {
 	return t, err
 }
 
+// TODO: need to keep children if any; i.e., this is not a recursive delete!
 func (t *Trie) del(key []byte) (*Trie, error) {
 	t = t.Copy()
 	if len(key) > 0 {
@@ -316,6 +317,9 @@ func (t *Trie) del(key []byte) (*Trie, error) {
 			return nil, err
 		}
 		return t, nil
+	} else if t != nil {
+		//t.KeyValue = nil
+		//return t, nil
 	}
 	return nil, nil
 }
@@ -391,7 +395,7 @@ func (t *Trie) nodes(parent []byte) (out []gviz.Node) {
 		if x == "" {
 			x = "nil"
 		}
-		return fmt.Sprintf("%s (%d; x%x)", x, t.Count, t.Merkle[:2])
+		return fmt.Sprintf("%s (%d; %x)", x, t.Count, t.Merkle[:2])
 	}
 	if t.KeyValue == nil {
 		n.shape = "ellipse"
