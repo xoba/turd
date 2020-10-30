@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/skratchdot/open-golang/open"
 	"github.com/xoba/turd/cnfg"
 )
 
@@ -37,18 +38,18 @@ func Join(meet, a, b *Trie) (*Trie, error) {
 		// b changed:
 		return b, nil
 	default:
-		// both changed:
-		t, err := New()
-		if err != nil {
-			return nil, err
-		}
-		for i, m2 := range meet.Next {
+		// both a & b changed:
+		t := meet.Copy()
+		for i, m2 := range t.Next {
 			a2, b2 := a.Next[i], b.Next[i]
 			j, err := Join(m2, a2, b2)
 			if err != nil {
 				return nil, err
 			}
 			t.Next[i] = j
+		}
+		if err := t.update(); err != nil {
+			return nil, err
 		}
 		return t, nil
 	}
@@ -71,20 +72,30 @@ func TestMerge(cnfg.Config) error {
 		return x.(*Trie)
 	}
 
+	viz := func(t *Trie, name string) error {
+		fmt.Println(t)
+		file := fmt.Sprintf("trie_%s.svg", name)
+		if err := t.ToGviz(file, name); err != nil {
+			return err
+		}
+		return open.Run(file)
+	}
+
 	var m *Trie
 	m = set(m, "a", "a value")
 	m = set(m, "b", "b value")
 	m = set(m, "c", "c value")
-	fmt.Println(m)
+	check(viz(m, "meet"))
 
 	a := set(m, "x", "x value")
-	fmt.Println(a)
+	check(viz(a, "a"))
 
 	b := set(m, "y", "y value")
-	fmt.Println(b)
+	//b = set(m, "x", "conflicting value")
+	check(viz(b, "b"))
 
-	merge, err := Join(m, a, b)
+	j, err := Join(m, a, b)
 	check(err)
-	fmt.Println(merge)
+	check(viz(j, "join"))
 	return nil
 }

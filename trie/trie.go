@@ -1,6 +1,7 @@
 package trie
 
 import (
+	"bytes"
 	"encoding/asn1"
 	"errors"
 	"fmt"
@@ -59,7 +60,25 @@ type Searchable interface {
 type SearchFunc func(kv *KeyValue) bool
 
 type KeyValue struct {
-	Key, Value []byte
+	Key, Value, Hash []byte
+}
+
+func (k KeyValue) computeHash() ([]byte, error) {
+	var h hasher
+	h.add(k.Key)
+	h.add(k.Value)
+	return h.compute()
+}
+
+func (k *KeyValue) Verify() error {
+	h, err := k.computeHash()
+	if err != nil {
+		return err
+	}
+	if !bytes.Equal(h, k.Hash) {
+		return fmt.Errorf("hash mismatch")
+	}
+	return nil
 }
 
 func New() (*Trie, error) {
@@ -70,7 +89,7 @@ func New() (*Trie, error) {
 	return &t, nil
 }
 
-// Copy without merkle hash
+// Copy without merkle hash, in order to mark "dirty"
 func (t *Trie) Copy() *Trie {
 	return &Trie{
 		KeyValue: t.KeyValue,
@@ -86,32 +105,47 @@ func (t *Trie) Hash() ([]byte, error) {
 	return t.Merkle, nil
 }
 
+type hasher [][]byte
+
+func (h *hasher) add(x interface{}) error {
+	switch t := x.(type) {
+	case nil:
+		*h = append(*h, []byte{})
+	case []byte:
+		*h = append(*h, t)
+	case int:
+		*h = append(*h, big.NewInt(int64(t)).Bytes())
+	default:
+		return fmt.Errorf("unsupported type %T: %v", t, t)
+	}
+	return nil
+}
+
+func (h hasher) compute() ([]byte, error) {
+	buf, err := asn1.Marshal(h)
+	if err != nil {
+		return nil, err
+	}
+	return thash.Hash(buf), nil
+}
+
 // recursively computes and sets count and merkles if unset
 func (t *Trie) update() error {
 	if t.IsClean() {
 		return nil
 	}
-	var list [][]byte
-	add := func(x interface{}) {
-		switch t := x.(type) {
-		case nil:
-			list = append(list, nil)
-		case []byte:
-			if len(t) == 0 {
-				panic("empty byte buffer")
-			}
-			list = append(list, t)
-		case int:
-			list = append(list, big.NewInt(int64(t)).Bytes())
-		default:
-			panic(fmt.Errorf("unsupported type %T", t))
+	var h hasher
+	if kv := t.KeyValue; kv == nil {
+		if err := h.add(nil); err != nil {
+			return err
 		}
-	}
-	if t.KeyValue == nil {
-		add(nil)
 	} else {
-		add(t.KeyValue.Key)
-		add(t.KeyValue.Value)
+		if err := kv.Verify(); err != nil {
+			return err
+		}
+		if err := h.add(kv.Hash); err != nil {
+			return err
+		}
 	}
 	count := big.NewInt(0)
 	if t.KeyValue != nil {
@@ -121,18 +155,22 @@ func (t *Trie) update() error {
 		if x == nil {
 			continue
 		}
-		add(i)
+		if err := h.add(i); err != nil {
+			return err
+		}
 		if err := x.update(); err != nil {
 			return err
 		}
-		add(x.Merkle)
+		if err := h.add(x.Merkle); err != nil {
+			return err
+		}
 		count = sum(count, x.Count)
 	}
-	buf, err := asn1.Marshal(list)
+	hash, err := h.compute()
 	if err != nil {
 		return err
 	}
-	t.Merkle = thash.Hash(buf)
+	t.Merkle = hash
 	t.Count = count
 	return nil
 }
@@ -197,7 +235,13 @@ func (t *Trie) Set(key, value []byte) (Database, error) {
 	if len(key) == 0 {
 		return nil, EmptyKey
 	}
-	return t.set(key, &KeyValue{Key: key, Value: value})
+	kv := &KeyValue{Key: key, Value: value}
+	h, err := kv.computeHash()
+	if err != nil {
+		return nil, err
+	}
+	kv.Hash = h
+	return t.set(key, kv)
 }
 
 func TestCOW(c cnfg.Config) error {
