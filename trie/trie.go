@@ -192,6 +192,7 @@ func (t *Trie) Get(key []byte) ([]byte, error) {
 	return current.KeyValue.Value, nil
 }
 
+// TODO: also need a set method etc that returns *Trie
 func (t *Trie) Set(key, value []byte) (Database, error) {
 	if len(key) == 0 {
 		return nil, EmptyKey
