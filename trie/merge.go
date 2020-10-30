@@ -28,21 +28,32 @@ func eq(list ...*Trie) bool {
 // Join is a three-way merge
 func Join(meet, a, b *Trie) (*Trie, error) {
 	switch {
-	case eq(meet, a, b):
-		// nothing changed
-		return meet, nil
+	case eq(a, b):
+		// no conflict whatsoever:
+		return a, nil
 	case eq(meet, b):
-		// a changed:
+		// only a changed:
 		return a, nil
 	case eq(meet, a):
-		// b changed:
+		// only b changed:
 		return b, nil
 	default:
+		// TODO: when meet doesn't exist?
+		switch {
+		case a == nil && b != nil:
+			// a does not exist
+			fmt.Println("*B")
+			return b, nil
+		case a != nil && b == nil:
+			// b does not exist
+			fmt.Println("*A")
+			return a, nil
+		}
 		// both a & b changed:
 		t := meet.Copy()
 		for i, m2 := range t.Next {
 			a2, b2 := a.Next[i], b.Next[i]
-			j, err := Join(m2, a2, b2)
+			j, err := Join(m2, a2, b2) // TODO: what if m2 == nil?
 			if err != nil {
 				return nil, err
 			}
@@ -81,16 +92,21 @@ func TestMerge(cnfg.Config) error {
 		return open.Run(file)
 	}
 
-	var m *Trie
+	var a, b, m *Trie
+
 	m = set(m, "a", "a value")
 	m = set(m, "b", "b value")
 	m = set(m, "c", "c value")
 	check(viz(m, "meet"))
 
-	a := set(m, "x", "x value")
+	a = set(m, "x", "x value")
+	a = set(a, "x/1", "x1 value")
+	a = set(a, "x/2", "x2 value")
+	a = set(a, "x/3", "x3 value")
+	a = set(a, "y/1", "y1 value")
 	check(viz(a, "a"))
 
-	b := set(m, "y", "y value")
+	b = set(m, "y", "y value")
 	//b = set(m, "x", "conflicting value")
 	check(viz(b, "b"))
 
