@@ -192,14 +192,12 @@ func (t *Trie) String() string {
 }
 
 func (t *Trie) Search(f SearchFunc) (*KeyValue, error) {
+	if kv := t.KeyValue; kv != nil && f(kv) {
+		return kv, nil
+	}
 	for _, c := range t.Next {
 		if c == nil {
 			continue
-		}
-		if c.KeyValue != nil {
-			if f(c.KeyValue) {
-				return c.KeyValue, nil
-			}
 		}
 		r, err := c.Search(f)
 		if err != nil && err != NotFound {

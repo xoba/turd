@@ -27,33 +27,22 @@ func eq(list ...*Trie) bool {
 
 // Join is a three-way merge
 func Join(meet, a, b *Trie) (*Trie, error) {
-	switch {
-	case eq(a, b):
-		// no conflict whatsoever:
-		return a, nil
-	case eq(meet, b):
-		// only a changed:
-		return a, nil
-	case eq(meet, a):
-		// only b changed:
-		return b, nil
-	default:
-		// TODO: when meet doesn't exist?
-		switch {
-		case a == nil && b != nil:
-			// a does not exist
-			fmt.Println("*B")
-			return b, nil
-		case a != nil && b == nil:
-			// b does not exist
-			fmt.Println("*A")
-			return a, nil
+	p := func(t *Trie) string {
+		if t == nil {
+			return "nil"
 		}
+		return fmt.Sprintf("%x (%v)", t.Merkle[:2], t)
+	}
+
+	if false {
+		fmt.Printf("meet = %s, a = %s, b = %s\n", p(meet), p(a), p(b))
+	}
+
+	both := func(t *Trie) (*Trie, error) {
 		// both a & b changed:
-		t := meet.Copy()
+		t.Merkle = nil
 		for i, m2 := range t.Next {
-			a2, b2 := a.Next[i], b.Next[i]
-			j, err := Join(m2, a2, b2) // TODO: what if m2 == nil?
+			j, err := Join(m2, a.Next[i], b.Next[i])
 			if err != nil {
 				return nil, err
 			}
@@ -63,6 +52,37 @@ func Join(meet, a, b *Trie) (*Trie, error) {
 			return nil, err
 		}
 		return t, nil
+	}
+
+	switch {
+	case eq(a, b):
+		// no conflict whatsoever:
+		return a, nil
+	case b == nil || eq(meet, b):
+		// only a is new or changed:
+		return a, nil
+	case a == nil || eq(meet, a):
+		// only b is new or changed:
+		return b, nil
+	case a == nil && b != nil: // nil case (3+4)/8
+		return b, nil
+	case a != nil && b == nil: // nil case (5+6)/8
+		return a, nil
+	case a != nil && b != nil: // nil cases (7+8)/8
+		fmt.Printf("%x vs %x\n", a.Merkle[:2], b.Merkle[:2])
+		var x *Trie
+		if meet == nil {
+			t, err := New()
+			if err != nil {
+				return nil, err
+			}
+			x = t
+		} else {
+			x = meet.Copy()
+		}
+		return both(x)
+	default:
+		panic("default")
 	}
 }
 
@@ -100,14 +120,16 @@ func TestMerge(cnfg.Config) error {
 	check(viz(m, "meet"))
 
 	a = set(m, "x", "x value")
-	a = set(a, "x/1", "x1 value")
-	a = set(a, "x/2", "x2 value")
-	a = set(a, "x/3", "x3 value")
-	a = set(a, "y/1", "y1 value")
+	if false {
+		a = set(a, "x/1", "x1 value")
+		a = set(a, "x/2", "x2 value")
+		a = set(a, "x/3", "x3 value")
+		a = set(a, "y/1", "y1 value")
+	}
 	check(viz(a, "a"))
 
 	b = set(m, "y", "y value")
-	//b = set(m, "x", "conflicting value")
+	b = set(m, "x/1", "x/1 value")
 	check(viz(b, "b"))
 
 	j, err := Join(m, a, b)
