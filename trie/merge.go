@@ -26,7 +26,7 @@ func eq(list ...*Trie) bool {
 }
 
 type Merger interface {
-	Merge(a, b *KeyValue) (*KeyValue, error)
+	Merge(meet, a, b *KeyValue) (*KeyValue, error)
 }
 
 // Join is a three-way merge
@@ -51,11 +51,15 @@ func Join(meet, a, b *Trie, merger Merger) (*Trie, error) {
 		case a.KeyValue != nil && b.KeyValue == nil:
 			t.KeyValue = a.KeyValue
 		case a.KeyValue != nil && b.KeyValue != nil:
-			m, err := merger.Merge(a.KeyValue, b.KeyValue)
+			var mkv *KeyValue
+			if meet != nil {
+				mkv = meet.KeyValue
+			}
+			j, err := merger.Merge(mkv, a.KeyValue, b.KeyValue)
 			if err != nil {
 				return nil, err
 			}
-			t.KeyValue = m
+			t.KeyValue = j
 		default:
 			panic("illegal")
 		}
@@ -150,7 +154,7 @@ func TestMerge(cnfg.Config) error {
 	b = set(m, "x/1", "x/1 value")
 	check(viz(b, "b"))
 
-	j, err := Join(m, a, b, mergeFunc(func(a, b *KeyValue) (*KeyValue, error) {
+	j, err := Join(m, a, b, mergeFunc(func(m, a, b *KeyValue) (*KeyValue, error) {
 		if !bytes.Equal(a.Hash, b.Hash) {
 			return nil, fmt.Errorf("conflict")
 		}
@@ -161,8 +165,8 @@ func TestMerge(cnfg.Config) error {
 	return nil
 }
 
-type mergeFunc func(a, b *KeyValue) (*KeyValue, error)
+type mergeFunc func(meet, a, b *KeyValue) (*KeyValue, error)
 
-func (m mergeFunc) Merge(a, b *KeyValue) (*KeyValue, error) {
-	return m(a, b)
+func (m mergeFunc) Merge(meet, a, b *KeyValue) (*KeyValue, error) {
+	return m(meet, a, b)
 }
