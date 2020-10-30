@@ -29,6 +29,7 @@ func (t *Trie) IsClean() bool {
 }
 
 func Run(c cnfg.Config) error {
+	return TestMerge(c)
 	return TestCOW(c)
 }
 
