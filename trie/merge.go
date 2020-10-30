@@ -39,8 +39,20 @@ func Join(meet, a, b *Trie) (*Trie, error) {
 	}
 
 	both := func(t *Trie) (*Trie, error) {
-		// both a & b changed:
 		t.Merkle = nil
+		switch {
+		case a.KeyValue == nil && b.KeyValue == nil:
+		case a.KeyValue == nil && b.KeyValue != nil:
+			t.KeyValue = b.KeyValue
+		case a.KeyValue != nil && b.KeyValue == nil:
+			t.KeyValue = a.KeyValue
+		case a.KeyValue != nil && b.KeyValue != nil:
+			if !bytes.Equal(a.KeyValue.Hash, b.KeyValue.Hash) {
+				return nil, fmt.Errorf("key value conflict: %v vs %v", a.KeyValue, b.KeyValue)
+			}
+		default:
+			panic("illegal")
+		}
 		for i, m2 := range t.Next {
 			j, err := Join(m2, a.Next[i], b.Next[i])
 			if err != nil {
@@ -120,8 +132,8 @@ func TestMerge(cnfg.Config) error {
 	check(viz(m, "meet"))
 
 	a = set(m, "x", "x value")
-	if false {
-		a = set(a, "x/1", "x1 value")
+	if true {
+		a = set(a, "x/1", "x/1 value")
 		a = set(a, "x/2", "x2 value")
 		a = set(a, "x/3", "x3 value")
 		a = set(a, "y/1", "y1 value")

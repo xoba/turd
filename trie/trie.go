@@ -70,6 +70,10 @@ func (k KeyValue) computeHash() ([]byte, error) {
 	return h.compute()
 }
 
+func (k KeyValue) String() string {
+	return fmt.Sprintf("%s=%s (%x)", string(k.Key), string(k.Value), k.Hash[:2])
+}
+
 func (k *KeyValue) Verify() error {
 	h, err := k.computeHash()
 	if err != nil {
