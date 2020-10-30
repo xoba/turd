@@ -24,6 +24,10 @@ type Trie struct {
 	Count  *big.Int // number of kv pairs in this and all descendants
 }
 
+func (t *Trie) IsClean() bool {
+	return len(t.Merkle) > 0 && t.Count != nil
+}
+
 func Run(c cnfg.Config) error {
 	return TestCOW(c)
 }
@@ -70,6 +74,7 @@ func (t *Trie) Copy() *Trie {
 	return &Trie{
 		KeyValue: t.KeyValue,
 		Next:     t.Next,
+		Count:    cp(t.Count),
 	}
 }
 
@@ -82,7 +87,7 @@ func (t *Trie) Hash() ([]byte, error) {
 
 // recursively computes and sets count and merkles if unset
 func (t *Trie) update() error {
-	if len(t.Merkle) > 0 {
+	if t.IsClean() {
 		return nil
 	}
 	var list [][]byte
@@ -147,19 +152,18 @@ func (t *Trie) String() string {
 	return String(t)
 }
 
-// TODO: "Do" should take a range argument, and handler should return bool
 func (t *Trie) Search(f SearchFunc) (*KeyValue, error) {
-	for _, x := range t.Next {
-		if x == nil {
+	for _, c := range t.Next {
+		if c == nil {
 			continue
 		}
-		if x.KeyValue != nil {
-			if f(x.KeyValue) {
-				return x.KeyValue, nil
+		if c.KeyValue != nil {
+			if f(c.KeyValue) {
+				return c.KeyValue, nil
 			}
 		}
-		r, err := x.Search(f)
-		if err != nil {
+		r, err := c.Search(f)
+		if err != nil && err != NotFound {
 			return nil, err
 		}
 		if r != nil {
@@ -210,21 +214,27 @@ func TestCOW(c cnfg.Config) error {
 		db    StringDatabase
 		title string
 	}
-
 	var steps []step
 	add := func(title string) {
 		steps = append(steps, step{
 			db:    s,
-			title: title,
+			title: fmt.Sprintf("%d. %s", len(steps), title),
 		})
 	}
 	add("empty")
+	viz := func(s step, i int) error {
+		file := fmt.Sprintf("trie_%d.svg", i)
+		if err := s.db.ToGviz(file, s.title); err != nil {
+			return err
+		}
+		return open.Run(file)
+	}
 	show := func(db StringDatabase) error {
 		h, err := db.Hash()
 		if err != nil {
 			return err
 		}
-		fmt.Printf("%x; %v\n", h, db)
+		fmt.Printf("%x; %v\n", h[:2], db)
 		return nil
 	}
 	set := func(key, value string) error {
@@ -244,6 +254,7 @@ func TestCOW(c cnfg.Config) error {
 			s = x
 		}
 		add("del " + key)
+		show(s)
 		return nil
 	}
 	log := func(e error) {
@@ -253,27 +264,21 @@ func TestCOW(c cnfg.Config) error {
 	}
 	log(set("/a", "b"))
 	log(set("/c", "d"))
-	for i := 0; i < 10; i++ {
-		log(set("/c/1/2/3/4", "long"))
-	}
+	log(set("/c/1/2/3/4", "long"))
 	log(set("/ab", "xyz"))
 	log(set("/a/x", "c"))
 	if c.Delete {
 		log(del("/c/1/2/3/4"))
 	}
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 4; i++ {
 		log(set(fmt.Sprintf("/a/x/%d", i), fmt.Sprintf("howdy %d", i)))
 	}
 	if c.Delete {
 		log(del("/a/x"))
+		log(del("/a/x/2")) // delete a leaf node
+		log(del("/a"))
 	}
-	viz := func(s step, i int) error {
-		file := fmt.Sprintf("trie_%d.svg", i)
-		if err := s.db.ToGviz(file, s.title); err != nil {
-			return err
-		}
-		return open.Run(file)
-	}
+	fmt.Println("replaying...")
 	for i, s := range steps {
 		log(show(s.db))
 		if err := viz(s, i); err != nil {
@@ -291,37 +296,41 @@ func (t *Trie) Delete(key []byte) (Database, error) {
 	if len(key) == 0 {
 		return nil, EmptyKey
 	}
-	t, err := t.del(key)
-	return t, err
+	return t.del(key, key)
 }
 
 // TODO: need to keep children if any; i.e., this is not a recursive delete!
-func (t *Trie) del(key []byte) (*Trie, error) {
+func (t *Trie) del(key, original []byte) (*Trie, error) {
 	t = t.Copy()
-	if len(key) > 0 {
+	switch len(key) {
+	case 0:
+		if t.KeyValue == nil {
+			return nil, fmt.Errorf("1: %w", NotFound)
+		}
+		t.KeyValue = nil
+		if one(t.Count) {
+			// this node needs to be pruned
+			return nil, nil
+		}
+	default:
 		prefix := key[0]
 		c := t.Next[prefix]
 		if c == nil {
-			return nil, fmt.Errorf("%s: %w", string(key), NotFound)
+			return nil, fmt.Errorf("2: %w", NotFound)
 		}
-		c2, err := c.del(key[1:])
+		c2, err := c.del(key[1:], original)
 		if err != nil {
 			return nil, err
 		}
 		t.Next[prefix] = c2
 		if c2 != nil && zero(c2.Count) {
-			// prune this branch
 			t.Next[prefix] = nil
 		}
-		if err := t.update(); err != nil {
-			return nil, err
-		}
-		return t, nil
-	} else if t != nil {
-		//t.KeyValue = nil
-		//return t, nil
 	}
-	return nil, nil
+	if err := t.update(); err != nil {
+		return nil, err
+	}
+	return t, nil
 }
 
 func (t *Trie) set(key []byte, kv *KeyValue) (*Trie, error) {
@@ -361,6 +370,12 @@ func inc(i *big.Int, v int) *big.Int {
 	return &x
 }
 
+func cp(i *big.Int) *big.Int {
+	var o big.Int
+	o.Set(i)
+	return &o
+}
+
 func sum(i, j *big.Int) *big.Int {
 	var out big.Int
 	out.Add(i, j)
@@ -369,6 +384,9 @@ func sum(i, j *big.Int) *big.Int {
 
 func zero(i *big.Int) bool {
 	return i.Cmp(big.NewInt(0)) == 0
+}
+func one(i *big.Int) bool {
+	return i.Cmp(big.NewInt(1)) == 0
 }
 
 func ToGviz(g gviz.Graph, file, title string) error {
