@@ -29,6 +29,10 @@ func (t *Trie) IsClean() bool {
 	return len(t.Merkle) > 0 && t.Count != nil
 }
 
+func (t *Trie) MarkDirty() {
+	t.Merkle = nil
+}
+
 func Run(c cnfg.Config) error {
 	return TestMerge(c)
 	return TestCOW(c)

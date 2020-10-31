@@ -25,57 +25,12 @@ func eq(list ...*Trie) bool {
 	return true
 }
 
-type Merger interface {
-	Merge(meet, a, b *KeyValue) (*KeyValue, error)
+type Joiner interface {
+	Join(meet, a, b *KeyValue) (*KeyValue, error)
 }
 
 // Join is a three-way merge
-func Join(meet, a, b *Trie, merger Merger) (*Trie, error) {
-	p := func(t *Trie) string {
-		if t == nil {
-			return "nil"
-		}
-		return fmt.Sprintf("%x (%v)", t.Merkle[:2], t)
-	}
-
-	if false {
-		fmt.Printf("meet = %s, a = %s, b = %s\n", p(meet), p(a), p(b))
-	}
-
-	both := func(t *Trie) (*Trie, error) {
-		t.Merkle = nil
-		switch {
-		case a.KeyValue == nil && b.KeyValue == nil:
-		case a.KeyValue == nil && b.KeyValue != nil:
-			t.KeyValue = b.KeyValue
-		case a.KeyValue != nil && b.KeyValue == nil:
-			t.KeyValue = a.KeyValue
-		case a.KeyValue != nil && b.KeyValue != nil:
-			var mkv *KeyValue
-			if meet != nil {
-				mkv = meet.KeyValue
-			}
-			j, err := merger.Merge(mkv, a.KeyValue, b.KeyValue)
-			if err != nil {
-				return nil, err
-			}
-			t.KeyValue = j
-		default:
-			panic("illegal")
-		}
-		for i, m2 := range t.Next {
-			j, err := Join(m2, a.Next[i], b.Next[i], merger)
-			if err != nil {
-				return nil, err
-			}
-			t.Next[i] = j
-		}
-		if err := t.update(); err != nil {
-			return nil, err
-		}
-		return t, nil
-	}
-
+func Join(meet, a, b *Trie, merger Joiner) (*Trie, error) {
 	switch {
 	case eq(a, b):
 		// no conflict whatsoever:
@@ -91,20 +46,49 @@ func Join(meet, a, b *Trie, merger Merger) (*Trie, error) {
 	case a != nil && b == nil: // nil case (5+6)/8
 		return a, nil
 	case a != nil && b != nil: // nil cases (7+8)/8
-		fmt.Printf("%x vs %x\n", a.Merkle[:2], b.Merkle[:2])
-		var x *Trie
+		var out *Trie
 		if meet == nil {
-			t, err := New()
+			x, err := New()
 			if err != nil {
 				return nil, err
 			}
-			x = t
+			out = x
 		} else {
-			x = meet.Copy()
+			out = meet.Copy()
 		}
-		return both(x)
+		out.MarkDirty()
+		switch {
+		case a.KeyValue == nil && b.KeyValue == nil:
+		case a.KeyValue == nil && b.KeyValue != nil:
+			out.KeyValue = b.KeyValue
+		case a.KeyValue != nil && b.KeyValue == nil:
+			out.KeyValue = a.KeyValue
+		case a.KeyValue != nil && b.KeyValue != nil:
+			var mkv *KeyValue
+			if meet != nil {
+				mkv = meet.KeyValue
+			}
+			join, err := merger.Join(mkv, a.KeyValue, b.KeyValue)
+			if err != nil {
+				return nil, err
+			}
+			out.KeyValue = join
+		default:
+			panic("illegal")
+		}
+		for i, m2 := range out.Next {
+			j, err := Join(m2, a.Next[i], b.Next[i], merger)
+			if err != nil {
+				return nil, err
+			}
+			out.Next[i] = j
+		}
+		if err := out.update(); err != nil {
+			return nil, err
+		}
+		return out, nil
 	default:
-		panic("default")
+		panic("illegal")
 	}
 }
 
@@ -167,6 +151,6 @@ func TestMerge(cnfg.Config) error {
 
 type mergeFunc func(meet, a, b *KeyValue) (*KeyValue, error)
 
-func (m mergeFunc) Merge(meet, a, b *KeyValue) (*KeyValue, error) {
+func (m mergeFunc) Join(meet, a, b *KeyValue) (*KeyValue, error) {
 	return m(meet, a, b)
 }
