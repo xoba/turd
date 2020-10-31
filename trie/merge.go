@@ -42,51 +42,53 @@ func Join(meet, a, b *Trie, merger Joiner) (*Trie, error) {
 		// only b is new or changed:
 		return b, nil
 	case a == nil && b != nil: // nil case (3+4)/8
+		// only b exists:
 		return b, nil
 	case a != nil && b == nil: // nil case (5+6)/8
+		// only a exists:
 		return a, nil
 	case a != nil && b != nil: // nil cases (7+8)/8
-		var out *Trie
+		// advance meet to the join of a and b:
 		if meet == nil {
 			x, err := New()
 			if err != nil {
 				return nil, err
 			}
-			out = x
+			meet = x
 		} else {
-			out = meet.Copy()
+			meet = meet.Copy()
 		}
-		out.MarkDirty()
+		meet.MarkDirty()
 		switch {
 		case a.KeyValue == nil && b.KeyValue == nil:
 		case a.KeyValue == nil && b.KeyValue != nil:
-			out.KeyValue = b.KeyValue
+			meet.KeyValue = b.KeyValue
 		case a.KeyValue != nil && b.KeyValue == nil:
-			out.KeyValue = a.KeyValue
+			meet.KeyValue = a.KeyValue
 		case a.KeyValue != nil && b.KeyValue != nil:
-			var mkv *KeyValue
+			var kv *KeyValue
 			if meet != nil {
-				mkv = meet.KeyValue
+				kv = meet.KeyValue
 			}
-			join, err := merger.Join(mkv, a.KeyValue, b.KeyValue)
+			join, err := merger.Join(kv, a.KeyValue, b.KeyValue)
 			if err != nil {
 				return nil, err
 			}
-			out.KeyValue = join
+			meet.KeyValue = join
 		default:
 			panic("illegal")
 		}
-		for i, m2 := range out.Next {
-			j, err := Join(m2, a.Next[i], b.Next[i], merger)
+		for i, m := range meet.Next {
+			j, err := Join(m, a.Next[i], b.Next[i], merger)
 			if err != nil {
 				return nil, err
 			}
-			out.Next[i] = j
+			meet.Next[i] = j
 		}
-		if err := out.update(); err != nil {
+		if err := meet.update(); err != nil {
 			return nil, err
 		}
-		return out, nil
+		return meet, nil
 	default:
 		panic("illegal")
 	}
@@ -108,7 +110,6 @@ func TestMerge(cnfg.Config) error {
 		check(err)
 		return x.(*Trie)
 	}
-
 	viz := func(t *Trie, name string) error {
 		fmt.Println(t)
 		file := fmt.Sprintf("trie_%s.svg", name)
@@ -135,7 +136,7 @@ func TestMerge(cnfg.Config) error {
 	check(viz(a, "a"))
 
 	b = set(m, "y", "y value")
-	b = set(m, "x/1", "x/1 value")
+	b = set(b, "x/1", "x/1 value")
 	check(viz(b, "b"))
 
 	j, err := Join(m, a, b, mergeFunc(func(m, a, b *KeyValue) (*KeyValue, error) {
