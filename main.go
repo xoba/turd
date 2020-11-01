@@ -19,6 +19,7 @@ import (
 	"github.com/xoba/turd/gossip"
 	"github.com/xoba/turd/infl"
 	"github.com/xoba/turd/poset"
+	"github.com/xoba/turd/scr"
 	"github.com/xoba/turd/taws"
 	"github.com/xoba/turd/tnet"
 	"github.com/xoba/turd/trie"
@@ -53,6 +54,7 @@ func Run(c cnfg.Config) error {
 		"launch":    LaunchNode,
 		"poset":     poset.Run,
 		"listen":    Listen,
+		"script":    scr.Run,
 		"trie":      trie.Run,
 	}
 	handler, ok := modes[c.Mode]

@@ -35,6 +35,8 @@ mining frequency is one hertz, per chain. upon scaling, it splits into
 two key spaces, half the difficulty and half the block reward,
 vice-versa for de-scaling.
 
+should have a script language for transaction processing.
+
 problems:
 
 how does depreciation work within lattice joins? for off-chain

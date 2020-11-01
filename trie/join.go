@@ -145,6 +145,7 @@ func TestMerge(cnfg.Config) error {
 		}
 		return a, nil
 	}))
+
 	check(err)
 	check(viz(j, "join"))
 	return nil
