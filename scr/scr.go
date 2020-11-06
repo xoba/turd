@@ -27,6 +27,26 @@ type Test struct {
 	Y time.Time `asn1:"generalized"`
 }
 
+type Transaction struct {
+	Inputs  []Input
+	Outputs []Output
+}
+
+func (t Transaction) Signature(key *ecdsa.PrivateKey) ([]byte, error) {
+	panic("")
+}
+
+type Output struct {
+	Tokens *big.Int
+	Script Steps
+}
+
+type Input struct {
+	Transaction []byte
+	Index       int
+	Script      Steps
+}
+
 func Run(cnfg.Config) error {
 
 	script := Script{

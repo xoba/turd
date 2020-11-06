@@ -49,6 +49,7 @@ meet algorithm: each block references a data structure containing all
 child blocks, thus to find meet do a breadth-first traversal of one
 block's child lattice, identifying the first common block as the meet.
 
-
-
+signing transactions: just sign the whole blob, which can't contain the
+signature in a script. use the signature as a runtime parameter of script,
+not embed it literally. 
 
