@@ -13,14 +13,25 @@ type node struct {
 
 func (n *node) Expression() (*Expression, error) {
 	if len(n.Value) > 0 {
-		e := NewString(n.Value)
-		return &e, nil
+		if strings.HasPrefix(n.Value, "'") {
+			return NewQuote(NewString(n.Value[1:])), nil
+		}
+		return NewString(n.Value), nil
 	}
 	var list []*Expression
+	var lastQuote bool
 	for _, c := range n.Children {
+		if c.Value == "'" {
+			lastQuote = true
+			continue
+		}
 		e, err := c.Expression()
 		if err != nil {
 			return nil, err
+		}
+		if lastQuote {
+			e = NewQuote(e)
+			lastQuote = false
 		}
 		list = append(list, e)
 	}

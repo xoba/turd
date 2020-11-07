@@ -8,7 +8,7 @@ import (
 )
 
 func Lisp(cnfg.Config) error {
-	return testRead(`(() (defun 'foo (a b c d) (+ a b c d)))
+	return testRead(`(() (defun 'foo (a b c d) '(p q) (+ a b c d)))
 `)
 }
 
@@ -66,8 +66,15 @@ type Expression struct {
 	*List
 }
 
-func NewString(s string) Expression {
-	return Expression{
+func NewQuote(e *Expression) *Expression {
+	out := NewList()
+	out.Add(NewString("quote"))
+	out.Add(e)
+	return out
+}
+
+func NewString(s string) *Expression {
+	return &Expression{
 		Atom: &Atom{
 			Type: "string",
 			Blob: []byte(s),
