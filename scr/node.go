@@ -6,26 +6,48 @@ import (
 	"strings"
 )
 
-func testRead(in string) error {
-	e, err := Read(in)
-	if err != nil {
-		return err
-	}
-	if out := e.String(); out != in {
-		return fmt.Errorf("expected %q, got %q\n", in, out)
-	}
-	return nil
+type node struct {
+	Value    string  `json:"V,omitempty"`
+	Children []*node `json:"C,omitempty"`
 }
 
-func parseList(list []string) node {
+func (n *node) Expression() (*Expression, error) {
+	if len(n.Value) > 0 {
+		e := NewString(n.Value)
+		return &e, nil
+	}
+	var list []*Expression
+	for _, c := range n.Children {
+		e, err := c.Expression()
+		if err != nil {
+			return nil, err
+		}
+		list = append(list, e)
+	}
+	return NewList(list...), nil
+}
+
+func parse(s string) (*node, error) {
+	toks, err := tokenize(s)
+	if err != nil {
+		return nil, err
+	}
+	nodes, err := parseTokens(toks)
+	if err != nil {
+		return nil, err
+	}
+	return nodes, nil
+}
+
+func parseTokens(list []string) (*node, error) {
 	switch len(list) {
 	case 0:
-		panic("illegal")
+		return nil, fmt.Errorf("can't parse empty list")
 	case 1:
-		return node{Value: list[0]}
+		return &node{Value: list[0]}, nil
 	default:
 		if list[0] != "(" || list[len(list)-1] != ")" {
-			panic(fmt.Sprintf("not a list: %q", list))
+			return nil, fmt.Errorf("not a list: %q", list)
 		}
 		list = list[1 : len(list)-1]
 		var out node
@@ -40,20 +62,19 @@ func parseList(list []string) node {
 			}
 			current = append(current, x)
 			if indent == 0 {
-				out.Children = append(out.Children, parseList(current))
+				c, err := parseTokens(current)
+				if err != nil {
+					return nil, err
+				}
+				out.Children = append(out.Children, c)
 				current = current[:0]
 			}
 		}
 		if indent != 0 {
 			panic(fmt.Errorf("indent = %d", indent))
 		}
-		return out
+		return &out, nil
 	}
-}
-
-type node struct {
-	Value    string `json:"V,omitempty"`
-	Children []node `json:"C,omitempty"`
 }
 
 func (n node) String() string {
@@ -61,18 +82,8 @@ func (n node) String() string {
 	return string(buf)
 }
 
-func (n node) Expression() (*Expression, error) {
-	panic("unimplemented")
-}
-
-func parse(s string) (*node, error) {
-	list := toList(s)
-	fmt.Println(parseList(list))
-
-	return nil, fmt.Errorf("read unimplemented")
-}
-
-func toList(s string) (list []string) {
+func tokenize(s string) ([]string, error) {
+	var out []string
 	s = strings.Replace(s, "(", " ( ", -1)
 	s = strings.Replace(s, ")", " ) ", -1)
 	for _, x := range strings.Fields(s) {
@@ -80,7 +91,7 @@ func toList(s string) (list []string) {
 		if len(x) == 0 {
 			continue
 		}
-		list = append(list, x)
+		out = append(out, x)
 	}
-	return
+	return out, nil
 }

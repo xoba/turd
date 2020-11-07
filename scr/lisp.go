@@ -12,13 +12,25 @@ func Lisp(cnfg.Config) error {
 `)
 }
 
+func testRead(in string) error {
+	in = strings.TrimSpace(in)
+	e, err := Read(in)
+	if err != nil {
+		return err
+	}
+	if out := e.String(); out != in {
+		return fmt.Errorf("expected %q, got %q", in, out)
+	}
+	return nil
+}
+
 func Read(s string) (*Expression, error) {
 	n, err := parse(s)
 	if err != nil {
 		return nil, err
 	}
 	fmt.Printf("node: %s\n", n)
-	return nil, fmt.Errorf("read unimplemented")
+	return n.Expression()
 }
 
 func (e Expression) Car() (*Expression, error) {
@@ -63,8 +75,8 @@ func NewString(s string) Expression {
 	}
 }
 
-func NewBlob(s []byte) Expression {
-	return Expression{
+func NewBlob(s []byte) *Expression {
+	return &Expression{
 		Atom: &Atom{
 			Type: "blob",
 			Blob: s,
@@ -72,7 +84,7 @@ func NewBlob(s []byte) Expression {
 	}
 }
 
-func NewList(list ...Expression) Expression {
+func NewList(list ...*Expression) *Expression {
 	var z List
 	e := Expression{
 		List: &z,
@@ -80,7 +92,7 @@ func NewList(list ...Expression) Expression {
 	for _, x := range list {
 		*e.List = append(*e.List, x)
 	}
-	return e
+	return &e
 }
 
 func (e Expression) String() string {
@@ -133,20 +145,20 @@ func (a Atom) String() string {
 	}
 }
 
-type List []Expression
+type List []*Expression
 
 func (l List) Empty() bool {
 	return len(l) == 0
 }
 
 func (l List) First() *Expression {
-	return &l[0]
+	return l[0]
 }
 
 func (l List) Rest() List {
 	return l[1:]
 }
 
-func (l *List) Add(e Expression) {
+func (l *List) Add(e *Expression) {
 	*l = append(*l, e)
 }
