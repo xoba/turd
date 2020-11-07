@@ -52,6 +52,7 @@ func Run(c cnfg.Config) error {
 		"inflation": infl.Run,
 		"keys":      tnet.SharedKey,
 		"launch":    LaunchNode,
+		"lisp":      scr.Lisp,
 		"poset":     poset.Run,
 		"listen":    Listen,
 		"script":    scr.Run,
