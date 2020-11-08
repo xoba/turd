@@ -11,7 +11,13 @@ import (
 
 func Lisp(cnfg.Config) error {
 	m := make(map[string]bool)
-	test := func(in, expect string) {
+	test := func(i int, in, expect string) {
+		wrap := func(e error) error {
+			if e == nil {
+				return nil
+			}
+			return fmt.Errorf("#%d. %w", i, e)
+		}
 		if in == "" {
 			return
 		}
@@ -19,79 +25,72 @@ func Lisp(cnfg.Config) error {
 			panic("duplication: " + in)
 		}
 		m[in] = true
+		fmt.Printf("%2d. %-50s -> %s\n", i, in, expect)
 		check := func(e error) {
 			if e != nil {
 				log.Fatal(e)
 			}
 		}
 		e, err := Read(in)
-		check(err)
+		check(wrap(err))
 		a := NewList()
 		x, err := Eval(e, a)
-		check(err)
-		fmt.Printf("%-17s -> %s\n", in, x)
+		check(wrap(err))
 		if got := x.String(); got != expect {
-			check(fmt.Errorf("expected %q, got %q", expect, got))
+			check(wrap(fmt.Errorf("expected %q, got %q", expect, got)))
 		}
 	}
 
-	// 1
-	test("(quote a)", "a")
-	test("'a", "a")
-	test("(quote (a b c))", "(a b c)")
-
-	// 2
-	test("(atom 'a)", "t")
-	test("(atom '(a b c))", "()")
-	test("(atom '())", "t")
-	test("(atom (atom 'a))", "t")
-	test("(atom '(atom 'a))", "()")
-
-	// 3
-	test("(eq 'a 'a)", "t")
-	test("(eq 'a 'b)", "()")
-	test("(eq '() '())", "t")
-
-	// 4
-	test("(car '(a b c))", "a")
-
-	// 5
-	test("(cdr '(a b c))", "(b c)")
-
-	// 6
-	test("(cons 'a '(b c))", "(a b c)")
-	test("(cons 'a (cons 'b (cons 'c '())))", "(a b c)")
-	test("(car (cons 'a '(b c)))", "a")
-	test("(cdr (cons 'a '(b c)))", "(b c)")
-
-	// 7
-	test("(cond ((eq 'a 'b) 'first) ((atom 'a) 'second))", "second")
-
-	test("", "")
-	test("", "")
-	test("", "")
-	test("", "")
-	test("", "")
-	test("", "")
-	test("", "")
-	test("", "")
-	test("", "")
-	test("", "")
-	test("", "")
-	test("", "")
-	test("", "")
-	test("", "")
-	test("", "")
-	test("", "")
-	test("", "")
+	test2 := func(x, y string) {
+		test(0, x, y)
+	}
 
 	// other:
-	test("(quote z)", "z")
-	test("(atom '(1 2 3))", "()")
-	test("(eq 'b 'a)", "()")
-	test("(eq 'b '())", "()")
-	test("(car '(x))", "x")
-	test("(cdr '(x))", "()")
+	test2("(quote z)", "z")
+	test2("(atom '(1 2 3))", "()")
+	test2("(eq 'b 'a)", "()")
+	test2("(eq 'b '())", "()")
+	test2("(car '(x))", "x")
+	test2("(cdr '(x))", "()")
+
+	// 1
+	test(1, "(quote a)", "a")
+	test(1, "'a", "a")
+	test(1, "(quote (a b c))", "(a b c)")
+
+	// 2
+	test(2, "(atom 'a)", "t")
+	test(2, "(atom '(a b c))", "()")
+	test(2, "(atom '())", "t")
+	test(2, "(atom (atom 'a))", "t")
+	test(2, "(atom '(atom 'a))", "()")
+
+	// 3
+	test(3, "(eq 'a 'a)", "t")
+	test(3, "(eq 'a 'b)", "()")
+	test(3, "(eq '() '())", "t")
+
+	// 4
+	test(4, "(car '(a b c))", "a")
+
+	// 5
+	test(5, "(cdr '(a b c))", "(b c)")
+
+	// 6
+	test(6, "(cons 'a '(b c))", "(a b c)")
+	test(6, "(cons 'a (cons 'b (cons 'c '())))", "(a b c)")
+	test(6, "(car (cons 'a '(b c)))", "a")
+	test(6, "(cdr (cons 'a '(b c)))", "(b c)")
+
+	// 7
+	test(7, "(cond ((eq 'a 'b) 'first) ((atom 'a) 'second))", "second")
+
+	test(0, "", "")
+	test(0, "", "")
+	test(0, "", "")
+	test(0, "", "")
+	test(0, "", "")
+	test(0, "", "")
 
 	return nil
 }
@@ -148,6 +147,7 @@ func MEval(args ...Maybe) Maybe {
 	atom := Eval1Func(AtomF).ToMonad()
 	assoc := Eval2Func(Assoc).ToMonad()
 	cons := Eval2Func(Cons).ToMonad()
+	evcon := Eval2Func(Evcon).ToMonad()
 
 	if e.Error != nil {
 		return e
@@ -183,7 +183,7 @@ func MEval(args ...Maybe) Maybe {
 				eval(caddr(e), a),
 			)
 		case "cond":
-			return Evcon(cdr(e), a)
+			return evcon(cdr(e), a)
 		default:
 			return eval(cons(assoc(car(e), a), cdr(e)), a)
 		}
@@ -209,7 +209,8 @@ func Cons(x, y *Expression) (*Expression, error) {
 	return NewList(args...), nil
 }
 
-func Evcon(c, a Maybe) Maybe {
+func EvconM(c, a Maybe) Maybe {
+	fmt.Printf("evcon(%q, %q)\n", c, a)
 	car := Eval1Func(Car).ToMonad()
 	cdr := Eval1Func(Cdr).ToMonad()
 	caar := Compose(car, car)
@@ -234,9 +235,40 @@ func Evcon(c, a Maybe) Maybe {
 			eval(cadar(c), a), // TODO: needs to be lazy
 		),
 		list(
-			quote(NewString("t")), Evcon(cdr(c), a), // TODO: needs to be lazy
+			quote(NewString("t")), EvconM(cdr(c), a), // TODO: needs to be lazy
 		),
 	)
+}
+
+func Evcon(c, a *Expression) (*Expression, error) {
+	if c == nil || a == nil {
+		return nil, fmt.Errorf("nil arguments")
+	}
+	if !(c.IsList() && a.IsList()) {
+		return nil, fmt.Errorf("needs lists")
+	}
+	for _, arg := range *c.List {
+		car, err := Car(arg)
+		if err != nil {
+			return nil, err
+		}
+		r, err := Eval(car, a)
+		if err != nil {
+			return nil, err
+		}
+		if r.String() == "t" {
+			e, err := Cdr(arg)
+			if err != nil {
+				return nil, err
+			}
+			e2, err := Car(e)
+			if err != nil {
+				return nil, err
+			}
+			return Eval(e2, a)
+		}
+	}
+	return nil, fmt.Errorf("no condition satisfied")
 }
 
 func Cond(args ...*Expression) (*Expression, error) {
@@ -327,6 +359,7 @@ func Cdr(e *Expression) (*Expression, error) {
 type Expression struct {
 	*Atom
 	*List
+	Func func() *Expression // TODO: lazy evaluation
 }
 
 func NewQuote(e *Expression) *Expression {
@@ -413,10 +446,7 @@ func (e Expression) IsAtom() bool {
 	if e.Atom != nil {
 		return true
 	}
-	if e.List == nil {
-		return false
-	}
-	if len(*e.List) == 0 {
+	if e.List == nil || len(*e.List) == 0 {
 		return true
 	}
 	return false
