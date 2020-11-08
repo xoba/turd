@@ -38,8 +38,6 @@ func Lisp(cnfg.Config) error {
 	return nil
 }
 
-type EvalFunc func(args ...*Expression) (*Expression, error)
-
 func Assoc(x, y *Expression) (*Expression, error) {
 	fmt.Printf("assoc(%s, %s)\n", x, y)
 	caar, err := Caar(y)
@@ -283,9 +281,9 @@ func (e Expression) IsAtom() bool {
 }
 
 func (e Expression) IsList() bool {
-	e.Check()
-	return e.List != nil
+	return !e.IsAtom()
 }
+
 func (e Expression) IsEmpty() bool {
 	e.Check()
 	return e.List.Empty()
