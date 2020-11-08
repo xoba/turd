@@ -60,7 +60,7 @@ func Compose(funcs ...MonadFunc) MonadFunc {
 
 func TestMonad(cnfg.Config) error {
 
-	const n = 3
+	const n = 100
 
 	randErr := func() error {
 		if rand.Intn(n) == 0 {
@@ -93,14 +93,31 @@ func TestMonad(cnfg.Config) error {
 	car := EvalFunc(Car).ToMonad()
 	cdr := EvalFunc(Cdr).ToMonad()
 	caddr := Compose(car, cdr, cdr)
+	cadadr := Compose(car, cdr, car, cdr)
 
-	list := Maybe{Expression: NewList(NewString("a"), NewString("b"), NewString("c"), NewString("d"))}
+	list := Maybe{
+		Expression: NewList(
+			NewString("a"),
+			NewList(
+				NewString("x"),
+				NewString("y"),
+				NewString("z"),
+			),
+			NewString("b"),
+			NewString("d"),
+		),
+	}
+
+	fmt.Printf("list = %s\n", list)
 
 	fmt.Printf("car = %s\n", car(list))
 	fmt.Printf("cdr = %s\n", cdr(list))
-	fmt.Printf("caddr = %s\n", car(cdr(cdr(list))))
 
+	fmt.Printf("caddr = %s\n", car(cdr(cdr(list))))
 	fmt.Printf("caddr = %s\n", caddr(list))
+
+	fmt.Printf("cadadr = %s\n", car(cdr(car(cdr(list)))))
+	fmt.Printf("cadadr = %s\n", cadadr(list))
 
 	return nil
 }
