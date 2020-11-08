@@ -136,6 +136,8 @@ func Eval(e, a *Expression) (*Expression, error) {
 	return f(e, a)
 }
 
+const lazy = true
+
 func MEval(args ...Maybe) Maybe {
 	e, a := args[0], args[1]
 	car := Eval1Func(Car).ToMonad()
@@ -149,7 +151,7 @@ func MEval(args ...Maybe) Maybe {
 	cons := Eval2Func(Cons).ToMonad()
 
 	var evcon MonadFunc
-	if true {
+	if lazy {
 		evcon = func(args ...Maybe) Maybe {
 			return EvconM(args[0], args[1])
 		}
@@ -411,7 +413,10 @@ type Expression struct {
 	Lazy func() error // for lazy evaluation
 }
 
-func (e Expression) EvalLazy() error {
+func (e *Expression) EvalLazy() error {
+	defer func() {
+		e.Lazy = nil
+	}()
 	if e.Lazy == nil {
 		return nil
 	}
