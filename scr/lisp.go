@@ -27,17 +27,21 @@ func Lisp(cnfg.Config) error {
 		}
 	}
 	test("(quote z)", "z")
-	test("(atom '(1 2 3))", "t")
+	test("(atom 'a)", "t")
+	test("(atom '())", "()")
+	test("(atom '(1 2 3))", "()")
+	test("(eq 'a 'a)", "t")
+	test("(eq 'a 'b)", "()")
+	test("(eq 'b 'a)", "()")
+	test("(eq 'b '())", "()")
+	test("(eq '() '())", "t")
 	return nil
 }
 
 type EvalFunc func(args ...*Expression) (*Expression, error)
 
-func Assoc(args ...*Expression) (*Expression, error) {
-	if err := nargs(2, args...); err != nil {
-		return nil, err
-	}
-	x, y := args[0], args[1]
+func Assoc(x, y *Expression) (*Expression, error) {
+	fmt.Printf("assoc(%s, %s)\n", x, y)
 	caar, err := Caar(y)
 	if err != nil {
 		return nil, err
@@ -53,17 +57,7 @@ func Assoc(args ...*Expression) (*Expression, error) {
 	if err != nil {
 		return nil, err
 	}
-	var out []*Expression
-	out = append(out, x)
-	out = append(out, cdr)
-	return Assoc(out...)
-}
-
-func nargs(n int, e ...*Expression) error {
-	if len(e) == n {
-		return nil
-	}
-	return fmt.Errorf("expected %d but got %d args", n, len(e))
+	return Assoc(x, cdr)
 }
 
 func Eq(x, y *Expression) (*Expression, error) {
@@ -87,12 +81,12 @@ func Eval(e, a *Expression) (*Expression, error) {
 	if e.IsAtom() {
 		return Assoc(e, a)
 	}
-	care, err := Car(e)
+	car, err := Car(e)
 	if err != nil {
 		return nil, err
 	}
-	if care.IsAtom() {
-		switch care.String() {
+	if car.IsAtom() {
+		switch car.String() {
 		case "quote":
 			return Cadr(e)
 		case "atom":
@@ -100,8 +94,32 @@ func Eval(e, a *Expression) (*Expression, error) {
 			if err != nil {
 				return nil, err
 			}
-			return Eval(cadr, a)
+			x, err := Eval(cadr, a)
+			if err != nil {
+				return nil, err
+			}
+			if x.IsAtom() {
+				return True(), nil
+			}
+			return False(), nil
 		case "eq":
+			cadr, err := Cadr(e)
+			if err != nil {
+				return nil, err
+			}
+			caddr, err := Caddr(e)
+			if err != nil {
+				return nil, err
+			}
+			first, err := Eval(cadr, a)
+			if err != nil {
+				return nil, err
+			}
+			second, err := Eval(caddr, a)
+			if err != nil {
+				return nil, err
+			}
+			return Eq(first, second)
 		case "car":
 		case "cdr":
 		case "cons":
@@ -109,7 +127,6 @@ func Eval(e, a *Expression) (*Expression, error) {
 		default:
 		}
 	}
-
 	return nil, fmt.Errorf("eval unimplemented")
 }
 
@@ -121,11 +138,7 @@ func Read(s string) (*Expression, error) {
 	return n.Expression()
 }
 
-func Cadr(args ...*Expression) (*Expression, error) {
-	if len(args) == 0 {
-		return nil, fmt.Errorf("no args")
-	}
-	e := args[0]
+func Cadr(e *Expression) (*Expression, error) {
 	a, err := Cdr(e)
 	if err != nil {
 		return nil, err
@@ -133,11 +146,19 @@ func Cadr(args ...*Expression) (*Expression, error) {
 	return Car(a)
 }
 
-func Caar(args ...*Expression) (*Expression, error) {
-	if len(args) == 0 {
-		return nil, fmt.Errorf("no args")
+func Caddr(e *Expression) (*Expression, error) {
+	a, err := Cdr(e)
+	if err != nil {
+		return nil, err
 	}
-	e := args[0]
+	b, err := Cdr(a)
+	if err != nil {
+		return nil, err
+	}
+	return Car(b)
+}
+
+func Caar(e *Expression) (*Expression, error) {
 	a, err := Car(e)
 	if err != nil {
 		return nil, err
@@ -145,11 +166,7 @@ func Caar(args ...*Expression) (*Expression, error) {
 	return Car(a)
 }
 
-func Cadar(args ...*Expression) (*Expression, error) {
-	if len(args) == 0 {
-		return nil, fmt.Errorf("no args")
-	}
-	e := args[0]
+func Cadar(e *Expression) (*Expression, error) {
 	a, err := Car(e)
 	if err != nil {
 		return nil, err
@@ -162,7 +179,6 @@ func Cadar(args ...*Expression) (*Expression, error) {
 }
 
 func Car(e *Expression) (*Expression, error) {
-	fmt.Printf("car %s\n", e)
 	if e == nil {
 		return Nil(), nil
 	}
@@ -175,11 +191,7 @@ func Car(e *Expression) (*Expression, error) {
 	return e.List.First(), nil
 }
 
-func Cdr(args ...*Expression) (*Expression, error) {
-	if len(args) == 0 {
-		return nil, fmt.Errorf("no args")
-	}
-	e := args[0]
+func Cdr(e *Expression) (*Expression, error) {
 	if e.IsAtom() {
 		return nil, fmt.Errorf("can't cdr an atom")
 	}
@@ -222,6 +234,14 @@ func NewBlob(s []byte) *Expression {
 
 func Nil() *Expression {
 	return NewList()
+}
+
+func True() *Expression {
+	return NewString("t")
+}
+
+func False() *Expression {
+	return Nil()
 }
 
 func NewList(list ...*Expression) *Expression {
