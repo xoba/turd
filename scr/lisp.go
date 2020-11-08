@@ -141,14 +141,21 @@ func MEval(args ...Maybe) Maybe {
 	car := Eval1Func(Car).ToMonad()
 	cdr := Eval1Func(Cdr).ToMonad()
 	cadr := Compose(car, cdr)
-	//caar := Compose(car, car)
 	caddr := Compose(car, cdr, cdr)
 	eq := Eval2Func(Eq).ToMonad()
 	eval := Eval2Func(Eval).ToMonad()
 	atom := Eval1Func(AtomF).ToMonad()
 	assoc := Eval2Func(Assoc).ToMonad()
 	cons := Eval2Func(Cons).ToMonad()
-	evcon := Eval2Func(Evcon).ToMonad()
+
+	var evcon MonadFunc
+	if false {
+		evcon = func(args ...Maybe) Maybe {
+			return EvconM(args[0], args[1])
+		}
+	} else {
+		evcon = Eval2Func(Evcon).ToMonad()
+	}
 
 	if e.Error != nil {
 		return e
@@ -159,8 +166,6 @@ func MEval(args ...Maybe) Maybe {
 	}
 
 	care := car(e)
-
-	//caare := caar(e)
 
 	switch {
 	case care.IsAtom():
@@ -242,11 +247,13 @@ func EvconM(c, a Maybe) Maybe {
 	return cond(
 		list(
 			eval(caar(c), a),
-			eval(cadar(c), a), // TODO: needs to be lazy
+			NewLazyM(func() Maybe {
+				return eval(cadar(c), a)
+			}),
 		),
-		list(
-			quote(NewString("t")), EvconM(cdr(c), a), // TODO: needs to be lazy
-		),
+		NewLazyM(func() Maybe {
+			return list(quote(NewString("t")), EvconM(cdr(c), a))
+		}),
 	)
 }
 
@@ -282,13 +289,28 @@ func Evcon(c, a *Expression) (*Expression, error) {
 }
 
 func Cond(args ...*Expression) (*Expression, error) {
+	fmt.Printf("cond(%q)\n", args)
 	for _, a := range args {
-		car, err := Car(a)
+		p, err := Car(a)
 		if err != nil {
 			return nil, err
 		}
-		if car.String() == "t" {
-			return Cdr(a)
+		if err := p.EvalLazy(); err != nil {
+			return nil, err
+		}
+		e, err := Eval(p, NewList())
+		if err != nil {
+			return nil, err
+		}
+		if e.String() == "t" {
+			cdr, err := Cdr(a)
+			if err != nil {
+				return nil, err
+			}
+			if err := cdr.EvalLazy(); err != nil {
+				return nil, err
+			}
+			return cdr, nil
 		}
 	}
 	return nil, fmt.Errorf("no condition satisfied")
@@ -346,8 +368,11 @@ func Car(e *Expression) (*Expression, error) {
 	if e == nil {
 		return Nil(), nil
 	}
-	if e.IsAtom() {
-		return nil, fmt.Errorf("can't car an atom")
+	if err := e.EvalLazy(); err != nil {
+		return nil, err
+	}
+	if !e.IsList() {
+		return nil, fmt.Errorf("can only car a list: %q", e)
 	}
 	if e.List.Empty() {
 		return Nil(), nil
@@ -356,8 +381,14 @@ func Car(e *Expression) (*Expression, error) {
 }
 
 func Cdr(e *Expression) (*Expression, error) {
-	if e.IsAtom() {
-		return nil, fmt.Errorf("can't cdr an atom")
+	if e == nil {
+		return Nil(), nil
+	}
+	if err := e.EvalLazy(); err != nil {
+		return nil, err
+	}
+	if !e.IsList() {
+		return nil, fmt.Errorf("can only cdr a list: %q", e)
 	}
 	if e.List.Empty() {
 		return Nil(), nil
@@ -369,7 +400,34 @@ func Cdr(e *Expression) (*Expression, error) {
 type Expression struct {
 	*Atom
 	*List
-	Func func() *Expression // for lazy evaluation
+	Lazy func() error // for lazy evaluation
+}
+
+func (e Expression) EvalLazy() error {
+	if e.Lazy == nil {
+		return nil
+	}
+	return e.Lazy()
+}
+
+func NewLazyM(f func() Maybe) Maybe {
+	return Maybe{Expression: NewLazy(func() (*Expression, error) {
+		out := f()
+		return out.Expression, out.Error
+	})}
+}
+
+func NewLazy(f func() (*Expression, error)) *Expression {
+	var out Expression
+	out.Lazy = func() error {
+		e, err := f()
+		if err != nil {
+			return err
+		}
+		out = *e
+		return nil
+	}
+	return &out
 }
 
 func NewString(s string) *Expression {
@@ -415,6 +473,8 @@ func NewList(list ...*Expression) *Expression {
 
 func (e Expression) String() string {
 	switch {
+	case e.Lazy != nil:
+		return "[LAZY]"
 	case e.IsAtom():
 		if e.Atom == nil {
 			return "()"
@@ -465,7 +525,7 @@ func (e Expression) IsEmpty() bool {
 
 func (e Expression) Check() error {
 	switch {
-	case e.Atom == nil && e.List == nil:
+	case e.Atom == nil && e.List == nil && e.Lazy == nil:
 		return fmt.Errorf("empty expression")
 	case e.Atom != nil && e.List != nil:
 		return fmt.Errorf("paradoxical expression")
