@@ -13,8 +13,8 @@ type node struct {
 
 func (n *node) Expression() (*Expression, error) {
 	if len(n.Value) > 0 {
-		if strings.HasPrefix(n.Value, "'") {
-			return NewQuote(NewString(n.Value[1:])), nil
+		if runes := []rune(n.Value); runes[0] == '\'' {
+			return NewQuote(NewString(string(runes[1:]))), nil
 		}
 		return NewString(n.Value), nil
 	}
@@ -34,6 +34,9 @@ func (n *node) Expression() (*Expression, error) {
 			lastQuote = false
 		}
 		list = append(list, e)
+	}
+	if lastQuote {
+		return nil, fmt.Errorf("errant quote")
 	}
 	return NewList(list...), nil
 }
