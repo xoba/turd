@@ -10,7 +10,15 @@ import (
 )
 
 func Lisp(cnfg.Config) error {
+	m := make(map[string]bool)
 	test := func(in, expect string) {
+		if in == "" {
+			return
+		}
+		if m[in] {
+			panic("duplication: " + in)
+		}
+		m[in] = true
 		check := func(e error) {
 			if e != nil {
 				log.Fatal(e)
@@ -21,25 +29,74 @@ func Lisp(cnfg.Config) error {
 		a := NewList()
 		x, err := Eval(e, a)
 		check(err)
-		fmt.Printf("(eval %s %s) = %s\n", e, a, x)
+		fmt.Printf("%-17s -> %s\n", in, x)
 		if got := x.String(); got != expect {
 			check(fmt.Errorf("expected %q, got %q", expect, got))
 		}
 	}
-	test("(quote z)", "z")
+
+	// 1
+	test("(quote a)", "a")
+	test("'a", "a")
+	test("(quote (a b c))", "(a b c)")
+
+	// 2
 	test("(atom 'a)", "t")
-	test("(atom '())", "()")
-	test("(atom '(1 2 3))", "()")
+	test("(atom '(a b c))", "()")
+	test("(atom '())", "t")
+	test("(atom (atom 'a))", "t")
+	test("(atom '(atom 'a))", "()")
+
+	// 3
 	test("(eq 'a 'a)", "t")
 	test("(eq 'a 'b)", "()")
+	test("(eq '() '())", "t")
+
+	// 4
+	test("(car '(a b c))", "a")
+
+	// 5
+	test("(cdr '(a b c))", "(b c)")
+
+	// 6
+	test("(cons 'a '(b c))", "(a b c)")
+	test("(cons 'a (cons 'b (cons 'c '())))", "(a b c)")
+	test("(car (cons 'a '(b c)))", "a")
+	test("(cdr (cons 'a '(b c)))", "(b c)")
+
+	// 7
+	test("(cond ((eq 'a 'b) 'first) ((atom 'a) 'second))", "second")
+
+	test("", "")
+	test("", "")
+	test("", "")
+	test("", "")
+	test("", "")
+	test("", "")
+	test("", "")
+	test("", "")
+	test("", "")
+	test("", "")
+	test("", "")
+	test("", "")
+	test("", "")
+	test("", "")
+	test("", "")
+	test("", "")
+	test("", "")
+
+	// other:
+	test("(quote z)", "z")
+	test("(atom '(1 2 3))", "()")
 	test("(eq 'b 'a)", "()")
 	test("(eq 'b '())", "()")
-	test("(eq '() '())", "t")
+	test("(car '(x))", "x")
+	test("(cdr '(x))", "()")
+
 	return nil
 }
 
 func Assoc(x, y *Expression) (*Expression, error) {
-	fmt.Printf("assoc(%s, %s)\n", x, y)
 	caar, err := Caar(y)
 	if err != nil {
 		return nil, err
@@ -76,7 +133,12 @@ func Eq(x, y *Expression) (*Expression, error) {
 }
 
 func Eval(e, a *Expression) (*Expression, error) {
-	em, am := Maybe{Expression: e}, Maybe{Expression: a}
+	f := MonadFunc(MEval).ToEvalFunc()
+	return f(e, a)
+}
+
+func MEval(args ...Maybe) Maybe {
+	e, a := args[0], args[1]
 	car := Eval1Func(Car).ToMonad()
 	cdr := Eval1Func(Cdr).ToMonad()
 	eq := Eval2Func(Eq).ToMonad()
@@ -84,35 +146,110 @@ func Eval(e, a *Expression) (*Expression, error) {
 	caddr := Compose(car, cdr, cdr)
 	eval := Eval2Func(Eval).ToMonad()
 	atom := Eval1Func(AtomF).ToMonad()
+	assoc := Eval2Func(Assoc).ToMonad()
+	cons := Eval2Func(Cons).ToMonad()
+
+	if e.Error != nil {
+		return e
+	}
 
 	if e.IsAtom() {
-		return Assoc(e, a)
+		return assoc(e, a)
 	}
-	care, err := Car(e)
-	if err != nil {
-		return nil, err
+
+	care := car(e)
+	if care.Error != nil {
+		return care
 	}
+
 	if care.IsAtom() {
 		switch care.String() {
 		case "quote":
-			return Cadr(e)
+			return cadr(e)
 		case "atom":
-			out := atom(eval(cadr(em), am))
-			return out.Expression, out.Error
+			return atom(eval(cadr(e), a))
 		case "eq":
-			out := eq(
-				eval(cadr(em), am),
-				eval(caddr(em), am),
+			return eq(
+				eval(cadr(e), a),
+				eval(caddr(e), a),
 			)
-			return out.Expression, out.Error
 		case "car":
+			return car(eval(cadr(e), a))
 		case "cdr":
+			return cdr(eval(cadr(e), a))
 		case "cons":
+			return cons(
+				eval(cadr(e), a),
+				eval(caddr(e), a),
+			)
 		case "cond":
+			return Evcon(cdr(e), a)
 		default:
+			return eval(cons(assoc(car(e), a), cdr(e)), a)
 		}
 	}
-	return nil, fmt.Errorf("eval unimplemented")
+	return Maybe{Error: fmt.Errorf("eval unimplemented for %q", args)}
+}
+
+func Cons(x, y *Expression) (*Expression, error) {
+	if !x.IsAtom() {
+		return nil, fmt.Errorf("first arg not an atom: %s", x)
+	}
+	if !y.IsList() {
+		return nil, fmt.Errorf("second arg not a list: %s", y)
+	}
+	var args []*Expression
+	add := func(e *Expression) {
+		args = append(args, e)
+	}
+	add(x)
+	for _, e := range *y.List {
+		add(e)
+	}
+	return NewList(args...), nil
+}
+
+func Evcon(c, a Maybe) Maybe {
+	car := Eval1Func(Car).ToMonad()
+	cdr := Eval1Func(Cdr).ToMonad()
+	caar := Compose(car, car)
+	cadar := Compose(car, cdr, car)
+	eval := Eval2Func(Eval).ToMonad()
+	cond := EvalFunc(Cond).ToMonad()
+	list := func(args ...Maybe) Maybe {
+		var list []*Expression
+		for _, a := range args {
+			if a.Error != nil {
+				return a
+			}
+		}
+		return Maybe{Expression: NewList(list...)}
+	}
+	quote := func(m *Expression) Maybe {
+		return Maybe{Expression: NewList(NewString("quote"), m)}
+	}
+	return cond(
+		list(
+			eval(caar(c), a),
+			eval(cadar(c), a), // TODO: needs to be lazy
+		),
+		list(
+			quote(NewString("t")), Evcon(cdr(c), a), // TODO: needs to be lazy
+		),
+	)
+}
+
+func Cond(args ...*Expression) (*Expression, error) {
+	for _, a := range args {
+		car, err := Car(a)
+		if err != nil {
+			return nil, err
+		}
+		if car.String() == "t" {
+			return Cdr(a)
+		}
+	}
+	return nil, fmt.Errorf("no condition satisfied")
 }
 
 func Read(s string) (*Expression, error) {
@@ -243,6 +380,9 @@ func NewList(list ...*Expression) *Expression {
 func (e Expression) String() string {
 	switch {
 	case e.IsAtom():
+		if e.Atom == nil {
+			return "()"
+		}
 		return e.Atom.String()
 	case e.IsList():
 		var list []string
@@ -270,11 +410,20 @@ func AtomF(e *Expression) (*Expression, error) {
 }
 
 func (e Expression) IsAtom() bool {
-	return e.Atom != nil
+	if e.Atom != nil {
+		return true
+	}
+	if e.List == nil {
+		return false
+	}
+	if len(*e.List) == 0 {
+		return true
+	}
+	return false
 }
 
 func (e Expression) IsList() bool {
-	return !e.IsAtom()
+	return e.List != nil
 }
 
 func (e Expression) IsEmpty() bool {
@@ -296,7 +445,17 @@ type Atom struct {
 	Blob []byte
 }
 
+// TODO: resolve overall issues of null Atoms
 func AtomsEqual(a, b *Atom) bool {
+	switch {
+	case a == nil && b == nil:
+		return true
+	case a == nil:
+		return false
+	case b == nil:
+		return false
+	}
+
 	if a.Type != b.Type {
 		return false
 	}

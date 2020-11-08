@@ -18,6 +18,17 @@ type Maybe struct {
 	Error error
 }
 
+func (m MonadFunc) ToEvalFunc() EvalFunc {
+	return func(args ...*Expression) (*Expression, error) {
+		var list []Maybe
+		for _, a := range args {
+			list = append(list, Maybe{Expression: a})
+		}
+		out := m(list...)
+		return out.Expression, out.Error
+	}
+}
+
 func (m Maybe) String() string {
 	if m.Error != nil {
 		return fmt.Sprintf("error: %v", m.Error)
