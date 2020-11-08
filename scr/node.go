@@ -14,7 +14,7 @@ type node struct {
 func (n *node) Expression() (*Expression, error) {
 	if len(n.Value) > 0 {
 		if runes := []rune(n.Value); runes[0] == '\'' {
-			return NewQuote(NewString(string(runes[1:]))), nil
+			return Quote(NewString(string(runes[1:]))), nil
 		}
 		return NewString(n.Value), nil
 	}
@@ -30,7 +30,7 @@ func (n *node) Expression() (*Expression, error) {
 			return nil, err
 		}
 		if lastQuote {
-			e = NewQuote(e)
+			e = Quote(e)
 			lastQuote = false
 		}
 		list = append(list, e)

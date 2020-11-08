@@ -140,9 +140,10 @@ func MEval(args ...Maybe) Maybe {
 	e, a := args[0], args[1]
 	car := Eval1Func(Car).ToMonad()
 	cdr := Eval1Func(Cdr).ToMonad()
-	eq := Eval2Func(Eq).ToMonad()
 	cadr := Compose(car, cdr)
+	//caar := Compose(car, car)
 	caddr := Compose(car, cdr, cdr)
+	eq := Eval2Func(Eq).ToMonad()
 	eval := Eval2Func(Eval).ToMonad()
 	atom := Eval1Func(AtomF).ToMonad()
 	assoc := Eval2Func(Assoc).ToMonad()
@@ -158,11 +159,11 @@ func MEval(args ...Maybe) Maybe {
 	}
 
 	care := car(e)
-	if care.Error != nil {
-		return care
-	}
 
-	if care.IsAtom() {
+	//caare := caar(e)
+
+	switch {
+	case care.IsAtom():
 		switch care.String() {
 		case "quote":
 			return cadr(e)
@@ -187,8 +188,9 @@ func MEval(args ...Maybe) Maybe {
 		default:
 			return eval(cons(assoc(car(e), a), cdr(e)), a)
 		}
+	default:
+		return Maybe{Error: fmt.Errorf("eval unimplemented for %q", args)}
 	}
-	return Maybe{Error: fmt.Errorf("eval unimplemented for %q", args)}
 }
 
 func Cons(x, y *Expression) (*Expression, error) {
@@ -209,6 +211,14 @@ func Cons(x, y *Expression) (*Expression, error) {
 	return NewList(args...), nil
 }
 
+func QuoteAtom(s string) *Expression {
+	return Quote(NewString(s))
+}
+
+func Quote(e *Expression) *Expression {
+	return NewList(NewString("quote"), e)
+}
+
 func EvconM(c, a Maybe) Maybe {
 	fmt.Printf("evcon(%q, %q)\n", c, a)
 	car := Eval1Func(Car).ToMonad()
@@ -227,7 +237,7 @@ func EvconM(c, a Maybe) Maybe {
 		return Maybe{Expression: NewList(list...)}
 	}
 	quote := func(m *Expression) Maybe {
-		return Maybe{Expression: NewList(NewString("quote"), m)}
+		return Maybe{Expression: Quote(m)}
 	}
 	return cond(
 		list(
@@ -257,15 +267,15 @@ func Evcon(c, a *Expression) (*Expression, error) {
 			return nil, err
 		}
 		if r.String() == "t" {
-			e, err := Cdr(arg)
+			cdr, err := Cdr(arg)
 			if err != nil {
 				return nil, err
 			}
-			e2, err := Car(e)
+			cadr, err := Car(cdr)
 			if err != nil {
 				return nil, err
 			}
-			return Eval(e2, a)
+			return Eval(cadr, a)
 		}
 	}
 	return nil, fmt.Errorf("no condition satisfied")
@@ -359,14 +369,7 @@ func Cdr(e *Expression) (*Expression, error) {
 type Expression struct {
 	*Atom
 	*List
-	Func func() *Expression // TODO: lazy evaluation
-}
-
-func NewQuote(e *Expression) *Expression {
-	out := NewList()
-	out.Add(NewString("quote"))
-	out.Add(e)
-	return out
+	Func func() *Expression // for lazy evaluation
 }
 
 func NewString(s string) *Expression {
