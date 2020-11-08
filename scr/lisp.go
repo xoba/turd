@@ -76,48 +76,35 @@ func Eq(x, y *Expression) (*Expression, error) {
 }
 
 func Eval(e, a *Expression) (*Expression, error) {
+	em, am := Maybe{Expression: e}, Maybe{Expression: a}
+	car := Eval1Func(Car).ToMonad()
+	cdr := Eval1Func(Cdr).ToMonad()
+	eq := Eval2Func(Eq).ToMonad()
+	cadr := Compose(car, cdr)
+	caddr := Compose(car, cdr, cdr)
+	eval := Eval2Func(Eval).ToMonad()
+	atom := Eval1Func(AtomF).ToMonad()
+
 	if e.IsAtom() {
 		return Assoc(e, a)
 	}
-	car, err := Car(e)
+	care, err := Car(e)
 	if err != nil {
 		return nil, err
 	}
-	if car.IsAtom() {
-		switch car.String() {
+	if care.IsAtom() {
+		switch care.String() {
 		case "quote":
 			return Cadr(e)
 		case "atom":
-			cadr, err := Cadr(e)
-			if err != nil {
-				return nil, err
-			}
-			x, err := Eval(cadr, a)
-			if err != nil {
-				return nil, err
-			}
-			if x.IsAtom() {
-				return True(), nil
-			}
-			return False(), nil
+			out := atom(eval(cadr(em), am))
+			return out.Expression, out.Error
 		case "eq":
-			cadr, err := Cadr(e)
-			if err != nil {
-				return nil, err
-			}
-			caddr, err := Caddr(e)
-			if err != nil {
-				return nil, err
-			}
-			first, err := Eval(cadr, a)
-			if err != nil {
-				return nil, err
-			}
-			second, err := Eval(caddr, a)
-			if err != nil {
-				return nil, err
-			}
-			return Eq(first, second)
+			out := eq(
+				eval(cadr(em), am),
+				eval(caddr(em), am),
+			)
+			return out.Expression, out.Error
 		case "car":
 		case "cdr":
 		case "cons":
@@ -275,8 +262,14 @@ func (e Expression) Boolean() bool {
 	return e.Atom.String() == "t"
 }
 
+func AtomF(e *Expression) (*Expression, error) {
+	if e.IsAtom() {
+		return NewString("t"), nil
+	}
+	return NewList(), nil
+}
+
 func (e Expression) IsAtom() bool {
-	e.Check()
 	return e.Atom != nil
 }
 
@@ -285,17 +278,17 @@ func (e Expression) IsList() bool {
 }
 
 func (e Expression) IsEmpty() bool {
-	e.Check()
 	return e.List.Empty()
 }
 
-func (e Expression) Check() {
+func (e Expression) Check() error {
 	switch {
 	case e.Atom == nil && e.List == nil:
-		panic("empty expression")
+		return fmt.Errorf("empty expression")
 	case e.Atom != nil && e.List != nil:
-		panic("paradoxical expression")
+		return fmt.Errorf("paradoxical expression")
 	}
+	return nil
 }
 
 type Atom struct {

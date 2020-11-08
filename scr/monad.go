@@ -8,6 +8,8 @@ import (
 )
 
 type EvalFunc func(args ...*Expression) (*Expression, error)
+type Eval1Func func(a *Expression) (*Expression, error)
+type Eval2Func func(a, b *Expression) (*Expression, error)
 
 type MonadFunc func(args ...Maybe) Maybe
 
@@ -33,6 +35,12 @@ func (f EvalFunc) ToMonad() MonadFunc {
 			if m.Error != nil {
 				return m
 			}
+			if m.Expression == nil {
+				return Maybe{Error: fmt.Errorf("nil expression")}
+			}
+			if err := m.Check(); err != nil {
+				return Maybe{Error: err}
+			}
 			list = append(list, m.Expression)
 		}
 		out, err := f(list...)
@@ -40,6 +48,32 @@ func (f EvalFunc) ToMonad() MonadFunc {
 			return Maybe{Error: err}
 		}
 		return Maybe{Expression: out}
+	}
+}
+
+func (f Eval1Func) ToMonad() MonadFunc {
+	return func(args ...Maybe) Maybe {
+		f2 := EvalFunc(func(args ...*Expression) (*Expression, error) {
+			if n := len(args); n != 1 {
+				return nil, fmt.Errorf("needs 1 argument, got %d", n)
+			}
+			return f(args[0])
+		})
+		m := f2.ToMonad()
+		return m(args...)
+	}
+}
+
+func (f Eval2Func) ToMonad() MonadFunc {
+	return func(args ...Maybe) Maybe {
+		f2 := EvalFunc(func(args ...*Expression) (*Expression, error) {
+			if n := len(args); n != 2 {
+				return nil, fmt.Errorf("needs 2 argument, got %d", n)
+			}
+			return f(args[0], args[1])
+		})
+		m := f2.ToMonad()
+		return m(args...)
 	}
 }
 
@@ -58,42 +92,30 @@ func Compose(funcs ...MonadFunc) MonadFunc {
 	}
 }
 
+func Wrap(args ...*Expression) (out []Maybe) {
+	for _, a := range args {
+		out = append(out, Maybe{Expression: a})
+	}
+	return
+}
+
 func TestMonad(cnfg.Config) error {
 
-	const n = 100
+	const n = 5
 
-	randErr := func() error {
+	randErr := func(args ...Maybe) Maybe {
 		if rand.Intn(n) == 0 {
-			return fmt.Errorf("fake")
+			return Maybe{Error: fmt.Errorf("fake")}
 		}
-		return nil
+		return args[0]
 	}
 
-	Car := func(args ...*Expression) (*Expression, error) {
-		if err := randErr(); err != nil {
-			return nil, err
-		}
-		v, err := Car(args[0])
-		if err != nil {
-			return nil, err
-		}
-		return v, nil
-	}
-	Cdr := func(args ...*Expression) (*Expression, error) {
-		if err := randErr(); err != nil {
-			return nil, err
-		}
-		v, err := Cdr(args[0])
-		if err != nil {
-			return nil, err
-		}
-		return v, nil
-	}
+	car := Compose(randErr, Eval1Func(Car).ToMonad())
+	cdr := Compose(randErr, Eval1Func(Cdr).ToMonad())
 
-	car := EvalFunc(Car).ToMonad()
-	cdr := EvalFunc(Cdr).ToMonad()
 	caddr := Compose(car, cdr, cdr)
 	cadadr := Compose(car, cdr, car, cdr)
+	cdddr := Compose(cdr, cdr, cdr)
 
 	list := Maybe{
 		Expression: NewList(
@@ -118,6 +140,9 @@ func TestMonad(cnfg.Config) error {
 
 	fmt.Printf("cadadr = %s\n", car(cdr(car(cdr(list)))))
 	fmt.Printf("cadadr = %s\n", cadadr(list))
+
+	fmt.Printf("cdddr = %s\n", cdr(cdr(cdr(list))))
+	fmt.Printf("cdddr = %s\n", cdddr(list))
 
 	return nil
 }
