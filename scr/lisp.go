@@ -149,7 +149,7 @@ func MEval(args ...Maybe) Maybe {
 	cons := Eval2Func(Cons).ToMonad()
 
 	var evcon MonadFunc
-	if false {
+	if true {
 		evcon = func(args ...Maybe) Maybe {
 			return EvconM(args[0], args[1])
 		}
@@ -238,6 +238,7 @@ func EvconM(c, a Maybe) Maybe {
 			if a.Error != nil {
 				return a
 			}
+			list = append(list, a.Expression)
 		}
 		return Maybe{Expression: NewList(list...)}
 	}
@@ -251,9 +252,12 @@ func EvconM(c, a Maybe) Maybe {
 				return eval(cadar(c), a)
 			}),
 		),
-		NewLazyM(func() Maybe {
-			return list(quote(NewString("t")), EvconM(cdr(c), a))
-		}),
+		list(
+			quote(NewString("t")),
+			NewLazyM(func() Maybe {
+				return EvconM(cdr(c), a)
+			}),
+		),
 	)
 }
 
@@ -290,7 +294,8 @@ func Evcon(c, a *Expression) (*Expression, error) {
 
 func Cond(args ...*Expression) (*Expression, error) {
 	fmt.Printf("cond(%q)\n", args)
-	for _, a := range args {
+	for i, a := range args {
+		fmt.Printf("arg[%d] = %q\n", i, a)
 		p, err := Car(a)
 		if err != nil {
 			return nil, err
@@ -300,6 +305,9 @@ func Cond(args ...*Expression) (*Expression, error) {
 		}
 		e, err := Eval(p, NewList())
 		if err != nil {
+			return nil, err
+		}
+		if err := e.EvalLazy(); err != nil {
 			return nil, err
 		}
 		if e.String() == "t" {
