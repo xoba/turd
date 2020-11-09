@@ -5,6 +5,7 @@ package exp
 type Expression interface {
 	Atom() (*Atom, error)
 	List() ([]Expression, error)
+	Error() error
 }
 
 type Atom struct {
@@ -15,6 +16,7 @@ type Atom struct {
 type expr struct {
 	atom *Atom
 	list []Expression
+	err  error
 	lazy func() (Expression, error)
 }
 
@@ -40,6 +42,10 @@ func (e *expr) eval() error {
 	return nil
 }
 
+func (e expr) Error() error {
+	return e.err
+}
+
 func (e expr) Atom() (*Atom, error) {
 	if err := e.eval(); err != nil {
 		return nil, err
@@ -52,6 +58,10 @@ func (e expr) List() ([]Expression, error) {
 		return nil, err
 	}
 	return e.list, nil
+}
+
+func NewError(e error) Expression {
+	return expr{err: e}
 }
 
 func NewAtom(a *Atom) Expression {
