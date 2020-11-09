@@ -44,11 +44,14 @@ func Lisp(cnfg.Config) error {
 		}
 	}
 
-	defun := func(name, lambda string) {
-		e, err := Read(lambda)
+	define := func(name, lambda string) {
+		if name == "" {
+			return
+		}
+		e, err := Read(fmt.Sprintf("(label %s %s)", name, lambda))
 		check(wrap(name, err))
 		*a.List = append(*a.List, NewList(NewString(name), e))
-		fmt.Printf("defun: %s\n", a)
+		fmt.Printf("define: %s\n", a)
 	}
 
 	test2 := func(x, y string) {
@@ -124,10 +127,91 @@ func Lisp(cnfg.Config) error {
 
 	test("list", "(list 'a 'b 'c)", "(a b c)")
 
-	defun("null", "(label null (lambda (x) (eq x '())))")
+	define("null", "(lambda (x) (eq x '()))")
+	define("and", `
+
+(lambda (x y)
+   (cond (x (cond (y 't) ('t ())))
+	 ('t '())))
+`)
+	define("not", "(lambda (x) (cond (x '()) ('t 't)))")
+	define("append", "(lambda (x y) (cond ((null x) y) ('t (cons (car x) (append (cdr x) y)))))")
+	define("pair", `
+(lambda (x y) (cond ((and (null x) (null y)) '())
+		    ((and (not (atom x)) (not (atom y)))
+		     (cons (list (car x) (car y))
+			   (pair (cdr x) (cdr y))))))`)
+	define("assoc", `(lambda (x y)
+  (cond ((eq (caar y) x) (cadar y))
+	('t (assoc x (cdr y)))))
+`)
+
+	define("eval", `(lambda (e a)
+  (cond
+   ((atom e) (assoc e a))
+   ((atom (car e))
+    (cond
+     ((eq (car e) 'quote)  (cadr e))
+     ((eq (car e) 'atom)   (atom   (eval (cadr e)  a)))
+     ((eq (car e) 'eq)     (eq     (eval (cadr e)  a)
+				   (eval (caddr e) a)))
+     ((eq (car e) 'car)    (car    (eval (cadr e)  a)))
+     ((eq (car e) 'cdr)    (cdr    (eval (cadr e)  a)))
+     ((eq (car e) 'cons)   (cons   (eval (cadr e)  a)
+				   (eval (caddr e) a)))
+     ((eq (car e) 'cond)   (evcon (cdr e) a))
+     ('t                   (eval  (cons (assoc (car e) a)
+					(cdr e))
+				  a))))
+   ((eq (caar e) 'label)
+    (eval (cons (caddar e) (cdr e))
+	  (cons (list (cadar e) (car e)) a)))
+   ((eq (caar e) 'lambda)
+    (eval (caddar e)
+	  (append (pair (cadar e) (evlis (cdr e) a))
+		  a)))))
+`)
+
+	define("evcon", `(lambda(c a)
+  (cond ((eval (caar c) a)
+	 (eval (cadar c) a))
+	('t (evcon (cdr c) a))))
+`)
+
+	define("evlis", `(lambda (m a)
+  (cond ((null m) '())
+	('t (cons (eval  (car m) a)
+		  (evlis (cdr m) a)))))
+`)
 
 	test("funcs", "(null 'a)", "()")
 	test("funcs", "(null '())", "t")
+
+	test("funcs", "(and (atom 'a) (eq 'a 'a))", "t")
+	test("funcs", "(and (atom 'a) 't)", "t")
+	test("funcs", "(and (atom 'a) '())", "()")
+
+	if false {
+		// make sure this errors out:
+		test("funcs", `(xyz 'a)`, "")
+	}
+
+	test("funcs", `(not (eq 'a 'a))`, "()")
+	test("funcs", `(not (eq 'a 'b))`, "t")
+	test("funcs", `(append '(a b) '(c d))`, "(a b c d)")
+	test("funcs", `(append '() '(c d))`, "(c d)")
+	test("funcs", `(pair '(x y z) '(a b c))`, "((x a) (y b) (z c))")
+	test("funcs", `(assoc x '((x a) (y b)))`, "a")
+	test("funcs", `(assoc 'x '((x new) (x a) (y b)))`, "new")
+	test("funcs", `(eval 'x '((x a) (y b)))`, "a")
+	test("funcs", `(eval '(eq 'a 'a) '())`, "t")
+	test("funcs", `(eval '(cons x '(b c)) '((x a) (y b)))`, "(a b c)")
+	test("funcs", ``, "")
+	test("funcs", ``, "")
+	test("funcs", ``, "")
+	test("funcs", ``, "")
+	test("funcs", ``, "")
+	test("funcs", ``, "")
 
 	test(0, "", "")
 	test(0, "", "")
@@ -152,6 +236,15 @@ func init() {
 }
 
 func Assoc(x, y *Expression) (*Expression, error) {
+	if !x.IsAtom() {
+		return nil, fmt.Errorf("needs an atom to assoc")
+	}
+	switch {
+	case y.IsList() && y.IsEmpty():
+		return x, nil
+	case !y.IsList():
+		return nil, fmt.Errorf("needs a list to assoc")
+	}
 	caar, err := Caar(y)
 	if err != nil {
 		return nil, err
@@ -166,9 +259,6 @@ func Assoc(x, y *Expression) (*Expression, error) {
 	cdr, err := Cdr(y)
 	if err != nil {
 		return nil, err
-	}
-	if cdr.IsList() && cdr.IsEmpty() {
-		return nil, fmt.Errorf("can't assoc with empty list")
 	}
 	return Assoc(x, cdr)
 }
@@ -222,8 +312,6 @@ func cxr(s string) (MonadFunc, error) {
 }
 
 func MEval(args ...Maybe) Maybe {
-
-	//fmt.Printf("eval(%s)\n", args)
 
 	e, a := args[0], args[1]
 
