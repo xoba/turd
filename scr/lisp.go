@@ -102,6 +102,7 @@ func Lisp(cnfg.Config) error {
  'm 'b '(a b (a b c) d))
 
 `, "(a m (a m c) d)")
+
 	test(0, "", "")
 	test(0, "", "")
 	test(0, "", "")
@@ -185,24 +186,23 @@ func MEval(args ...Maybe) Maybe {
 		return Compose(list...)
 	}
 
-	car := x("car")
-	cdr := x("cdr")
-	cadr := x("cadr")
+	appendM := Eval2Func(Append).ToMonad()
+	assoc := Eval2Func(Assoc).ToMonad()
+	atom := Eval1Func(AtomF).ToMonad()
 	caar := x("caar")
-	caddr := x("caddr")
 	cadar := x("cadar")
 	caddar := x("caddar")
+	caddr := x("caddr")
+	cadr := x("cadr")
+	car := x("car")
+	cdr := x("cdr")
+	cons := Eval2Func(Cons).ToMonad()
 	eq := Eval2Func(Eq).ToMonad()
 	eval := Eval2Func(Eval).ToMonad()
-	atom := Eval1Func(AtomF).ToMonad()
-	assoc := Eval2Func(Assoc).ToMonad()
-	cons := Eval2Func(Cons).ToMonad()
-	appendM := Eval2Func(Append).ToMonad()
-	pair := Eval2Func(Pair).ToMonad()
 	evlis := Eval2Func(Evlis).ToMonad()
-	list := EvalFunc(func(e ...*Expression) (*Expression, error) {
-		return NewList(e...), nil
-	}).ToMonad()
+	list := EvalFunc(func(e ...*Expression) (*Expression, error) { return NewList(e...), nil }).ToMonad()
+	pair := Eval2Func(Pair).ToMonad()
+
 	var evcon MonadFunc
 	if lazy {
 		evcon = func(args ...Maybe) Maybe {
