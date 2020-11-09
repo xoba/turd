@@ -25,7 +25,7 @@ func Lisp(cnfg.Config) error {
 			panic("duplication: " + in)
 		}
 		m[in] = true
-		fmt.Printf("%v. %-55s -> %s\n", i, in, expect)
+		fmt.Printf("%v: %-55s -> %s\n", i, in, expect)
 		check := func(e error) {
 			if e != nil {
 				log.Fatal(e)
@@ -90,7 +90,18 @@ func Lisp(cnfg.Config) error {
 	test("λ", "((lambda (x y) (cons x (cdr y))) 'z '(a b c))", "(z b c)")
 	test("λ", "((lambda (f) (f '(b c))) '(lambda (x) (cons 'a x)))", "(a b c)")
 
-	test(0, "", "")
+	test("label", `
+
+((label subst 
+	(lambda (x y z)
+	  (cond ((atom z)
+		 (cond ((eq z y) x)
+		       ('t z)))
+		('t (cons (subst x y (car z))
+			  (subst x y (cdr z)))))))
+ 'm 'b '(a b (a b c) d))
+
+`, "(a m (a m c) d)")
 	test(0, "", "")
 	test(0, "", "")
 	test(0, "", "")
@@ -189,7 +200,9 @@ func MEval(args ...Maybe) Maybe {
 	appendM := Eval2Func(Append).ToMonad()
 	pair := Eval2Func(Pair).ToMonad()
 	evlis := Eval2Func(Evlis).ToMonad()
-
+	list := EvalFunc(func(e ...*Expression) (*Expression, error) {
+		return NewList(e...), nil
+	}).ToMonad()
 	var evcon MonadFunc
 	if lazy {
 		evcon = func(args ...Maybe) Maybe {
@@ -232,6 +245,13 @@ func MEval(args ...Maybe) Maybe {
 		default:
 			return eval(cons(assoc(car(e), a), cdr(e)), a)
 		}
+	}
+
+	if x := caar(e); x.String() == "label" {
+		return eval(
+			cons(caddar(e), cdr(e)),
+			cons(list(cadar(e), car(e)), a),
+		)
 	}
 
 	if x := caar(e); x.String() == "lambda" {
