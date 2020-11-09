@@ -112,7 +112,7 @@ func Lisp(cnfg.Config) error {
 	test("funcs", "(caddr '((a b) (c d) e))", "e")
 	test("funcs", "(cdar '((a b) (c d) e))", "(b)")
 
-	test(0, "", "")
+	test("funcs", "(list 'a 'b 'c)", "(a b c)")
 	test(0, "", "")
 	test(0, "", "")
 	test(0, "", "")
@@ -262,6 +262,8 @@ func MEval(args ...Maybe) Maybe {
 		}
 
 		switch x.String() {
+		case "list":
+			return evlis(cdr(e), a)
 		case "quote":
 			reg(3)
 			return cadr(e)
