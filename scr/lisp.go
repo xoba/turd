@@ -48,7 +48,7 @@ func Lisp(cnfg.Config) error {
 		if name == "" {
 			return
 		}
-		e, err := Read(fmt.Sprintf("(label %s %s)", name, lambda))
+		e, err := Read(lambda)
 		check(wrap(name, err))
 		*a.List = append(*a.List, NewList(NewString(name), e))
 		fmt.Printf("define: %s\n", a)
@@ -206,10 +206,18 @@ func Lisp(cnfg.Config) error {
 	test("funcs", `(eval 'x '((x a) (y b)))`, "a")
 	test("funcs", `(eval '(eq 'a 'a) '())`, "t")
 	test("funcs", `(eval '(cons x '(b c)) '((x a) (y b)))`, "(a b c)")
-	test("funcs", ``, "")
-	test("funcs", ``, "")
-	test("funcs", ``, "")
-	test("funcs", ``, "")
+	test("funcs", `(eval '(cond ((atom x) 'atom) ('t 'list)) '((x '(a b))))`, "list")
+	test("funcs", `(eval '(f '(b c)) '((f (lambda (x) (cons 'a x)))))`, "(a b c)")
+	test("funcs", `(eval '((label firstatom (lambda (x)
+			   (cond ((atom x) x)
+				 ('t (firstatom (car x))))))
+	y)
+      '((y ((a b) (c d)))))`, "a")
+	test("funcs", `(eval '((lambda (x y) (cons x (cdr y)))
+	'a
+	'(b c d))
+      '())
+`, "(a c d)")
 	test("funcs", ``, "")
 	test("funcs", ``, "")
 
