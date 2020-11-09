@@ -83,7 +83,12 @@ func Lisp(cnfg.Config) error {
 	test(6, "(cdr (cons 'a '(b c)))", "(b c)")
 
 	// 7
-	test(7, "(cond ((eq 'a 'b) 'first) ((atom 'a) 'second))", "second")
+	test(7, `
+
+(cond ((eq 'a 'b) 'first) 
+      ((atom 'a) 'second))
+
+`, "second")
 
 	// lambda
 	test("λ", "((lambda (x) (cons x '(b))) 'a)", "(a b)")
@@ -103,13 +108,31 @@ func Lisp(cnfg.Config) error {
 
 `, "(a m (a m c) d)")
 
+	test("funcs", "(cadr '((a b) (c d) e))", "(c d)")
+	test("funcs", "(caddr '((a b) (c d) e))", "e")
+	test("funcs", "(cdar '((a b) (c d) e))", "(b)")
+
 	test(0, "", "")
 	test(0, "", "")
 	test(0, "", "")
 	test(0, "", "")
 	test(0, "", "")
 
+	fmt.Printf("test coverage = %v\n", coverage)
 	return nil
+}
+
+// vars for test coverage:
+var (
+	coverage map[int]int
+	reg      func(i int)
+)
+
+func init() {
+	coverage = make(map[int]int)
+	reg = func(i int) {
+		coverage[i]++
+	}
 }
 
 func Assoc(x, y *Expression) (*Expression, error) {
@@ -127,6 +150,9 @@ func Assoc(x, y *Expression) (*Expression, error) {
 	cdr, err := Cdr(y)
 	if err != nil {
 		return nil, err
+	}
+	if cdr.IsList() && cdr.IsEmpty() {
+		return nil, fmt.Errorf("can't assoc with empty list")
 	}
 	return Assoc(x, cdr)
 }
@@ -155,35 +181,42 @@ func Eval(e, a *Expression) (*Expression, error) {
 
 const lazy = false
 
+func cxr(s string) (MonadFunc, error) {
+	car := Eval1Func(Car).ToMonad()
+	cdr := Eval1Func(Cdr).ToMonad()
+	runes := []rune(s)
+	n := len(runes) - 1
+	if runes[0] != 'c' || runes[n] != 'r' {
+		return nil, fmt.Errorf("not CxR: %q", s)
+	}
+	var list []MonadFunc
+	for i := 1; i < n; i++ {
+		var f MonadFunc
+		switch runes[i] {
+		case 'a':
+			f = car
+		case 'd':
+			f = cdr
+		default:
+			return nil, fmt.Errorf("not CxR: %q", s)
+		}
+		list = append(list, f)
+	}
+	return Compose(list...), nil
+}
+
 func MEval(args ...Maybe) Maybe {
+
+	//fmt.Printf("eval(%s)\n", args)
+
 	e, a := args[0], args[1]
 
 	x := func(s string) MonadFunc {
-		car := Eval1Func(Car).ToMonad()
-		cdr := Eval1Func(Cdr).ToMonad()
-
-		check := func() {
-			panic("illegal: " + s)
+		f, err := cxr(s)
+		if err != nil {
+			panic(err)
 		}
-		runes := []rune(s)
-		n := len(runes) - 1
-		if runes[0] != 'c' || runes[n] != 'r' {
-			check()
-		}
-		var list []MonadFunc
-		for i := 1; i < n; i++ {
-			var f MonadFunc
-			switch runes[i] {
-			case 'a':
-				f = car
-			case 'd':
-				f = cdr
-			default:
-				check()
-			}
-			list = append(list, f)
-		}
-		return Compose(list...)
+		return f
 	}
 
 	appendM := Eval2Func(Append).ToMonad()
@@ -198,7 +231,7 @@ func MEval(args ...Maybe) Maybe {
 	cdr := x("cdr")
 	cons := Eval2Func(Cons).ToMonad()
 	eq := Eval2Func(Eq).ToMonad()
-	eval := Eval2Func(Eval).ToMonad()
+	eval := MEval
 	evlis := Eval2Func(Evlis).ToMonad()
 	list := EvalFunc(func(e ...*Expression) (*Expression, error) { return NewList(e...), nil }).ToMonad()
 	pair := Eval2Func(Pair).ToMonad()
@@ -217,37 +250,47 @@ func MEval(args ...Maybe) Maybe {
 	}
 
 	if e.IsAtom() {
+		reg(1)
 		return assoc(e, a)
 	}
 
 	if x := car(e); x.IsAtom() {
+		reg(2)
+
+		if f, err := cxr(x.String()); err == nil {
+			return f(eval(cadr(e), a))
+		}
+
 		switch x.String() {
 		case "quote":
+			reg(3)
 			return cadr(e)
 		case "atom":
+			reg(4)
 			return atom(eval(cadr(e), a))
 		case "eq":
+			reg(5)
 			return eq(
 				eval(cadr(e), a),
 				eval(caddr(e), a),
 			)
-		case "car":
-			return car(eval(cadr(e), a))
-		case "cdr":
-			return cdr(eval(cadr(e), a))
 		case "cons":
+			reg(8)
 			return cons(
 				eval(cadr(e), a),
 				eval(caddr(e), a),
 			)
 		case "cond":
+			reg(9)
 			return evcon(cdr(e), a)
 		default:
+			reg(10)
 			return eval(cons(assoc(car(e), a), cdr(e)), a)
 		}
 	}
 
 	if x := caar(e); x.String() == "label" {
+		reg(11)
 		return eval(
 			cons(caddar(e), cdr(e)),
 			cons(list(cadar(e), car(e)), a),
@@ -255,6 +298,7 @@ func MEval(args ...Maybe) Maybe {
 	}
 
 	if x := caar(e); x.String() == "lambda" {
+		reg(12)
 		return eval(
 			caddar(e),
 			appendM(pair(cadar(e), evlis(cdr(e), a)),
@@ -262,6 +306,8 @@ func MEval(args ...Maybe) Maybe {
 			),
 		)
 	}
+
+	reg(13)
 
 	return Maybe{Error: fmt.Errorf("eval unimplemented for %q", args)}
 }
