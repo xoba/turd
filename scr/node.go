@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+
+	"github.com/xoba/turd/scr/exp"
 )
 
 type node struct {
@@ -11,24 +13,25 @@ type node struct {
 	Children []*node `json:"C,omitempty"`
 }
 
-func (n *node) Expression() (*Expression, error) {
+func Quote(e exp.Expression) exp.Expression {
+	return exp.NewList(exp.NewString("quote"), e)
+}
+
+func (n *node) Expression() exp.Expression {
 	if len(n.Value) > 0 {
 		if runes := []rune(n.Value); runes[0] == '\'' {
-			return Quote(NewString(string(runes[1:]))), nil
+			return Quote(exp.NewString(string(runes[1:])))
 		}
-		return NewString(n.Value), nil
+		return exp.NewString(n.Value)
 	}
-	var list []*Expression
+	var list []exp.Expression
 	var lastQuote bool
 	for _, c := range n.Children {
 		if c.Value == "'" {
 			lastQuote = true
 			continue
 		}
-		e, err := c.Expression()
-		if err != nil {
-			return nil, err
-		}
+		e := c.Expression()
 		if lastQuote {
 			e = Quote(e)
 			lastQuote = false
@@ -36,9 +39,9 @@ func (n *node) Expression() (*Expression, error) {
 		list = append(list, e)
 	}
 	if lastQuote {
-		return nil, fmt.Errorf("errant quote")
+		return exp.NewError(fmt.Errorf("errant quote"))
 	}
-	return NewList(list...), nil
+	return exp.NewList(list...)
 }
 
 func parse(s string) (*node, error) {

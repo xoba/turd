@@ -53,7 +53,6 @@ func Run(c cnfg.Config) error {
 		"keys":      tnet.SharedKey,
 		"launch":    LaunchNode,
 		"lisp":      scr.Lisp,
-		"monad":     scr.TestMonad,
 		"poset":     poset.Run,
 		"listen":    Listen,
 		"script":    scr.Run,
