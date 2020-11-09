@@ -33,9 +33,6 @@ func (m Maybe) String() string {
 	if m.Error != nil {
 		return fmt.Sprintf("error: %v", m.Error)
 	}
-	if m.Expression == nil {
-		return "nil"
-	}
 	return m.Expression.String()
 }
 
@@ -89,6 +86,9 @@ func (f Eval2Func) ToMonad() MonadFunc {
 }
 
 func Compose(funcs ...MonadFunc) MonadFunc {
+	if len(funcs) == 0 {
+		return funcs[0]
+	}
 	return func(args ...Maybe) Maybe {
 		if len(args) != 1 {
 			return Maybe{Error: fmt.Errorf("can only compose functions of one argument")}

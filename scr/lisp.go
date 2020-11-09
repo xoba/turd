@@ -11,12 +11,12 @@ import (
 
 func Lisp(cnfg.Config) error {
 	m := make(map[string]bool)
-	test := func(i int, in, expect string) {
+	test := func(i interface{}, in, expect string) {
 		wrap := func(e error) error {
 			if e == nil {
 				return nil
 			}
-			return fmt.Errorf("#%d. %w", i, e)
+			return fmt.Errorf("#%v. %w", i, e)
 		}
 		if in == "" {
 			return
@@ -25,7 +25,7 @@ func Lisp(cnfg.Config) error {
 			panic("duplication: " + in)
 		}
 		m[in] = true
-		fmt.Printf("%2d. %-50s -> %s\n", i, in, expect)
+		fmt.Printf("%v. %-55s -> %s\n", i, in, expect)
 		check := func(e error) {
 			if e != nil {
 				log.Fatal(e)
@@ -85,6 +85,11 @@ func Lisp(cnfg.Config) error {
 	// 7
 	test(7, "(cond ((eq 'a 'b) 'first) ((atom 'a) 'second))", "second")
 
+	// lambda
+	test("λ", "((lambda (x) (cons x '(b))) 'a)", "(a b)")
+	test("λ", "((lambda (x y) (cons x (cdr y))) 'z '(a b c))", "(z b c)")
+	test("λ", "((lambda (f) (f '(b c))) '(lambda (x) (cons 'a x)))", "(a b c)")
+
 	test(0, "", "")
 	test(0, "", "")
 	test(0, "", "")
@@ -136,19 +141,54 @@ func Eval(e, a *Expression) (*Expression, error) {
 	return f(e, a)
 }
 
-const lazy = true
+const lazy = false
 
 func MEval(args ...Maybe) Maybe {
 	e, a := args[0], args[1]
-	car := Eval1Func(Car).ToMonad()
-	cdr := Eval1Func(Cdr).ToMonad()
-	cadr := Compose(car, cdr)
-	caddr := Compose(car, cdr, cdr)
+
+	x := func(s string) MonadFunc {
+		car := Eval1Func(Car).ToMonad()
+		cdr := Eval1Func(Cdr).ToMonad()
+
+		check := func() {
+			panic("illegal: " + s)
+		}
+		runes := []rune(s)
+		n := len(runes) - 1
+		if runes[0] != 'c' || runes[n] != 'r' {
+			check()
+		}
+		var list []MonadFunc
+		for i := 1; i < n; i++ {
+			var f MonadFunc
+			switch runes[i] {
+			case 'a':
+				f = car
+			case 'd':
+				f = cdr
+			default:
+				check()
+			}
+			list = append(list, f)
+		}
+		return Compose(list...)
+	}
+
+	car := x("car")
+	cdr := x("cdr")
+	cadr := x("cadr")
+	caar := x("caar")
+	caddr := x("caddr")
+	cadar := x("cadar")
+	caddar := x("caddar")
 	eq := Eval2Func(Eq).ToMonad()
 	eval := Eval2Func(Eval).ToMonad()
 	atom := Eval1Func(AtomF).ToMonad()
 	assoc := Eval2Func(Assoc).ToMonad()
 	cons := Eval2Func(Cons).ToMonad()
+	appendM := Eval2Func(Append).ToMonad()
+	pair := Eval2Func(Pair).ToMonad()
+	evlis := Eval2Func(Evlis).ToMonad()
 
 	var evcon MonadFunc
 	if lazy {
@@ -167,11 +207,8 @@ func MEval(args ...Maybe) Maybe {
 		return assoc(e, a)
 	}
 
-	care := car(e)
-
-	switch {
-	case care.IsAtom():
-		switch care.String() {
+	if x := car(e); x.IsAtom() {
+		switch x.String() {
 		case "quote":
 			return cadr(e)
 		case "atom":
@@ -195,15 +232,94 @@ func MEval(args ...Maybe) Maybe {
 		default:
 			return eval(cons(assoc(car(e), a), cdr(e)), a)
 		}
-	default:
-		return Maybe{Error: fmt.Errorf("eval unimplemented for %q", args)}
 	}
+
+	if x := caar(e); x.String() == "lambda" {
+		return eval(
+			caddar(e),
+			appendM(pair(cadar(e), evlis(cdr(e), a)),
+				a,
+			),
+		)
+	}
+
+	return Maybe{Error: fmt.Errorf("eval unimplemented for %q", args)}
+}
+
+func Pair(x, y *Expression) (*Expression, error) {
+	if x.String() == "()" && y.String() == "()" {
+		return EmptyList(), nil
+	}
+	if !x.IsAtom() && !y.IsAtom() {
+		carx, err := Car(x)
+		if err != nil {
+			return nil, err
+		}
+		cary, err := Car(y)
+		if err != nil {
+			return nil, err
+		}
+		cdrx, err := Cdr(x)
+		if err != nil {
+			return nil, err
+		}
+		cdry, err := Cdr(y)
+		if err != nil {
+			return nil, err
+		}
+		list := NewList(carx, cary)
+		pair, err := Pair(cdrx, cdry)
+		if err != nil {
+			return nil, err
+		}
+		return Cons(list, pair)
+	}
+	return nil, fmt.Errorf("illegal pair state")
+}
+
+func Evlis(m, a *Expression) (*Expression, error) {
+	if m.String() == "()" {
+		return EmptyList(), nil
+	}
+	car, err := Car(m)
+	if err != nil {
+		return nil, err
+	}
+	cdr, err := Cdr(m)
+	if err != nil {
+		return nil, err
+	}
+	eval, err := Eval(car, a)
+	if err != nil {
+		return nil, err
+	}
+	evlis, err := Evlis(cdr, a)
+	if err != nil {
+		return nil, err
+	}
+	return Cons(eval, evlis)
+}
+
+func Append(x, y *Expression) (*Expression, error) {
+	if x.String() == "()" {
+		return y, nil
+	}
+	car, err := Car(x)
+	if err != nil {
+		return nil, err
+	}
+	cdr, err := Cdr(x)
+	if err != nil {
+		return nil, err
+	}
+	tail, err := Append(cdr, y)
+	if err != nil {
+		return nil, err
+	}
+	return Cons(car, tail)
 }
 
 func Cons(x, y *Expression) (*Expression, error) {
-	if !x.IsAtom() {
-		return nil, fmt.Errorf("first arg not an atom: %s", x)
-	}
 	if !y.IsList() {
 		return nil, fmt.Errorf("second arg not a list: %s", y)
 	}
@@ -411,6 +527,13 @@ type Expression struct {
 	*Atom
 	*List
 	Lazy func() error // for lazy evaluation
+}
+
+func EmptyList() *Expression {
+	var list List
+	return &Expression{
+		List: &list,
+	}
 }
 
 func (e *Expression) EvalLazy() error {
