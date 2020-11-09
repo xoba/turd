@@ -11,13 +11,22 @@ import (
 
 func Lisp(cnfg.Config) error {
 	m := make(map[string]bool)
-	test := func(i interface{}, in, expect string) {
-		wrap := func(e error) error {
-			if e == nil {
-				return nil
-			}
-			return fmt.Errorf("#%v. %w", i, e)
+
+	a := NewList()
+
+	check := func(e error) {
+		if e != nil {
+			log.Fatal(e)
 		}
+	}
+	wrap := func(i interface{}, e error) error {
+		if e == nil {
+			return nil
+		}
+		return fmt.Errorf("#%v. %w", i, e)
+	}
+
+	test := func(i interface{}, in, expect string) {
 		if in == "" {
 			return
 		}
@@ -26,19 +35,20 @@ func Lisp(cnfg.Config) error {
 		}
 		m[in] = true
 		fmt.Printf("%v: %-55s -> %s\n", i, in, expect)
-		check := func(e error) {
-			if e != nil {
-				log.Fatal(e)
-			}
-		}
 		e, err := Read(in)
-		check(wrap(err))
-		a := NewList()
+		check(wrap(i, err))
 		x, err := Eval(e, a)
-		check(wrap(err))
+		check(wrap(i, err))
 		if got := x.String(); got != expect {
-			check(wrap(fmt.Errorf("expected %q, got %q", expect, got)))
+			check(wrap(i, fmt.Errorf("expected %q, got %q", expect, got)))
 		}
+	}
+
+	defun := func(name, lambda string) {
+		e, err := Read(lambda)
+		check(wrap(name, err))
+		*a.List = append(*a.List, NewList(NewString(name), e))
+		fmt.Printf("defun: %s\n", a)
 	}
 
 	test2 := func(x, y string) {
@@ -112,7 +122,13 @@ func Lisp(cnfg.Config) error {
 	test("funcs", "(caddr '((a b) (c d) e))", "e")
 	test("funcs", "(cdar '((a b) (c d) e))", "(b)")
 
-	test("funcs", "(list 'a 'b 'c)", "(a b c)")
+	test("list", "(list 'a 'b 'c)", "(a b c)")
+
+	defun("null", "(label null (lambda (x) (eq x '())))")
+
+	test("funcs", "(null 'a)", "()")
+	test("funcs", "(null '())", "t")
+
 	test(0, "", "")
 	test(0, "", "")
 	test(0, "", "")
