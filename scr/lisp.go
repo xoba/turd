@@ -51,7 +51,6 @@ func Lisp(cnfg.Config) error {
 		e, err := Read(lambda)
 		check(wrap(name, err))
 		*a.List = append(*a.List, NewList(NewString(name), e))
-		fmt.Printf("define: %s\n", a)
 	}
 
 	test2 := func(x, y string) {
@@ -232,18 +231,19 @@ func Lisp(cnfg.Config) error {
 
 // vars for test coverage:
 var (
-	coverage map[int]int
-	reg      func(i int)
+	coverage map[string]int
+	reg      func(string)
 )
 
 func init() {
-	coverage = make(map[int]int)
-	reg = func(i int) {
-		coverage[i]++
+	coverage = make(map[string]int)
+	reg = func(x string) {
+		coverage[x]++
 	}
 }
 
 func Assoc(x, y *Expression) (*Expression, error) {
+	reg("assoc")
 	if !x.IsAtom() {
 		return nil, fmt.Errorf("needs an atom to assoc")
 	}
@@ -272,6 +272,7 @@ func Assoc(x, y *Expression) (*Expression, error) {
 }
 
 func Eq(x, y *Expression) (*Expression, error) {
+	reg("eq")
 	r := func(v bool) (*Expression, error) {
 		if v {
 			return NewString("t"), nil
@@ -321,6 +322,8 @@ func cxr(s string) (MonadFunc, error) {
 
 func MEval(args ...Maybe) Maybe {
 
+	reg("eval")
+
 	e, a := args[0], args[1]
 
 	x := func(s string) MonadFunc {
@@ -328,7 +331,10 @@ func MEval(args ...Maybe) Maybe {
 		if err != nil {
 			panic(err)
 		}
-		return f
+		return func(args ...Maybe) Maybe {
+			reg(s)
+			return f(args...)
+		}
 	}
 
 	appendM := Eval2Func(Append).ToMonad()
@@ -345,7 +351,7 @@ func MEval(args ...Maybe) Maybe {
 	eq := Eval2Func(Eq).ToMonad()
 	eval := MEval
 	evlis := Eval2Func(Evlis).ToMonad()
-	list := EvalFunc(func(e ...*Expression) (*Expression, error) { return NewList(e...), nil }).ToMonad()
+	list := EvalFunc(func(e ...*Expression) (*Expression, error) { reg("list"); return NewList(e...), nil }).ToMonad()
 	pair := Eval2Func(Pair).ToMonad()
 
 	var evcon MonadFunc
@@ -362,12 +368,10 @@ func MEval(args ...Maybe) Maybe {
 	}
 
 	if e.IsAtom() {
-		reg(1)
 		return assoc(e, a)
 	}
 
 	if x := car(e); x.IsAtom() {
-		reg(2)
 
 		if f, err := cxr(x.String()); err == nil {
 			return f(eval(cadr(e), a))
@@ -377,34 +381,27 @@ func MEval(args ...Maybe) Maybe {
 		case "list":
 			return evlis(cdr(e), a)
 		case "quote":
-			reg(3)
 			return cadr(e)
 		case "atom":
-			reg(4)
 			return atom(eval(cadr(e), a))
 		case "eq":
-			reg(5)
 			return eq(
 				eval(cadr(e), a),
 				eval(caddr(e), a),
 			)
 		case "cons":
-			reg(8)
 			return cons(
 				eval(cadr(e), a),
 				eval(caddr(e), a),
 			)
 		case "cond":
-			reg(9)
 			return evcon(cdr(e), a)
 		default:
-			reg(10)
 			return eval(cons(assoc(car(e), a), cdr(e)), a)
 		}
 	}
 
 	if x := caar(e); x.String() == "label" {
-		reg(11)
 		return eval(
 			cons(caddar(e), cdr(e)),
 			cons(list(cadar(e), car(e)), a),
@@ -412,7 +409,6 @@ func MEval(args ...Maybe) Maybe {
 	}
 
 	if x := caar(e); x.String() == "lambda" {
-		reg(12)
 		return eval(
 			caddar(e),
 			appendM(pair(cadar(e), evlis(cdr(e), a)),
@@ -421,12 +417,11 @@ func MEval(args ...Maybe) Maybe {
 		)
 	}
 
-	reg(13)
-
 	return Maybe{Error: fmt.Errorf("eval unimplemented for %q", args)}
 }
 
 func Pair(x, y *Expression) (*Expression, error) {
+	reg("pair")
 	if x.String() == "()" && y.String() == "()" {
 		return EmptyList(), nil
 	}
@@ -458,6 +453,7 @@ func Pair(x, y *Expression) (*Expression, error) {
 }
 
 func Evlis(m, a *Expression) (*Expression, error) {
+	reg("evlis")
 	if m.String() == "()" {
 		return EmptyList(), nil
 	}
@@ -481,6 +477,7 @@ func Evlis(m, a *Expression) (*Expression, error) {
 }
 
 func Append(x, y *Expression) (*Expression, error) {
+	reg("append")
 	if x.String() == "()" {
 		return y, nil
 	}
@@ -500,6 +497,7 @@ func Append(x, y *Expression) (*Expression, error) {
 }
 
 func Cons(x, y *Expression) (*Expression, error) {
+	reg("cons")
 	if !y.IsList() {
 		return nil, fmt.Errorf("second arg not a list: %s", y)
 	}
@@ -815,6 +813,7 @@ func (e Expression) Boolean() bool {
 }
 
 func AtomF(e *Expression) (*Expression, error) {
+	reg("atom")
 	if e.IsAtom() {
 		return NewString("t"), nil
 	}
@@ -822,6 +821,7 @@ func AtomF(e *Expression) (*Expression, error) {
 }
 
 func (e Expression) IsAtom() bool {
+	reg("isatom")
 	if e.Atom != nil {
 		return true
 	}
