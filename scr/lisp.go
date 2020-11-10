@@ -1,7 +1,6 @@
 package scr
 
 import (
-	"bytes"
 	"fmt"
 	"log"
 
@@ -314,59 +313,63 @@ func cxr(s string) (MonadFunc, error) {
 	return Compose(list...), nil
 }
 
+type efunc func(...exp.Expression) exp.Expression
+type onefunc func(exp.Expression) exp.Expression
+type twofunc func(exp.Expression, exp.Expression) exp.Expression
+
+func two(f twofunc) efunc {
+	return func(args ...exp.Expression) exp.Expression {
+		if n := len(args); n != 2 {
+			return exp.Errorf("needs two args, got %d", n)
+		}
+		return f(args[0], args[1])
+	}
+
+}
+
+func one(f onefunc) efunc {
+	return func(args ...exp.Expression) exp.Expression {
+		if n := len(args); n != 1 {
+			return exp.Errorf("needs two args, got %d", n)
+		}
+		return f(args[0])
+	}
+}
+
+func apply(f efunc, args ...exp.Expression) exp.Expression {
+	for _, arg := range args {
+		if arg.Error() != nil {
+			return arg
+		}
+	}
+	return f(args...)
+}
+
+func x(s string) efunc {
+	f, err := cxr(s)
+	if err != nil {
+		panic(err)
+	}
+	return one(func(a exp.Expression) exp.Expression {
+		reg(s)
+		return f(a)
+	})
+}
+
+var (
+	caar   = x("caar")
+	cadar  = x("cadar")
+	caddar = x("caddar")
+	caddr  = x("caddr")
+	cadr   = x("cadr")
+	car    = x("car")
+	cdr    = x("cdr")
+)
+
 func Eval(e, a exp.Expression) exp.Expression {
 
 	reg("eval")
 
-	type efunc func(...exp.Expression) exp.Expression
-	type onefunc func(exp.Expression) exp.Expression
-	type twofunc func(exp.Expression, exp.Expression) exp.Expression
-
-	two := func(f twofunc) efunc {
-		return func(args ...exp.Expression) exp.Expression {
-			if n := len(args); n != 2 {
-				return exp.Errorf("needs two args, got %d", n)
-			}
-			return f(args[0], args[1])
-		}
-
-	}
-	one := func(f onefunc) efunc {
-		return func(args ...exp.Expression) exp.Expression {
-			if n := len(args); n != 1 {
-				return exp.Errorf("needs two args, got %d", n)
-			}
-			return f(args[0])
-		}
-	}
-
-	apply := func(f efunc, args ...exp.Expression) exp.Expression {
-		for _, arg := range args {
-			if arg.Error() != nil {
-				return arg
-			}
-		}
-		return f(args...)
-	}
-
-	x := func(s string) efunc {
-		f, err := cxr(s)
-		if err != nil {
-			panic(err)
-		}
-		return one(func(a exp.Expression) exp.Expression {
-			reg(s)
-			return f(a)
-		})
-	}
-
-	caar := x("caar")
-	cadar := x("cadar")
-	caddar := x("caddar")
-	caddr := x("caddr")
-	cadr := x("cadr")
-	car := x("car")
-	cdr := x("cdr")
 	list := func(args ...exp.Expression) exp.Expression {
 		return exp.NewList(args...)
 	}
@@ -404,7 +407,6 @@ func Eval(e, a exp.Expression) exp.Expression {
 			return apply(cons, apply(eval, apply(cadr, e), a), apply(eval, apply(caddr, e), a))
 		case "cond":
 			return apply(evcon, apply(cdr, e), a)
-			return Evcon(cdr(e), a)
 		default:
 			return apply(eval, apply(cons, apply(assoc, apply(car, e), a), apply(cdr, e)), a)
 		}
@@ -498,6 +500,7 @@ func Cons(x, y exp.Expression) exp.Expression {
 }
 
 func Evcon(c, a exp.Expression) exp.Expression {
+
 	if c == nil || a == nil {
 		return exp.NewError(fmt.Errorf("nil arguments"))
 	}
@@ -595,7 +598,7 @@ func IsEmpty(e exp.Expression) bool {
 }
 
 // TODO: resolve overall issues of null Atoms
-func AtomsEqual(a, b *exp.Atom) bool {
+func AtomsEqual(a, b exp.Atom) bool {
 	switch {
 	case a == nil && b == nil:
 		return true
@@ -604,12 +607,5 @@ func AtomsEqual(a, b *exp.Atom) bool {
 	case b == nil:
 		return false
 	}
-
-	if a.Type != b.Type {
-		return false
-	}
-	if !bytes.Equal(a.Blob, b.Blob) {
-		return false
-	}
-	return true
+	return a.String() == b.String()
 }

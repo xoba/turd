@@ -8,13 +8,13 @@ import (
 
 // atom must be nil if length of list is nonzero
 type Expression interface {
-	Atom() *Atom
+	Atom() Atom
 	List() []Expression
 	Error() error
 	fmt.Stringer
 }
 
-func (e expr) Atom() *Atom {
+func (e expr) Atom() Atom {
 	e.eval()
 	return e.atom
 }
@@ -29,24 +29,27 @@ func (e expr) Error() error {
 	return e.err
 }
 
-type Atom struct {
-	Type string
-	Blob []byte // TODO: just make an interface{} instead
+type Atom interface {
+	fmt.Stringer
 }
 
-func (a Atom) String() string {
-	switch a.Type {
-	case "string":
-		return string(a.Blob)
-	case "blob":
-		return fmt.Sprintf("0x%x", a.Blob)
+type atom struct {
+	v interface{}
+}
+
+func (a atom) String() string {
+	switch t := a.v.(type) {
+	case string:
+		return t
+	case []byte:
+		return fmt.Sprintf("0x%x", t)
 	default:
-		panic("illegal type")
+		panic(fmt.Errorf("illegal atom type %T", t))
 	}
 }
 
 type expr struct {
-	atom *Atom
+	atom Atom
 	list list
 	err  error
 	lazy func() Expression
@@ -94,21 +97,19 @@ func Errorf(format string, a ...interface{}) Expression {
 	return NewError(fmt.Errorf(format, a...))
 }
 
-func NewAtom(a *Atom) Expression {
+func newAtom(a atom) Expression {
 	return expr{atom: a}
 }
 
 func NewString(x string) Expression {
-	return NewAtom(&Atom{
-		Type: "string",
-		Blob: []byte(x),
+	return newAtom(atom{
+		v: x,
 	})
 }
 
 func NewBlob(x []byte) Expression {
-	return NewAtom(&Atom{
-		Type: "blob",
-		Blob: x,
+	return newAtom(atom{
+		v: x,
 	})
 }
 
