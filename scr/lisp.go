@@ -385,8 +385,10 @@ func Cond(args ...exp.Expression) exp.Expression {
 
 func TestCond() error {
 	lazy := func(name string, e exp.Expression) exp.Expression {
+		var done bool
 		return exp.NewLazy(func() exp.Expression {
-			fmt.Printf("lazily evaluating %s -> %s\n", name, e)
+			fmt.Printf("%v: lazily evaluating %s -> %s\n", done, name, e)
+			done = true
 			return e
 		})
 	}

@@ -26,22 +26,22 @@ type expr struct {
 	lazy func() Expression
 }
 
-func (e expr) Atom() Atom {
+func (e *expr) Atom() Atom {
 	e.eval()
 	return e.atom
 }
 
-func (e expr) List() []Expression {
+func (e *expr) List() []Expression {
 	e.eval()
 	return e.list
 }
 
-func (e expr) Error() error {
+func (e *expr) Error() error {
 	e.eval()
 	return e.err
 }
 
-func (e expr) String() string {
+func (e *expr) String() string {
 	e.eval()
 	if a := e.atom; a != nil {
 		return a.String()
@@ -93,7 +93,7 @@ func (l list) String() string {
 }
 
 func NewError(e error) Expression {
-	return expr{err: e}
+	return &expr{err: e}
 }
 
 func Errorf(format string, a ...interface{}) Expression {
@@ -101,7 +101,7 @@ func Errorf(format string, a ...interface{}) Expression {
 }
 
 func NewAtom(a fmt.Stringer) Expression {
-	return expr{atom: a}
+	return &expr{atom: a}
 }
 
 func NewString(x string) Expression {
@@ -123,9 +123,9 @@ func NewInt(x int64) Expression {
 }
 
 func NewLazy(f func() Expression) Expression {
-	return expr{lazy: f}
+	return &expr{lazy: f}
 }
 
 func NewList(list ...Expression) Expression {
-	return expr{list: list}
+	return &expr{list: list}
 }
