@@ -31,7 +31,7 @@ func (e expr) Error() error {
 
 type Atom struct {
 	Type string
-	Blob []byte
+	Blob []byte // TODO: just make an interface{} instead
 }
 
 func (a Atom) String() string {
