@@ -2,6 +2,8 @@
 package exp
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"strings"
@@ -47,7 +49,11 @@ func (e *expr) String() string {
 		return a.String()
 	}
 	if err := e.err; err != nil {
-		return fmt.Sprintf("ERROR: %q", err.Error())
+		m := map[string]string{
+			"error": err.Error(),
+		}
+		buf, _ := json.Marshal(m)
+		return string(buf)
 	}
 	return e.list.String()
 }
@@ -69,14 +75,21 @@ type atom struct {
 	v interface{}
 }
 
+// inverse of atom.String()
+func ParseAtom(s string) (Atom, error) {
+	return nil, fmt.Errorf("ParseAtom unimplemented")
+}
+
 func (a atom) String() string {
 	switch t := a.v.(type) {
-	case fmt.Stringer:
-		return t.String()
 	case string:
 		return t
 	case []byte:
-		return fmt.Sprintf("0x%x", t)
+		return fmt.Sprintf("b:%s", base64.StdEncoding.EncodeToString(t))
+	case *big.Int:
+		return fmt.Sprintf("i:%s", t)
+	case fmt.Stringer:
+		return t.String()
 	default:
 		panic(fmt.Errorf("illegal atom type %T", t))
 	}

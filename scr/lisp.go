@@ -3,6 +3,7 @@ package scr
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/xoba/turd/cnfg"
 	"github.com/xoba/turd/scr/exp"
@@ -83,6 +84,10 @@ func Lisp(config cnfg.Config) error {
 		)
 		test("funcs", "("+Null+" '())", "t")
 		test("funcs", "("+Null+" 'a)", "()")
+
+		Append2 := strings.Replace(Append, "null", Null, -1)
+		test("funcs", "("+Append2+" '(a b) '(c d))", "(a b c d)")
+		test("funcs", "("+Append2+" '() '(c d))", "(c d)")
 
 		define("null", Null)
 
