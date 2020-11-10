@@ -10,6 +10,10 @@ import (
 
 func Lisp(config cnfg.Config) error {
 
+	defer func() {
+		fmt.Printf("test coverage = %v\n", coverage)
+	}()
+
 	if config.Debug {
 		return TestCond()
 	}
@@ -239,7 +243,6 @@ func Lisp(config cnfg.Config) error {
 	test(0, "", "")
 	test(0, "", "")
 
-	fmt.Printf("test coverage = %v\n", coverage)
 	return nil
 }
 
@@ -431,8 +434,50 @@ func Eval(e, a exp.Expression) exp.Expression {
 	eval := two(Eval)
 	eq := two(Eq)
 	cons := two(Cons)
+
 	evcon := two(Evcon)
 	assoc := two(Assoc)
+
+	q := func(s string) exp.Expression {
+		return exp.NewString(s)
+	}
+
+	if false {
+		apply(Cond,
+			exp.NewList( // ((atom e) (assoc e a))
+				exp.NewLazy(func() exp.Expression {
+					return apply(atom, e)
+				}),
+				exp.NewLazy(func() exp.Expression {
+					return apply(assoc, e, a)
+				}),
+			),
+			exp.NewList( // ((atom (car e))
+				exp.NewLazy(func() exp.Expression {
+					return apply(atom, apply(car, e))
+				}),
+				exp.NewLazy(func() exp.Expression {
+					panic("*1")
+				}),
+			),
+			exp.NewList( // ((eq (caar e) 'label))
+				exp.NewLazy(func() exp.Expression {
+					return apply(eq, apply(caar, e), q("label"))
+				}),
+				exp.NewLazy(func() exp.Expression {
+					panic("*2")
+				}),
+			),
+			exp.NewList( // ((eq (caar e) 'lambda))
+				exp.NewLazy(func() exp.Expression {
+					return apply(eq, apply(caar, e), q("lambda"))
+				}),
+				exp.NewLazy(func() exp.Expression {
+					panic("*3")
+				}),
+			),
+		)
+	}
 
 	if x := car(e); IsAtom(x) {
 		if f, err := cxr(x.String()); err == nil {
