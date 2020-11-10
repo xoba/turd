@@ -84,12 +84,15 @@ func (a atom) String() string {
 
 type list []Expression
 
-func (l list) String() string {
-	var list []string
-	for _, e := range l {
-		list = append(list, e.String())
+func (list list) String() string {
+	if len(list) == 2 && list[0].String() == "quote" {
+		return "'" + list[1].String()
 	}
-	return fmt.Sprintf("(%s)", strings.Join(list, " "))
+	var parts []string
+	for _, e := range list {
+		parts = append(parts, e.String())
+	}
+	return fmt.Sprintf("(%s)", strings.Join(parts, " "))
 }
 
 func NewError(e error) Expression {
