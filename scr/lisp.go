@@ -77,12 +77,14 @@ func Lisp(config cnfg.Config) error {
 			Append = `
 (label append
        (lambda (x y)
-	 (cond ((` + Null + ` x) y)
+	 (cond ((null x) y)
 	       ('t (cons (car x) (append (cdr x)))))))
 `
 		)
 		test("funcs", "("+Null+" '())", "t")
 		test("funcs", "("+Null+" 'a)", "()")
+
+		define("null", Null)
 
 		test("funcs", "("+Append+" '(a b) '(c d))", "(a b c d)")
 		test("funcs", "("+Append+" '() '(c d))", "(c d)")
