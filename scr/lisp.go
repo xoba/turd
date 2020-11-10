@@ -60,9 +60,9 @@ func Lisp(config cnfg.Config) error {
 		if name == "" {
 			return
 		}
-		e := Read(lambda)
+		e := Read(fmt.Sprintf("(label %s %s)", name, lambda))
 		check(wrap(name, e.Error()))
-		a = exp.NewList(a, exp.NewList(exp.NewString(name), e))
+		a = exp.NewList(exp.NewList(exp.NewString(name), e), a)
 	}
 
 	test2 := func(x, y string) {
@@ -93,7 +93,7 @@ func Lisp(config cnfg.Config) error {
 
 		test("funcs", "("+Append+" '(a b) '(c d))", "(a b c d)")
 		test("funcs", "("+Append+" '() '(c d))", "(c d)")
-		return nil
+		//return nil
 
 	}
 
