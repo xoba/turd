@@ -3,15 +3,27 @@ package exp
 
 import (
 	"fmt"
+	"math/big"
 	"strings"
 )
 
-// atom must be nil if length of list is nonzero
+// if atom is nil, expression is an atom, otherwise a list
 type Expression interface {
 	Atom() Atom
 	List() []Expression
 	Error() error
 	fmt.Stringer
+}
+
+type Atom interface {
+	fmt.Stringer
+}
+
+type expr struct {
+	atom Atom
+	list list
+	err  error
+	lazy func() Expression
 }
 
 func (e expr) Atom() Atom {
@@ -29,42 +41,6 @@ func (e expr) Error() error {
 	return e.err
 }
 
-type Atom interface {
-	fmt.Stringer
-}
-
-type atom struct {
-	v interface{}
-}
-
-func (a atom) String() string {
-	switch t := a.v.(type) {
-	case string:
-		return t
-	case []byte:
-		return fmt.Sprintf("0x%x", t)
-	default:
-		panic(fmt.Errorf("illegal atom type %T", t))
-	}
-}
-
-type expr struct {
-	atom Atom
-	list list
-	err  error
-	lazy func() Expression
-}
-
-type list []Expression
-
-func (l list) String() string {
-	var list []string
-	for _, e := range l {
-		list = append(list, e.String())
-	}
-	return fmt.Sprintf("(%s)", strings.Join(list, " "))
-}
-
 func (e expr) String() string {
 	e.eval()
 	if a := e.atom; a != nil {
@@ -77,16 +53,43 @@ func (e expr) String() string {
 }
 
 func (e *expr) eval() {
-	defer func() {
-		e.lazy = nil
-	}()
 	if e.lazy == nil {
 		return
 	}
+	defer func() {
+		e.lazy = nil
+	}()
 	o := e.lazy()
 	e.atom = o.Atom()
 	e.list = o.List()
 	e.err = o.Error()
+}
+
+type atom struct {
+	v interface{}
+}
+
+func (a atom) String() string {
+	switch t := a.v.(type) {
+	case fmt.Stringer:
+		return t.String()
+	case string:
+		return t
+	case []byte:
+		return fmt.Sprintf("0x%x", t)
+	default:
+		panic(fmt.Errorf("illegal atom type %T", t))
+	}
+}
+
+type list []Expression
+
+func (l list) String() string {
+	var list []string
+	for _, e := range l {
+		list = append(list, e.String())
+	}
+	return fmt.Sprintf("(%s)", strings.Join(list, " "))
 }
 
 func NewError(e error) Expression {
@@ -97,19 +100,25 @@ func Errorf(format string, a ...interface{}) Expression {
 	return NewError(fmt.Errorf(format, a...))
 }
 
-func newAtom(a atom) Expression {
+func NewAtom(a fmt.Stringer) Expression {
 	return expr{atom: a}
 }
 
 func NewString(x string) Expression {
-	return newAtom(atom{
+	return NewAtom(atom{
 		v: x,
 	})
 }
 
 func NewBlob(x []byte) Expression {
-	return newAtom(atom{
+	return NewAtom(atom{
 		v: x,
+	})
+}
+
+func NewInt(x int64) Expression {
+	return NewAtom(atom{
+		v: big.NewInt(x),
 	})
 }
 

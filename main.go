@@ -35,6 +35,7 @@ func main() {
 	flag.IntVar(&c.Port, "p", 8080, "http port to run on")
 	flag.IntVar(&c.Seed, "s", 0, "if not zero, the random seed")
 	flag.BoolVar(&c.Delete, "d", false, "whether to delete something in a test")
+	flag.BoolVar(&c.Debug, "debug", false, "whether to debug")
 	flag.Parse()
 	if err := Run(c); err != nil {
 		fmt.Fprintln(os.Stderr, err)

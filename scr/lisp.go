@@ -8,7 +8,12 @@ import (
 	"github.com/xoba/turd/scr/exp"
 )
 
-func Lisp(cnfg.Config) error {
+func Lisp(config cnfg.Config) error {
+
+	if config.Debug {
+		return TestCond()
+	}
+
 	m := make(map[string]bool)
 
 	a := exp.NewList()
@@ -366,6 +371,43 @@ var (
 	cdr    = x("cdr")
 )
 
+func Cond(args ...exp.Expression) exp.Expression {
+	eval := two(Eval)
+	for _, a := range args {
+		p := car(a)
+		e := cadr(a)
+		if Boolean(p) {
+			return eval(e, Nil())
+		}
+	}
+	return exp.Errorf("cond fallthrough")
+}
+
+func TestCond() error {
+	lazy := func(name string, e exp.Expression) exp.Expression {
+		return exp.NewLazy(func() exp.Expression {
+			fmt.Printf("lazily evaluating %s -> %s\n", name, e)
+			return e
+		})
+	}
+	clause := two(func(p, e exp.Expression) exp.Expression {
+		return exp.NewList(
+			lazy("p", p),
+			lazy("e", e),
+		)
+	})
+	q := func(s string) exp.Expression {
+		return exp.NewString(s)
+	}
+	t, f := True(), False()
+	first := clause(f, q("first"))
+	second := clause(f, q("second"))
+	third := clause(t, q("third"))
+	result := apply(Cond, first, second, third)
+	fmt.Printf("result = %s\n", result)
+	return result.Error()
+}
+
 func Eval(e, a exp.Expression) exp.Expression {
 
 	reg("eval")
@@ -563,11 +605,7 @@ func False() exp.Expression {
 }
 
 func Boolean(e exp.Expression) bool {
-	if IsList(e) {
-		return false
-	}
-	atom := e.Atom()
-	return atom.String() == "t"
+	return e.String() == "t"
 }
 
 func Atom(e exp.Expression) exp.Expression {
@@ -590,14 +628,13 @@ func IsAtom(e exp.Expression) bool {
 }
 
 func IsList(e exp.Expression) bool {
-	return e.List != nil
+	return e.Atom() == nil
 }
 
 func IsEmpty(e exp.Expression) bool {
 	return len(e.List()) == 0
 }
 
-// TODO: resolve overall issues of null Atoms
 func AtomsEqual(a, b exp.Atom) bool {
 	switch {
 	case a == nil && b == nil:

@@ -8,4 +8,5 @@ type Config struct {
 	PrivateKeyFile string
 	Seed           int
 	Delete         bool
+	Debug          bool
 }
