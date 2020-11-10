@@ -45,8 +45,8 @@ func Lisp(config cnfg.Config) error {
 		}
 		count++
 		m[in] = true
-		fmt.Printf("%2d.%v: %-55s -> %s\n", count, i, in, expect)
 		e := Read(in)
+		fmt.Printf("%2d.%v: %-55s -> %s\n", count, i, e, expect)
 		check(wrap(i, e.Error()))
 		x := Eval(e, a)
 		check(wrap(i, x.Error()))
@@ -68,7 +68,29 @@ func Lisp(config cnfg.Config) error {
 		test(0, x, y)
 	}
 
-	if false {
+	if true {
+		const (
+			Null = `
+(label null
+       (lambda (x) (eq x '())))
+`
+			Append = `
+(label append
+       (lambda (x y)
+	 (cond ((` + Null + ` x) y)
+	       ('t (cons (car x) (append (cdr x)))))))
+`
+		)
+		test("funcs", "("+Null+" '())", "t")
+		test("funcs", "("+Null+" 'a)", "()")
+
+		test("funcs", "("+Append+" '(a b) '(c d))", "(a b c d)")
+		test("funcs", "("+Append+" '() '(c d))", "(c d)")
+		return nil
+
+	}
+
+	if true {
 		// TODO: this group works at start of test suite, but not in middle or end!
 		const null = "(lambda (x) (eq x '()))"
 		define("null", null)
@@ -76,7 +98,14 @@ func Lisp(config cnfg.Config) error {
 		test("funcs", "("+null+" 'a)", "()")
 		test("funcs", "(null 'a)", "()")
 		test("funcs", "(null '())", "t")
+		const (
+			def = "(lambda (x y) (cond ((" + null + " x) y) ('t (cons (car x) (append (cdr x) y)))))"
+		)
+		test("funcs", "("+def+" '(c d))", "(a b c d)")
 		return nil
+		define("append", def)
+		test("funcs", `(append '(a b) '(c d))`, "(a b c d)")
+		test("funcs", `(append '() '(c d))`, "(c d)")
 	}
 
 	// other:
@@ -163,10 +192,6 @@ func Lisp(config cnfg.Config) error {
 
 	test("funcs", `(not (eq 'a 'a))`, "()")
 	test("funcs", `(not (eq 'a 'b))`, "t")
-
-	define("append", "(lambda (x y) (cond ((null x) y) ('t (cons (car x) (append (cdr x) y)))))")
-	test("funcs", `(append '(a b) '(c d))`, "(a b c d)")
-	test("funcs", `(append '() '(c d))`, "(c d)")
 
 	define("pair", `
 (lambda (x y) (cond ((and (null x) (null y)) '())
