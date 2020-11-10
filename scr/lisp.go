@@ -35,6 +35,7 @@ func Lisp(config cnfg.Config) error {
 		return fmt.Errorf("#%v. %w", i, e)
 	}
 
+	var count int
 	test := func(i interface{}, in, expect string) {
 		if in == "" {
 			return
@@ -42,8 +43,9 @@ func Lisp(config cnfg.Config) error {
 		if m[in] {
 			panic("duplication: " + in)
 		}
+		count++
 		m[in] = true
-		fmt.Printf("%v: %-55s -> %s\n", i, in, expect)
+		fmt.Printf("%2d.%v: %-55s -> %s\n", count, i, in, expect)
 		e := Read(in)
 		check(wrap(i, e.Error()))
 		x := Eval(e, a)
@@ -146,16 +148,26 @@ func Lisp(config cnfg.Config) error {
 
 	test("list", "(list 'a 'b 'c)", "(a b c)")
 
-	return nil
-
 	define("and", `
 
 (lambda (x y)
    (cond (x (cond (y 't) ('t ())))
 	 ('t '())))
 `)
+
+	test("funcs", "(and (atom 'a) (eq 'a 'a))", "t")
+	test("funcs", "(and (atom 'a) 't)", "t")
+	test("funcs", "(and (atom 'a) '())", "()")
+
 	define("not", "(lambda (x) (cond (x '()) ('t 't)))")
+
+	test("funcs", `(not (eq 'a 'a))`, "()")
+	test("funcs", `(not (eq 'a 'b))`, "t")
+
 	define("append", "(lambda (x y) (cond ((null x) y) ('t (cons (car x) (append (cdr x) y)))))")
+	test("funcs", `(append '(a b) '(c d))`, "(a b c d)")
+	test("funcs", `(append '() '(c d))`, "(c d)")
+
 	define("pair", `
 (lambda (x y) (cond ((and (null x) (null y)) '())
 		    ((and (not (atom x)) (not (atom y)))
@@ -204,19 +216,11 @@ func Lisp(config cnfg.Config) error {
 		  (evlis (cdr m) a)))))
 `)
 
-	test("funcs", "(and (atom 'a) (eq 'a 'a))", "t")
-	test("funcs", "(and (atom 'a) 't)", "t")
-	test("funcs", "(and (atom 'a) '())", "()")
-
 	if false {
 		// make sure this errors out:
 		test("funcs", `(xyz 'a)`, "")
 	}
 
-	test("funcs", `(not (eq 'a 'a))`, "()")
-	test("funcs", `(not (eq 'a 'b))`, "t")
-	test("funcs", `(append '(a b) '(c d))`, "(a b c d)")
-	test("funcs", `(append '() '(c d))`, "(c d)")
 	test("funcs", `(pair '(x y z) '(a b c))`, "((x a) (y b) (z c))")
 	test("funcs", `(assoc x '((x a) (y b)))`, "a")
 	test("funcs", `(assoc 'x '((x new) (x a) (y b)))`, "new")
@@ -375,12 +379,9 @@ var (
 )
 
 func Cond(args ...exp.Expression) exp.Expression {
-	eval := two(Eval)
 	for _, a := range args {
-		p := car(a)
-		e := cadr(a)
-		if Boolean(p) {
-			return eval(e, Nil())
+		if Boolean(car(a)) {
+			return cadr(a)
 		}
 	}
 	return exp.Errorf("cond fallthrough")
@@ -413,9 +414,12 @@ func TestCond() error {
 	return result.Error()
 }
 
+// TODO: compile this from lisp source
 func Eval(e, a exp.Expression) exp.Expression {
 
 	reg("eval")
+
+	//fmt.Printf("eval(%q, %q)\n", e, a)
 
 	list := func(args ...exp.Expression) exp.Expression {
 		return exp.NewList(args...)
@@ -442,42 +446,123 @@ func Eval(e, a exp.Expression) exp.Expression {
 		return exp.NewString(s)
 	}
 
-	if false {
-		apply(Cond,
-			exp.NewList( // ((atom e) (assoc e a))
-				exp.NewLazy(func() exp.Expression {
-					return apply(atom, e)
-				}),
-				exp.NewLazy(func() exp.Expression {
-					return apply(assoc, e, a)
-				}),
-			),
-			exp.NewList( // ((atom (car e))
-				exp.NewLazy(func() exp.Expression {
-					return apply(atom, apply(car, e))
-				}),
-				exp.NewLazy(func() exp.Expression {
-					panic("*1")
-				}),
-			),
-			exp.NewList( // ((eq (caar e) 'label))
-				exp.NewLazy(func() exp.Expression {
-					return apply(eq, apply(caar, e), q("label"))
-				}),
-				exp.NewLazy(func() exp.Expression {
-					panic("*2")
-				}),
-			),
-			exp.NewList( // ((eq (caar e) 'lambda))
-				exp.NewLazy(func() exp.Expression {
-					return apply(eq, apply(caar, e), q("lambda"))
-				}),
-				exp.NewLazy(func() exp.Expression {
-					panic("*3")
-				}),
-			),
+	is := func(s string) exp.Expression {
+		return apply(eq, apply(car, e), q(s))
+	}
+
+	cxxr := func(f string) exp.Expression {
+		return exp.NewList( // 'cdr
+			exp.NewLazy(func() exp.Expression {
+				return is(f)
+			}),
+			exp.NewLazy(func() exp.Expression {
+				return apply(x(f), apply(eval, apply(cadr, e), a))
+			}),
 		)
 	}
+
+	return apply(Cond,
+		exp.NewList( // ((atom e) (assoc e a))
+			exp.NewLazy(func() exp.Expression {
+				return apply(atom, e)
+			}),
+			exp.NewLazy(func() exp.Expression {
+				return apply(assoc, e, a)
+			}),
+		),
+		exp.NewList( // ((atom (car e))
+			exp.NewLazy(func() exp.Expression {
+				return apply(atom, apply(car, e))
+			}),
+			exp.NewLazy(func() exp.Expression {
+				return apply(Cond,
+					exp.NewList( // 'quote
+						exp.NewLazy(func() exp.Expression {
+							return is("quote")
+						}),
+						exp.NewLazy(func() exp.Expression {
+							return apply(cadr, e)
+						}),
+					),
+					exp.NewList( // 'atom
+						exp.NewLazy(func() exp.Expression {
+							return is("atom")
+						}),
+						exp.NewLazy(func() exp.Expression {
+							return apply(atom, apply(eval, apply(cadr, e), a))
+						}),
+					),
+					exp.NewList( // 'eq
+						exp.NewLazy(func() exp.Expression {
+							return is("eq")
+						}),
+						exp.NewLazy(func() exp.Expression {
+							return apply(eq,
+								apply(eval, apply(cadr, e), a),
+								apply(eval, apply(caddr, e), a))
+						}),
+					),
+					cxxr("car"),
+					cxxr("cdr"),
+					cxxr("cadr"),
+					cxxr("caddr"),
+					cxxr("cdar"),
+					exp.NewList( // 'list
+						exp.NewLazy(func() exp.Expression {
+							return is("list")
+						}),
+						exp.NewLazy(func() exp.Expression {
+							return apply(evlis, apply(cdr, e), a)
+						}),
+					),
+					exp.NewList( // 'cons
+						exp.NewLazy(func() exp.Expression {
+							return is("cons")
+						}),
+						exp.NewLazy(func() exp.Expression {
+							return apply(cons, apply(eval, apply(cadr, e), a), apply(eval, apply(caddr, e), a))
+						}),
+					),
+					exp.NewList( // 'cond
+						exp.NewLazy(func() exp.Expression {
+							return is("cond")
+						}),
+						exp.NewLazy(func() exp.Expression {
+							return apply(evcon, apply(cdr, e), a)
+						}),
+					),
+					exp.NewList( // 't
+						exp.NewLazy(func() exp.Expression {
+							return True()
+						}),
+						exp.NewLazy(func() exp.Expression {
+							return apply(eval, apply(cons, apply(assoc, apply(car, e), a), apply(cdr, e)), a)
+						}),
+					),
+				)
+			}),
+		),
+		exp.NewList( // ((eq (caar e) 'label))
+			exp.NewLazy(func() exp.Expression {
+				return apply(eq, apply(caar, e), q("label"))
+			}),
+			exp.NewLazy(func() exp.Expression {
+				return apply(eval,
+					apply(cons, apply(caddar, e), apply(cdr, e)),
+					apply(cons, apply(list, apply(cadar, e), apply(car, e)), a))
+			}),
+		),
+		exp.NewList( // ((eq (caar e) 'lambda))
+			exp.NewLazy(func() exp.Expression {
+				return apply(eq, apply(caar, e), q("lambda"))
+			}),
+			exp.NewLazy(func() exp.Expression {
+				return apply(eval,
+					apply(caddar, e),
+					apply(two(Append), apply(two(Pair), apply(cadar, e), apply(evlis, apply(cdr, e), a)), a))
+			}),
+		),
+	)
 
 	if x := car(e); IsAtom(x) {
 		if f, err := cxr(x.String()); err == nil {
