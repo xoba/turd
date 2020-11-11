@@ -506,6 +506,27 @@ func Lisp(config cnfg.Config) error {
 }
 
 func Assoc(x, y exp.Expression) exp.Expression {
+	if false {
+		eq := two(Eq)
+		assoc := two(Assoc)
+		return apply(Cond,
+			exp.NewList(
+				exp.NewLazy(func() exp.Expression {
+					return apply(eq, apply(caar, y), x)
+				}),
+				exp.NewLazy(func() exp.Expression {
+					return apply(cadar, y)
+				}),
+			),
+			exp.NewList(
+				True(),
+				exp.NewLazy(func() exp.Expression {
+					return apply(assoc, x, apply(cdr, y))
+				}),
+			),
+		)
+	}
+
 	if !IsAtom(x) {
 		return exp.Errorf("needs an atom to assoc")
 	}
@@ -525,21 +546,19 @@ func Assoc(x, y exp.Expression) exp.Expression {
 }
 
 func Eq(x, y exp.Expression) exp.Expression {
-	r := func(v bool) exp.Expression {
+	ret := func(v bool) exp.Expression {
 		if v {
 			return True()
 		}
-		return exp.NewList()
+		return False()
 	}
 	switch {
 	case IsAtom(x) && IsAtom(y):
-		xa := x.Atom()
-		ya := y.Atom()
-		return r(AtomsEqual(xa, ya))
+		return ret(AtomsEqual(x.Atom(), y.Atom()))
 	case IsList(x) && IsList(y):
-		return r(IsEmpty(x) && IsEmpty(y))
+		return ret(IsEmpty(x) && IsEmpty(y))
 	default:
-		return r(false)
+		return False()
 	}
 }
 
@@ -801,6 +820,16 @@ func Eval(e, a exp.Expression) exp.Expression {
 	return exp.Errorf("eval can't handle (%s %s)", e, a)
 }
 
+func IsAtom(e exp.Expression) bool {
+	if e.Atom() != nil {
+		return true
+	}
+	if len(e.List()) == 0 {
+		return true
+	}
+	return false
+}
+
 func Pair(x, y exp.Expression) exp.Expression {
 	if x.String() == "()" && y.String() == "()" {
 		return exp.NewList()
@@ -854,41 +883,34 @@ func Cons(x, y exp.Expression) exp.Expression {
 }
 
 func Evlis(m, a exp.Expression) exp.Expression {
-	if false {
-		null := one(Null)
-		cons := two(Cons)
-		eval := two(Eval)
-		evlis := two(Evlis)
-		return apply(Cond,
-			exp.NewList(
-				exp.NewLazy(func() exp.Expression {
-					return apply(null, m)
-				}),
-				Nil(),
-			),
-			exp.NewList(
-				True(),
-				exp.NewLazy(func() exp.Expression {
-					return apply(
-						cons,
-						apply(eval, apply(car, m), a),
-						apply(evlis, apply(cdr, m), a),
-					)
-				}),
-			),
-			exp.NewList(),
-		)
-	} else {
-		if m.String() == "()" {
-			return exp.NewList()
-		}
-		return Cons(Eval(Car(m), a), Evlis(Cdr(m), a))
-	}
+	null := one(Null)
+	cons := two(Cons)
+	eval := two(Eval)
+	evlis := two(Evlis)
+	return apply(Cond,
+		exp.NewList(
+			exp.NewLazy(func() exp.Expression {
+				return apply(null, m)
+			}),
+			Nil(),
+		),
+		exp.NewList(
+			True(),
+			exp.NewLazy(func() exp.Expression {
+				return apply(
+					cons,
+					apply(eval, apply(car, m), a),
+					apply(evlis, apply(cdr, m), a),
+				)
+			}),
+		),
+		exp.NewList(),
+	)
 }
 
 func Null(x exp.Expression) exp.Expression {
 	eq := two(Eq)
-	return apply(eq, Nil())
+	return apply(eq, x, Nil())
 }
 
 func Evcon(c, a exp.Expression) exp.Expression {
@@ -960,20 +982,13 @@ func Boolean(e exp.Expression) bool {
 }
 
 func Atom(e exp.Expression) exp.Expression {
-	if IsAtom(e) {
+	if e.Atom() != nil {
+		return True()
+	}
+	if len(e.List()) == 0 {
 		return True()
 	}
 	return False()
-}
-
-func IsAtom(e exp.Expression) bool {
-	if e.Atom() != nil {
-		return true
-	}
-	if len(e.List()) == 0 {
-		return true
-	}
-	return false
 }
 
 func IsList(e exp.Expression) bool {
