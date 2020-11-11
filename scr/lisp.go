@@ -32,8 +32,8 @@ func RunTests() error {
 		})
 	}
 
-	if false {
-		return RunTest("tests/052-funcs.lisp")
+	if true {
+		return RunTest("tests/005-funcs.lisp")
 	} else {
 		files, err := loadLisp("tests")
 		if err != nil {
@@ -174,7 +174,7 @@ func singleTest(file string, env exp.Expression) error {
 	e := Eval(in, env)
 	if e.String() != out.String() {
 		fmt.Println("error")
-		return fmt.Errorf("%s failed; expected %q, got %q", file, out, e)
+		return fmt.Errorf("%s failed; expected %s, got %s", file, out, e)
 	}
 	return nil
 }
@@ -528,23 +528,6 @@ func Assoc(x, y exp.Expression) exp.Expression {
 	)
 }
 
-func Eq(x, y exp.Expression) exp.Expression {
-	ret := func(v bool) exp.Expression {
-		if v {
-			return True()
-		}
-		return False()
-	}
-	switch {
-	case IsAtom(x) && IsAtom(y):
-		return ret(AtomsEqual(x.Atom(), y.Atom()))
-	case IsList(x) && IsList(y):
-		return ret(IsEmpty(x) && IsEmpty(y))
-	default:
-		return False()
-	}
-}
-
 func cxr(s string) (MonadFunc, error) {
 	runes := []rune(s)
 	n := len(runes) - 1
@@ -623,15 +606,6 @@ var (
 	}
 )
 
-func Cond(args ...exp.Expression) exp.Expression {
-	for _, a := range args {
-		if Boolean(car(a)) {
-			return cadr(a)
-		}
-	}
-	return exp.Errorf("cond fallthrough: %s", args)
-}
-
 func TestCond() error {
 	lazy := func(name string, e exp.Expression) exp.Expression {
 		var done bool
@@ -664,7 +638,7 @@ func List(x, y exp.Expression) exp.Expression {
 // TODO: compile this from lisp source
 func Eval(e, a exp.Expression) exp.Expression {
 
-	// fmt.Printf("eval(%q, %q)\n", e, a)
+	fmt.Printf("eval(%q, %q)\n", e, a)
 
 	list := two(List)
 
@@ -813,8 +787,66 @@ func IsAtom(e exp.Expression) bool {
 	return false
 }
 
+func And(x, y exp.Expression) exp.Expression {
+	return apply(Cond,
+		exp.NewList(
+			x,
+			apply(Cond,
+				exp.NewList(
+					y,
+					True(),
+				),
+			),
+		),
+		exp.NewList(
+			True(),
+			Nil(),
+		),
+	)
+}
+
+func Not(x exp.Expression) exp.Expression {
+	return apply(Cond,
+		exp.NewList(x, Nil()),
+		exp.NewList(True(), True()),
+	)
+}
+
 func Pair(x, y exp.Expression) exp.Expression {
-	//	fmt.Printf("pair(%q, %q)\n", x, y)
+	fmt.Printf("PAIR(%q, %q)\n", x, y)
+	if false {
+		and := two(And)
+		not := one(Not)
+		atom := one(Atom)
+		null := one(Null)
+		cons := two(Cons)
+		list := two(List)
+		pair := two(Pair)
+		return apply(Cond,
+			exp.NewList(
+				apply(and, apply(null, x), apply(null, y)),
+				Nil(),
+			),
+			exp.NewList(
+				exp.NewLazy(func() exp.Expression {
+					return apply(and,
+						apply(not, apply(atom, x)),
+						apply(not, apply(atom, y)))
+				}),
+				exp.NewLazy(func() exp.Expression {
+					return apply(cons,
+						apply(list, apply(car, x), apply(car, y)),
+						apply(pair, apply(cdr, x), apply(cdr, y)))
+
+				}),
+			),
+			exp.NewList(
+				True(),
+				exp.Errorf("illegal"),
+			),
+		)
+	}
+
 	if x.String() == "()" && y.String() == "()" {
 		return exp.NewList()
 	}
@@ -867,22 +899,6 @@ func Append(x, y exp.Expression) exp.Expression {
 	cdr := Cdr(x)
 	tail := Append(cdr, y)
 	return Cons(car, tail)
-}
-
-func Cons(x, y exp.Expression) exp.Expression {
-	if !IsList(y) {
-		return exp.Errorf("second arg not a list: %s", y)
-	}
-	var args []exp.Expression
-	add := func(e exp.Expression) {
-		args = append(args, e)
-	}
-	add(x)
-	list := y.List()
-	for _, e := range list {
-		add(e)
-	}
-	return exp.NewList(args...)
 }
 
 func Evlis(m, a exp.Expression) exp.Expression {
@@ -946,28 +962,6 @@ func Read(s string) (exp.Expression, error) {
 	return n.Expression()
 }
 
-func Car(e exp.Expression) exp.Expression {
-	if !IsList(e) {
-		return exp.Errorf("can only car a list: %q", e)
-	}
-	list := e.List()
-	if len(list) == 0 {
-		return Nil()
-	}
-	return list[0]
-}
-
-func Cdr(e exp.Expression) exp.Expression {
-	if !IsList(e) {
-		return exp.Errorf("can only cdr a list: %q", e)
-	}
-	list := e.List()
-	if len(list) == 0 {
-		return Nil()
-	}
-	return exp.NewList(list[1:]...)
-}
-
 func Nil() exp.Expression {
 	return exp.NewList()
 }
@@ -982,16 +976,6 @@ func False() exp.Expression {
 
 func Boolean(e exp.Expression) bool {
 	return e.String() == True().String()
-}
-
-func Atom(e exp.Expression) exp.Expression {
-	if e.Atom() != nil {
-		return True()
-	}
-	if len(e.List()) == 0 {
-		return True()
-	}
-	return False()
 }
 
 func IsList(e exp.Expression) bool {

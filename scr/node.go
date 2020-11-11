@@ -15,14 +15,15 @@ type node struct {
 	Children []*node `json:"C,omitempty"`
 }
 
-func Quote(e exp.Expression) exp.Expression {
-	return exp.NewList(exp.NewString("quote"), e)
-}
-
 func (n *node) Expression() (exp.Expression, error) {
+
+	newQuote := func(e exp.Expression) exp.Expression {
+		return exp.NewList(exp.NewString("quote"), e)
+	}
+
 	if len(n.Value) > 0 {
 		if runes := []rune(n.Value); runes[0] == '\'' {
-			return Quote(exp.NewString(string(runes[1:]))), nil
+			return newQuote(exp.NewString(string(runes[1:]))), nil
 		}
 		return exp.NewString(n.Value), nil
 	}
@@ -38,7 +39,7 @@ func (n *node) Expression() (exp.Expression, error) {
 			return nil, err
 		}
 		if lastQuote {
-			e = Quote(e)
+			e = newQuote(e)
 			lastQuote = false
 		}
 		list = append(list, e)
