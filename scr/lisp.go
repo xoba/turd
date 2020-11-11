@@ -33,7 +33,12 @@ func RunTests() error {
 	}
 
 	if true {
-		return RunTest("tests/005-funcs.lisp")
+		if err := RunTest("tests/append.lisp"); err != nil {
+			return err
+		}
+		if err := RunTest("tests/append_label.lisp"); err != nil {
+			return err
+		}
 	} else {
 		files, err := loadLisp("tests")
 		if err != nil {
@@ -173,7 +178,6 @@ func singleTest(file string, env exp.Expression) error {
 	fmt.Printf("%-16s: %s -> %s\n", filepath.Base(file), in, out)
 	e := Eval(in, env)
 	if e.String() != out.String() {
-		fmt.Println("error")
 		return fmt.Errorf("%s failed; expected %s, got %s", file, out, e)
 	}
 	return nil
@@ -638,7 +642,7 @@ func List(x, y exp.Expression) exp.Expression {
 // TODO: compile this from lisp source
 func Eval(e, a exp.Expression) exp.Expression {
 
-	fmt.Printf("eval(%q, %q)\n", e, a)
+	//fmt.Printf("eval(%q, %q)\n", e, a)
 
 	list := two(List)
 
@@ -813,8 +817,8 @@ func Not(x exp.Expression) exp.Expression {
 }
 
 func Pair(x, y exp.Expression) exp.Expression {
-	fmt.Printf("PAIR(%q, %q)\n", x, y)
-	if false {
+	//fmt.Printf("PAIR(%q, %q)\n", x, y)
+	if true {
 		and := two(And)
 		not := one(Not)
 		atom := one(Atom)
