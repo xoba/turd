@@ -2,14 +2,165 @@ package scr
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
+	"os"
+	"path/filepath"
+	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/xoba/turd/cnfg"
 	"github.com/xoba/turd/scr/exp"
 )
 
+func RunTests() error {
+	type test struct {
+		name string
+		f    func() error
+	}
+	var tests []test
+	add := func(name string, f func() error) {
+		tests = append(tests, test{
+			name: name,
+			f:    f,
+		})
+	}
+	add("null", nullTest)
+	files, err := loadLisp("tests")
+	if err != nil {
+		return err
+	}
+	for _, file := range files {
+		file := file
+		add(file, func() error {
+			return RunTest(file)
+		})
+	}
+	for _, t := range tests {
+		fmt.Printf("running %q\n", t.name)
+		if err := t.f(); err != nil {
+			return fmt.Errorf("can't run %q: %w", t.name, err)
+		}
+	}
+	return nil
+}
+
+func nullTest() error {
+	env, err := LoadEnv("defs/null.lisp")
+	if err != nil {
+		return err
+	}
+	return singleTest("tests/funcs-011.lisp", env)
+}
+
+func loadLisp(dir string) ([]string, error) {
+	type file struct {
+		name string
+		size int
+	}
+	var files []file
+	list, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+	space := regexp.MustCompile(`\s+`)
+	for _, fi := range list {
+		name := filepath.Join(dir, fi.Name())
+		if filepath.Ext(name) != ".lisp" {
+			continue
+		}
+		buf, err := ioutil.ReadFile(name)
+		if err != nil {
+			return nil, err
+		}
+		content := space.ReplaceAllString(string(buf), " ")
+		files = append(files, file{
+			name: name,
+			size: len(content),
+		})
+	}
+	// start with smaller files:
+	sort.Slice(files, func(i, j int) bool {
+		return files[i].size < files[j].size
+	})
+	var out []string
+	for _, f := range files {
+		out = append(out, f.name)
+	}
+	return out, nil
+}
+
+func LoadEnv(files ...string) (exp.Expression, error) {
+	a := Nil()
+	q := func(s string) exp.Expression {
+		return exp.NewString(s)
+	}
+	for _, file := range files {
+		buf, err := ioutil.ReadFile(file)
+		if err != nil {
+			return nil, err
+		}
+		def, err := Read(string(buf))
+		if err != nil {
+			return nil, err
+		}
+		name := Car(Cdr(def))
+		args := Car(Cdr(Cdr(def)))
+		body := Car(Cdr(Cdr(Cdr(def))))
+		label := exp.NewList(
+			q("label"),
+			name,
+			exp.NewList(
+				q("lambda"),
+				args,
+				body,
+			),
+		)
+		env := exp.NewList(name, label)
+		a = exp.NewList(env, a)
+	}
+	return a, nil
+}
+
+func LoadAllDefs() (exp.Expression, error) {
+	files, err := loadLisp("defs")
+	if err != nil {
+		return nil, err
+	}
+	return LoadEnv(files...)
+}
+
+func singleTest(file string, env exp.Expression) error {
+	buf, err := ioutil.ReadFile(file)
+	if err != nil {
+		return err
+	}
+	test, err := Read(string(buf))
+	if err != nil {
+		return err
+	}
+	in := Car(test)
+	out := Car(Cdr(test))
+	fmt.Printf("%s: %s -> %s\n", filepath.Base(file), in, out)
+	e := Eval(in, env)
+	if e.String() != out.String() {
+		return fmt.Errorf("%s failed", file)
+	}
+	return nil
+}
+
+func RunTest(file string) error {
+	a, err := LoadAllDefs()
+	if err != nil {
+		return err
+	}
+	return singleTest(file, a)
+}
+
 func Lisp(config cnfg.Config) error {
+
+	return RunTests()
 
 	defer func() {
 		fmt.Printf("test coverage = %v\n", coverage)
@@ -37,7 +188,10 @@ func Lisp(config cnfg.Config) error {
 	}
 
 	var count int
+
+	names := make(map[string]bool)
 	test := func(i interface{}, in, expect string) {
+
 		if in == "" {
 			return
 		}
@@ -46,8 +200,39 @@ func Lisp(config cnfg.Config) error {
 		}
 		count++
 		m[in] = true
-		e := Read(in)
-		fmt.Printf("%2d.%v: %-55s -> %s\n", count, i, e, expect)
+
+		var name string
+		switch t := i.(type) {
+		case int:
+			name = fmt.Sprintf("%03d-%03d", t, count)
+		case string:
+			name = fmt.Sprintf("%s-%03d", t, count)
+		default:
+			panic(t)
+		}
+
+		if names[name] {
+			panic("dup name " + name)
+		}
+		names[name] = true
+
+		f, err := os.Create(fmt.Sprintf("tests/%s.lisp", name))
+		check(err)
+		defer f.Close()
+		fmt.Fprintf(f, fmt.Sprintf(`(%s
+%s
+)
+`, in, expect))
+
+		return
+
+		e, err := Read(in)
+		check(wrap(i, err))
+
+		ex, err := Read(expect)
+		check(wrap(i, err))
+
+		fmt.Printf("%2d.%v: %-55s -> %s\n", count, i, e, ex)
 		check(wrap(i, e.Error()))
 		x := Eval(e, a)
 		check(wrap(i, x.Error()))
@@ -57,12 +242,27 @@ func Lisp(config cnfg.Config) error {
 	}
 
 	define := func(name, lambda string) {
+		return
 		if name == "" {
 			return
 		}
-		e := Read(fmt.Sprintf("(label %s %s)", name, lambda))
+		lambdaE, err := Read(lambda)
+		check(err)
+
+		e, err := Read(fmt.Sprintf("(label %s %s)", name, lambda))
+		check(err)
+
 		check(wrap(name, e.Error()))
 		a = exp.NewList(exp.NewList(exp.NewString(name), e), a)
+
+		args := Car(Cdr(lambdaE))
+		body := Car(Cdr(Cdr(lambdaE)))
+		f, err := os.Create(fmt.Sprintf("defs/%s.lisp", name))
+		check(err)
+		defer f.Close()
+		fmt.Fprintf(f, fmt.Sprintf(`(defun %s %s 
+%s)
+`, name, args, body))
 	}
 
 	test2 := func(x, y string) {
@@ -93,7 +293,6 @@ func Lisp(config cnfg.Config) error {
 
 		test("funcs", "("+Append+" '(a b) '(c d))", "(a b c d)")
 		test("funcs", "("+Append+" '() '(c d))", "(c d)")
-		//return nil
 	}
 
 	if true {
@@ -112,10 +311,9 @@ func Lisp(config cnfg.Config) error {
 		     (cons (list (car x) (car y))
 			   (pair (cdr x) (cdr y))))))`)
 		test("funcs", `(pair '(x y z) '(a b c))`, "((x a) (y b) (z c))")
-		return nil
 	}
 
-	if false {
+	if true {
 		// TODO: this group works at start of test suite, but not in middle or end!
 		const null = "(lambda (x) (eq x '()))"
 		define("null", null)
@@ -127,7 +325,6 @@ func Lisp(config cnfg.Config) error {
 			def = "(lambda (x y) (cond ((" + null + " x) y) ('t (cons (car x) (append (cdr x) y)))))"
 		)
 		test("funcs", "("+def+" '(c d))", "(a b c d)")
-		return nil
 		define("append", def)
 		test("funcs", `(append '(a b) '(c d))`, "(a b c d)")
 		test("funcs", `(append '() '(c d))`, "(c d)")
@@ -729,10 +926,10 @@ func Evcon(c, a exp.Expression) exp.Expression {
 	return exp.NewError(fmt.Errorf("no condition satisfied"))
 }
 
-func Read(s string) exp.Expression {
+func Read(s string) (exp.Expression, error) {
 	n, err := parse(s)
 	if err != nil {
-		return exp.NewError(err)
+		return nil, err
 	}
 	return n.Expression()
 }

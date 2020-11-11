@@ -17,12 +17,12 @@ func Quote(e exp.Expression) exp.Expression {
 	return exp.NewList(exp.NewString("quote"), e)
 }
 
-func (n *node) Expression() exp.Expression {
+func (n *node) Expression() (exp.Expression, error) {
 	if len(n.Value) > 0 {
 		if runes := []rune(n.Value); runes[0] == '\'' {
-			return Quote(exp.NewString(string(runes[1:])))
+			return Quote(exp.NewString(string(runes[1:]))), nil
 		}
-		return exp.NewString(n.Value)
+		return exp.NewString(n.Value), nil
 	}
 	var list []exp.Expression
 	var lastQuote bool
@@ -31,7 +31,10 @@ func (n *node) Expression() exp.Expression {
 			lastQuote = true
 			continue
 		}
-		e := c.Expression()
+		e, err := c.Expression()
+		if err != nil {
+			return nil, err
+		}
 		if lastQuote {
 			e = Quote(e)
 			lastQuote = false
@@ -39,9 +42,9 @@ func (n *node) Expression() exp.Expression {
 		list = append(list, e)
 	}
 	if lastQuote {
-		return exp.NewError(fmt.Errorf("errant quote"))
+		return nil, fmt.Errorf("errant quote")
 	}
-	return exp.NewList(list...)
+	return exp.NewList(list...), nil
 }
 
 func parse(s string) (*node, error) {
@@ -57,16 +60,16 @@ func parse(s string) (*node, error) {
 }
 
 func parseTokens(list []string) (*node, error) {
-	switch len(list) {
+	switch n := len(list); n {
 	case 0:
 		return nil, fmt.Errorf("can't parse empty list")
 	case 1:
 		return &node{Value: list[0]}, nil
 	default:
-		if list[0] != "(" || list[len(list)-1] != ")" {
+		if list[0] != "(" || list[n-1] != ")" {
 			return nil, fmt.Errorf("not a list: %q", list)
 		}
-		list = list[1 : len(list)-1]
+		list = list[1 : n-1]
 		var out node
 		var indent int
 		var current []string
