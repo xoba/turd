@@ -654,14 +654,17 @@ func TestCond() error {
 	return result.Error()
 }
 
+func List(x, y exp.Expression) exp.Expression {
+	cons := two(Cons)
+	return apply(cons, x, apply(cons, y, Nil()))
+}
+
 // TODO: compile this from lisp source
 func Eval(e, a exp.Expression) exp.Expression {
 
 	//fmt.Printf("eval(%q, %q)\n", e, a)
 
-	list := func(args ...exp.Expression) exp.Expression {
-		return exp.NewList(args...)
-	}
+	list := two(List)
 
 	if e.Error() != nil {
 		return e
@@ -675,124 +678,126 @@ func Eval(e, a exp.Expression) exp.Expression {
 	eval := two(Eval)
 	eq := two(Eq)
 	cons := two(Cons)
-
+	appnd := two(Append)
+	pair := two(Pair)
 	evcon := two(Evcon)
 	assoc := two(Assoc)
 
-	is := func(s string) exp.Expression {
-		return apply(eq, apply(car, e), q(s))
+	nl := exp.NewList
+	z := exp.NewLazy
+	y := apply
+
+	is2 := func(s string) exp.Expression {
+		is := func(s string) exp.Expression {
+			return apply(eq, apply(car, e), q(s))
+		}
+		return z(func() exp.Expression {
+			return is(s)
+		})
+	}
+
+	is3 := func(s string) exp.Expression {
+		return z(func() exp.Expression {
+			return y(eq, y(caar, e), q(s))
+		})
 	}
 
 	cxxr := func(f string) exp.Expression {
-		return exp.NewList( // 'cdr
-			exp.NewLazy(func() exp.Expression {
-				return is(f)
-			}),
-			exp.NewLazy(func() exp.Expression {
-				return apply(x(f), apply(eval, apply(cadr, e), a))
+		return nl(
+			is2(f),
+			z(func() exp.Expression {
+				return y(x(f), y(eval, y(cadr, e), a))
 			}),
 		)
 	}
 
-	return apply(Cond,
-		exp.NewList(
-			exp.NewLazy(func() exp.Expression {
-				return apply(atom, e)
-			}),
-			exp.NewLazy(func() exp.Expression {
-				return apply(assoc, e, a)
+	return y(Cond,
+		nl(
+			y(atom, e),
+			z(func() exp.Expression {
+				return y(assoc, e, a)
 			}),
 		),
-		exp.NewList(
-			exp.NewLazy(func() exp.Expression {
-				return apply(atom, apply(car, e))
+		nl(
+			z(func() exp.Expression {
+				return y(atom, y(car, e))
 			}),
-			exp.NewLazy(func() exp.Expression {
-				return apply(Cond,
-					exp.NewList(
-						exp.NewLazy(func() exp.Expression {
-							return is("quote")
-						}),
-						exp.NewLazy(func() exp.Expression {
-							return apply(cadr, e)
+			z(func() exp.Expression {
+				return y(Cond,
+					nl(
+						is2("quote"),
+						z(func() exp.Expression {
+							return y(cadr, e)
 						}),
 					),
-					exp.NewList(
-						exp.NewLazy(func() exp.Expression {
-							return is("atom")
-						}),
-						exp.NewLazy(func() exp.Expression {
-							return apply(atom, apply(eval, apply(cadr, e), a))
+					nl(
+						is2("atom"),
+						z(func() exp.Expression {
+							return y(atom, y(eval, y(cadr, e), a))
 						}),
 					),
-					exp.NewList(
-						exp.NewLazy(func() exp.Expression {
-							return is("eq")
-						}),
-						exp.NewLazy(func() exp.Expression {
-							return apply(eq,
-								apply(eval, apply(cadr, e), a),
-								apply(eval, apply(caddr, e), a))
+					nl(
+						is2("eq"),
+						z(func() exp.Expression {
+							return y(eq,
+								y(eval, y(cadr, e), a),
+								y(eval, y(caddr, e), a))
 						}),
 					),
 					cxxr("car"),
 					cxxr("cdr"),
-					exp.NewList(
-						exp.NewLazy(func() exp.Expression {
-							return is("list")
-						}),
-						exp.NewLazy(func() exp.Expression {
-							return apply(evlis, apply(cdr, e), a)
+					nl(
+						is2("list"),
+						z(func() exp.Expression {
+							return y(evlis, y(cdr, e), a)
 						}),
 					),
-					exp.NewList(
-						exp.NewLazy(func() exp.Expression {
-							return is("cons")
-						}),
-						exp.NewLazy(func() exp.Expression {
-							return apply(cons, apply(eval, apply(cadr, e), a), apply(eval, apply(caddr, e), a))
-						}),
-					),
-					exp.NewList(
-						exp.NewLazy(func() exp.Expression {
-							return is("cond")
-						}),
-						exp.NewLazy(func() exp.Expression {
-							return apply(evcon, apply(cdr, e), a)
+					nl(
+						is2("cons"),
+						z(func() exp.Expression {
+							return y(cons,
+								y(eval, y(cadr, e), a),
+								y(eval, y(caddr, e), a))
 						}),
 					),
-					exp.NewList(
-						exp.NewLazy(func() exp.Expression {
-							return True()
+					nl(
+						is2("cond"),
+						z(func() exp.Expression {
+							return y(evcon, y(cdr, e), a)
 						}),
-						exp.NewLazy(func() exp.Expression {
-							return apply(eval, apply(cons, apply(assoc, apply(car, e), a), apply(cdr, e)), a)
+					),
+					nl(
+						True(),
+						z(func() exp.Expression {
+							return y(eval,
+								y(cons,
+									y(assoc, y(car, e), a),
+									y(cdr, e)),
+								a)
 						}),
 					),
 				)
 			}),
 		),
-		exp.NewList( // ((eq (caar e) 'label))
-			exp.NewLazy(func() exp.Expression {
-				return apply(eq, apply(caar, e), q("label"))
-			}),
-			exp.NewLazy(func() exp.Expression {
-				return apply(eval,
-					apply(cons, apply(caddar, e), apply(cdr, e)),
-					apply(cons, apply(list, apply(cadar, e), apply(car, e)), a))
+		nl(
+			is3("label"),
+			z(func() exp.Expression {
+				return y(eval,
+					y(cons, y(caddar, e), y(cdr, e)),
+					y(cons, y(list, y(cadar, e), y(car, e)), a))
 			}),
 		),
-		exp.NewList( // ((eq (caar e) 'lambda))
-			exp.NewLazy(func() exp.Expression {
-				return apply(eq, apply(caar, e), q("lambda"))
-			}),
-			exp.NewLazy(func() exp.Expression {
-				return apply(eval,
-					apply(caddar, e),
-					apply(two(Append), apply(two(Pair), apply(cadar, e), apply(evlis, apply(cdr, e), a)), a))
+		nl(
+			is3("lambda"),
+			z(func() exp.Expression {
+				return y(eval,
+					y(caddar, e),
+					y(appnd, y(pair, y(cadar, e), y(evlis, y(cdr, e), a)),
+						a))
 			}),
 		),
 	)
+
 	return exp.Errorf("eval can't handle (%s %s)", e, a)
 }
 
