@@ -666,9 +666,8 @@ func Eval(e, a exp.Expression) exp.Expression {
 	if e.Error() != nil {
 		return e
 	}
-
-	if IsAtom(e) {
-		return Assoc(e, a)
+	if a.Error() != nil {
+		return a
 	}
 
 	evlis := two(Evlis)
@@ -736,36 +735,7 @@ func Eval(e, a exp.Expression) exp.Expression {
 								apply(eval, apply(caddr, e), a))
 						}),
 					),
-					// all cxr's up to 4 ops:
-					cxxr("caaaar"),
-					cxxr("caaadr"),
-					cxxr("caaar"),
-					cxxr("caadar"),
-					cxxr("caaddr"),
-					cxxr("caadr"),
-					cxxr("caar"),
-					cxxr("cadaar"),
-					cxxr("cadadr"),
-					cxxr("cadar"),
-					cxxr("caddar"),
-					cxxr("cadddr"),
-					cxxr("caddr"),
-					cxxr("cadr"),
 					cxxr("car"),
-					cxxr("cdaaar"),
-					cxxr("cdaadr"),
-					cxxr("cdaar"),
-					cxxr("cdadar"),
-					cxxr("cdaddr"),
-					cxxr("cdadr"),
-					cxxr("cdar"),
-					cxxr("cddaar"),
-					cxxr("cddadr"),
-					cxxr("cddar"),
-					cxxr("cdddar"),
-					cxxr("cddddr"),
-					cxxr("cdddr"),
-					cxxr("cddr"),
 					cxxr("cdr"),
 					exp.NewList(
 						exp.NewLazy(func() exp.Expression {
