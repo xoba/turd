@@ -1,3 +1,4 @@
-((null '())
-t
-)
+(
+ (null '()) ; yes, this is null
+ t
+ )

@@ -1,6 +1,8 @@
 package scr
 
 import (
+	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -48,6 +50,27 @@ func (n *node) Expression() (exp.Expression, error) {
 }
 
 func parse(s string) (*node, error) {
+	{
+		uncommented := func(s string) string {
+			z := new(bytes.Buffer)
+			for _, r := range s {
+				if r == ';' {
+					break
+				}
+				z.WriteRune(r)
+			}
+			return z.String()
+		}
+		w := new(bytes.Buffer)
+		scanner := bufio.NewScanner(strings.NewReader(s))
+		for scanner.Scan() {
+			fmt.Fprintf(w, "%s\n", uncommented(scanner.Text()))
+		}
+		if err := scanner.Err(); err != nil {
+			return nil, err
+		}
+		s = w.String()
+	}
 	toks, err := tokenize(s)
 	if err != nil {
 		return nil, err
