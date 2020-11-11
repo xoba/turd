@@ -1,6 +1,7 @@
 package scr
 
 import (
+	"crypto/md5"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -44,7 +45,6 @@ func RunTests() error {
 	}
 
 	for _, t := range tests {
-		fmt.Printf("running %q\n", t.name)
 		if err := t.f(); err != nil {
 			return fmt.Errorf("can't run %q: %w", t.name, err)
 		}
@@ -79,6 +79,12 @@ func loadLisp(dir string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	hashes := make(map[string]bool)
+	hash := func(b []byte) string {
+		h := md5.New()
+		h.Write(b)
+		return fmt.Sprintf("%x", h.Sum(nil))
+	}
 	space := regexp.MustCompile(`\s+`)
 	for _, fi := range list {
 		name := filepath.Join(dir, fi.Name())
@@ -89,6 +95,11 @@ func loadLisp(dir string) ([]string, error) {
 		if err != nil {
 			return nil, err
 		}
+		if hashes[hash(buf)] {
+			os.Remove(name)
+			continue
+		}
+		hashes[hash(buf)] = true
 		content := space.ReplaceAllString(string(buf), " ")
 		files = append(files, file{
 			name: name,
