@@ -96,6 +96,7 @@ func loadLisp(dir string) ([]string, error) {
 			return nil, err
 		}
 		if hashes[hash(buf)] {
+			fmt.Printf("removing %q\n", name)
 			os.Remove(name)
 			continue
 		}
@@ -168,7 +169,7 @@ func singleTest(file string, env exp.Expression) error {
 	}
 	in := Car(test)
 	out := Car(Cdr(test))
-	fmt.Printf("%s: %s -> %s\n", filepath.Base(file), in, out)
+	fmt.Printf("%-16s: %s -> %s\n", filepath.Base(file), in, out)
 	e := Eval(in, env)
 	if e.String() != out.String() {
 		return fmt.Errorf("%s failed; expected %q, got %q", file, out, e)
