@@ -29,22 +29,22 @@ type expr struct {
 }
 
 func (e *expr) Atom() Atom {
-	e.eval()
+	e.eval(false)
 	return e.atom
 }
 
 func (e *expr) List() []Expression {
-	e.eval()
+	e.eval(false)
 	return e.list
 }
 
 func (e *expr) Error() error {
-	e.eval()
+	e.eval(false)
 	return e.err
 }
 
 func (e *expr) String() string {
-	e.eval()
+	e.eval(false)
 	if a := e.atom; a != nil {
 		return a.String()
 	}
@@ -58,13 +58,16 @@ func (e *expr) String() string {
 	return e.list.String()
 }
 
-func (e *expr) eval() {
+func (e *expr) eval(debug bool) {
 	if e.lazy == nil {
 		return
 	}
 	defer func() {
 		e.lazy = nil
 	}()
+	if debug {
+		fmt.Printf("evaluating lazily\n")
+	}
 	o := e.lazy()
 	e.atom = o.Atom()
 	e.list = o.List()

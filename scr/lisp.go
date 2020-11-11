@@ -33,7 +33,7 @@ func RunTests() error {
 	}
 
 	if false {
-		single("tests/funcs-012.lisp")
+		return RunTest("tests/052-funcs.lisp")
 	} else {
 		files, err := loadLisp("tests")
 		if err != nil {
@@ -159,6 +159,7 @@ func LoadAllDefs() (exp.Expression, error) {
 }
 
 func singleTest(file string, env exp.Expression) error {
+	fmt.Printf("run(%q)\n", file)
 	buf, err := ioutil.ReadFile(file)
 	if err != nil {
 		return err
@@ -172,6 +173,7 @@ func singleTest(file string, env exp.Expression) error {
 	fmt.Printf("%-16s: %s -> %s\n", filepath.Base(file), in, out)
 	e := Eval(in, env)
 	if e.String() != out.String() {
+		fmt.Println("error")
 		return fmt.Errorf("%s failed; expected %q, got %q", file, out, e)
 	}
 	return nil
@@ -506,43 +508,24 @@ func Lisp(config cnfg.Config) error {
 }
 
 func Assoc(x, y exp.Expression) exp.Expression {
-	if false {
-		eq := two(Eq)
-		assoc := two(Assoc)
-		return apply(Cond,
-			exp.NewList(
-				exp.NewLazy(func() exp.Expression {
-					return apply(eq, apply(caar, y), x)
-				}),
-				exp.NewLazy(func() exp.Expression {
-					return apply(cadar, y)
-				}),
-			),
-			exp.NewList(
-				True(),
-				exp.NewLazy(func() exp.Expression {
-					return apply(assoc, x, apply(cdr, y))
-				}),
-			),
-		)
-	}
-
-	if !IsAtom(x) {
-		return exp.Errorf("needs an atom to assoc")
-	}
-	switch {
-	case IsList(y) && IsEmpty(y):
-		return x
-	case !IsList(y):
-		return exp.Errorf("needs a list to assoc")
-	}
-	caar := Car(Car(y))
-	eq := Eq(caar, x)
-	if eq.String() == True().String() {
-		return Car(Cdr(Car(y)))
-	}
-	cdr := Cdr(y)
-	return Assoc(x, cdr)
+	eq := two(Eq)
+	assoc := two(Assoc)
+	return apply(Cond,
+		exp.NewList(
+			exp.NewLazy(func() exp.Expression {
+				return apply(eq, apply(caar, y), x)
+			}),
+			exp.NewLazy(func() exp.Expression {
+				return apply(cadar, y)
+			}),
+		),
+		exp.NewList(
+			True(),
+			exp.NewLazy(func() exp.Expression {
+				return apply(assoc, x, apply(cdr, y))
+			}),
+		),
+	)
 }
 
 func Eq(x, y exp.Expression) exp.Expression {
@@ -681,7 +664,7 @@ func List(x, y exp.Expression) exp.Expression {
 // TODO: compile this from lisp source
 func Eval(e, a exp.Expression) exp.Expression {
 
-	//fmt.Printf("eval(%q, %q)\n", e, a)
+	// fmt.Printf("eval(%q, %q)\n", e, a)
 
 	list := two(List)
 
@@ -831,6 +814,7 @@ func IsAtom(e exp.Expression) bool {
 }
 
 func Pair(x, y exp.Expression) exp.Expression {
+	//	fmt.Printf("pair(%q, %q)\n", x, y)
 	if x.String() == "()" && y.String() == "()" {
 		return exp.NewList()
 	}
@@ -857,6 +841,25 @@ func w2(name string, f TwoFunc) TwoFunc {
 }
 
 func Append(x, y exp.Expression) exp.Expression {
+	null := one(Null)
+	cons := two(Cons)
+	append := two(Append)
+	return apply(Cond,
+		exp.NewList(
+			apply(null, x),
+			y,
+		),
+		exp.NewList(
+			True(),
+			exp.NewLazy(func() exp.Expression {
+				return apply(cons,
+					apply(car, x),
+					apply(append, apply(cdr, x), y),
+				)
+			}),
+		),
+	)
+
 	if x.String() == "()" {
 		return y
 	}
