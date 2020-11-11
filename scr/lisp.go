@@ -642,7 +642,7 @@ func List(x, y exp.Expression) exp.Expression {
 // TODO: compile this from lisp source
 func Eval(e, a exp.Expression) exp.Expression {
 
-	//fmt.Printf("eval(%q, %q)\n", e, a)
+	debug("EVAL(%q, %q)", e, a)
 
 	list := two(List)
 
@@ -816,9 +816,19 @@ func Not(x exp.Expression) exp.Expression {
 	)
 }
 
+func debug(format string, args ...interface{}) {
+	x := fmt.Sprintf(format, args...)
+	fmt.Println(x)
+	return
+
+	hash := md5.New()
+	hash.Write([]byte(x))
+	fmt.Printf("%x: %s\n", hash.Sum(nil)[:2], x)
+}
+
 func Pair(x, y exp.Expression) exp.Expression {
-	//fmt.Printf("PAIR(%q, %q)\n", x, y)
-	if true {
+	debug("PAIR(%q, %q)", x, y)
+	if false {
 		and := two(And)
 		not := one(Not)
 		atom := one(Atom)
@@ -855,13 +865,7 @@ func Pair(x, y exp.Expression) exp.Expression {
 		return exp.NewList()
 	}
 	if !IsAtom(x) && !IsAtom(y) {
-		carx := Car(x)
-		cary := Car(y)
-		cdrx := Cdr(x)
-		cdry := Cdr(y)
-		list := exp.NewList(carx, cary)
-		pair := Pair(cdrx, cdry)
-		return Cons(list, pair)
+		return Cons(exp.NewList(Car(x), Car(y)), Pair(Cdr(x), Cdr(y)))
 	}
 	return exp.Errorf("illegal pair state")
 }
