@@ -823,46 +823,6 @@ func Eval(e, a exp.Expression) exp.Expression {
 			}),
 		),
 	)
-
-	if x := car(e); IsAtom(x) {
-		if f, err := cxr(x.String()); err == nil {
-			return f(Eval(cadr(e), a))
-		}
-		switch x.String() {
-		case "list":
-			return apply(evlis, apply(cdr, e), a)
-		case "quote":
-			return apply(cadr, e)
-		case "atom":
-			return apply(atom, apply(eval, apply(cadr, e), a))
-		case "eq":
-			return apply(eq, apply(eval, apply(cadr, e), a), apply(eval, apply(caddr, e), a))
-		case "cons":
-			return apply(cons, apply(eval, apply(cadr, e), a), apply(eval, apply(caddr, e), a))
-		case "cond":
-			return apply(evcon, apply(cdr, e), a)
-		default:
-			return apply(eval, apply(cons, apply(assoc, apply(car, e), a), apply(cdr, e)), a)
-		}
-	}
-
-	if x := caar(e); x.String() == "label" {
-		return Eval(
-			Cons(caddar(e), cdr(e)),
-			Cons(list(cadar(e), car(e)), a),
-		)
-	}
-
-	if x := caar(e); x.String() == "lambda" {
-		e2 := caddar(e)
-		a2 := Append(Pair(cadar(e), Evlis(cdr(e), a)),
-			a,
-		)
-		return Eval(
-			e2, a2,
-		)
-	}
-
 	return exp.Errorf("eval can't handle (%s %s)", e, a)
 }
 
@@ -892,17 +852,6 @@ func w2(name string, f TwoFunc) TwoFunc {
 	}
 }
 
-func Evlis(m, a exp.Expression) exp.Expression {
-	if m.String() == "()" {
-		return exp.NewList()
-	}
-	car := Car(m)
-	cdr := Cdr(m)
-	eval := Eval(car, a)
-	evlis := Evlis(cdr, a)
-	return Cons(eval, evlis)
-}
-
 func Append(x, y exp.Expression) exp.Expression {
 	if x.String() == "()" {
 		return y
@@ -927,6 +876,44 @@ func Cons(x, y exp.Expression) exp.Expression {
 		add(e)
 	}
 	return exp.NewList(args...)
+}
+
+func Evlis(m, a exp.Expression) exp.Expression {
+	if false {
+		null := one(Null)
+		cons := two(Cons)
+		eval := two(Eval)
+		evlis := two(Evlis)
+		return apply(Cond,
+			exp.NewList(
+				exp.NewLazy(func() exp.Expression {
+					return apply(null, m)
+				}),
+				Nil(),
+			),
+			exp.NewList(
+				True(),
+				exp.NewLazy(func() exp.Expression {
+					return apply(
+						cons,
+						apply(eval, apply(car, m), a),
+						apply(evlis, apply(cdr, m), a),
+					)
+				}),
+			),
+			exp.NewList(),
+		)
+	} else {
+		if m.String() == "()" {
+			return exp.NewList()
+		}
+		return Cons(Eval(Car(m), a), Evlis(Cdr(m), a))
+	}
+}
+
+func Null(x exp.Expression) exp.Expression {
+	eq := two(Eq)
+	return apply(eq, Nil())
 }
 
 func Evcon(c, a exp.Expression) exp.Expression {
