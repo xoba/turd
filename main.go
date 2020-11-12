@@ -45,6 +45,7 @@ func main() {
 
 func Run(c cnfg.Config) error {
 	modes := map[string]func(cnfg.Config) error{
+		"compile":   lisp.CompileDef,
 		"connect":   Connect,
 		"dd":        dd.Run,
 		"gossip":    gossip.Run,
