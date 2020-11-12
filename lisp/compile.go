@@ -58,7 +58,7 @@ func CompileDef(cnfg.Config) error {
 		if err != nil {
 			return err
 		}
-
+		e = translateAtoms("append", "xappend", e)
 		{
 			name, env, err := ToEnv(e)
 			if err != nil {
@@ -159,7 +159,7 @@ func Tofunc(defun exp.Expression) (string, []byte, error) {
 		}
 		fmt.Fprintf(w, "%s := args[%d];\n", a.Atom(), i)
 	}
-	code, err := Compile(body, false)
+	code, err := Compile(body)
 	if err != nil {
 		return name, nil, err
 	}
@@ -176,7 +176,46 @@ func in(a string, list ...string) bool {
 	return false
 }
 
-func Compile(e exp.Expression, noapply bool) ([]byte, error) {
+func translateAtoms(from, to string, e exp.Expression) exp.Expression {
+	a := e.Atom()
+	if a == nil {
+		var out []exp.Expression
+		for _, c := range e.List() {
+			out = append(out, translateAtoms(from, to, c))
+		}
+		return exp.NewList(out...)
+	}
+	if a.String() == from {
+		return exp.NewString(to)
+	}
+	return e
+}
+
+func CompileLazy(e exp.Expression) ([]byte, error) {
+	w := new(bytes.Buffer)
+	list := e.List()
+	if len(list) != 2 {
+		return nil, fmt.Errorf("malformed cond: %s %s", e)
+	}
+	pb, err := Compile(list[0])
+	if err != nil {
+		return nil, err
+	}
+	eb, err := Compile(list[1])
+	if err != nil {
+		return nil, err
+	}
+	f := func(s string) string {
+		return fmt.Sprintf(`func() Exp {
+return %s
+}`, string(s))
+	}
+	fmt.Fprintf(w, "list(\n%s,\n%s,\n)", f(string(pb)), f(string(eb)))
+	return w.Bytes(), nil
+}
+
+// TODO: deal with "append" to not conflict with golang's keyword with same name
+func Compile(e exp.Expression) ([]byte, error) {
 	w := new(bytes.Buffer)
 	indent := func(msg string, list []string) {
 		fmt.Fprintf(w, "%s(\n%s,\n)", msg, strings.Join(list, ",\n"))
@@ -197,16 +236,21 @@ func Compile(e exp.Expression, noapply bool) ([]byte, error) {
 		case n == 0:
 			fmt.Fprintf(w, "Nil")
 		case n == 1:
-			sub, err := Compile(e.List()[0], false)
+			sub, err := Compile(e.List()[0])
 			if err != nil {
 				return nil, err
 			}
 			fmt.Fprintf(w, "(%s)", string(sub))
-		case n > 1 && in(e.List()[0].String(), "cond", "xquote"):
-			// TODO: NEED TO MAKE SUB-ARGS LAZY HERE:
+		case n > 1 && in(e.List()[0].String(), "cond"):
 			var list []string
-			for _, a := range e.List() {
-				sub, err := Compile(a, true)
+			for i, a := range e.List() {
+				var f func(exp.Expression) ([]byte, error)
+				if i == 0 {
+					f = Compile
+				} else {
+					f = CompileLazy
+				}
+				sub, err := f(a)
 				if err != nil {
 					return nil, err
 				}
@@ -216,19 +260,13 @@ func Compile(e exp.Expression, noapply bool) ([]byte, error) {
 		default:
 			var list []string
 			for _, a := range e.List() {
-				sub, err := Compile(a, false)
+				sub, err := Compile(a)
 				if err != nil {
 					return nil, err
 				}
 				list = append(list, string(sub))
 			}
-			var msg string
-			if noapply {
-				msg = "list"
-			} else {
-				msg = "apply"
-			}
-			indent(msg, list)
+			indent("apply", list)
 		}
 	}
 	return w.Bytes(), nil
