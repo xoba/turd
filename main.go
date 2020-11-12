@@ -18,8 +18,8 @@ import (
 	"github.com/xoba/turd/dd"
 	"github.com/xoba/turd/gossip"
 	"github.com/xoba/turd/infl"
+	"github.com/xoba/turd/lisp"
 	"github.com/xoba/turd/poset"
-	"github.com/xoba/turd/scr"
 	"github.com/xoba/turd/taws"
 	"github.com/xoba/turd/tnet"
 	"github.com/xoba/turd/trie"
@@ -53,10 +53,10 @@ func Run(c cnfg.Config) error {
 		"inflation": infl.Run,
 		"keys":      tnet.SharedKey,
 		"launch":    LaunchNode,
-		"lisp":      scr.Lisp,
+		"lisp":      lisp.Lisp,
 		"poset":     poset.Run,
 		"listen":    Listen,
-		"script":    scr.Run,
+		"script":    lisp.Run,
 		"trie":      trie.Run,
 	}
 	handler, ok := modes[c.Mode]

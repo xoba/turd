@@ -1,6 +1,6 @@
-package scr
+package lisp
 
-import "github.com/xoba/turd/scr/exp"
+import "github.com/xoba/turd/lisp/exp"
 
 // #1
 func Quote(e exp.Expression) exp.Expression {

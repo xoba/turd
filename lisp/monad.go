@@ -1,7 +1,7 @@
-package scr
+package lisp
 
 import (
-	"github.com/xoba/turd/scr/exp"
+	"github.com/xoba/turd/lisp/exp"
 )
 
 type MonadFunc func(exp.Expression) exp.Expression

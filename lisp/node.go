@@ -1,4 +1,4 @@
-package scr
+package lisp
 
 import (
 	"bufio"
@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/xoba/turd/scr/exp"
+	"github.com/xoba/turd/lisp/exp"
 )
 
 type node struct {

@@ -1,4 +1,4 @@
-package scr
+package lisp
 
 import (
 	"crypto/md5"
@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	"github.com/xoba/turd/cnfg"
-	"github.com/xoba/turd/scr/exp"
+	"github.com/xoba/turd/lisp/exp"
 )
 
 func RunTests() error {

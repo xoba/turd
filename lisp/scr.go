@@ -1,5 +1,5 @@
 // Package scr is for transaction scripting language
-package scr
+package lisp
 
 import (
 	"bytes"
