@@ -6,19 +6,27 @@ import (
 	"strings"
 )
 
+var env Exp
+
 func main() {
 
-	show := func(e Exp) {
-		fmt.Println(String(e))
+	show := func(msg string, e Exp) {
+		fmt.Printf("%s: %s\n", msg, String(e))
 	}
-	show(quote())
-	show(quote("howdy"))
-	show(atom(quote("howdy")))
-	show(apply(atom, apply(quote, "howdy")))
-	show(atom(list()))
-	show(atom(list("a")))
-	show(eq(quote("a"), quote("a")))
-	show(eq(quote("b"), quote("a")))
+	show("1", quote("howdy"))
+
+	show("2", atom(quote("howdy")))
+	show("11", atom(list("quote", "a")))
+	show("12", atom("x"))
+
+	show("3", apply(atom, apply(quote, "howdy")))
+	show("4", atom(list()))
+	show("5", atom(list("a")))
+	show("6", eq("a", "a"))
+	show("7", eq("a", "b"))
+	f1 := and("t", "t")
+	show("14", f1)
+	show("15", and("t", list()))
 
 	lazy := func(e Exp) Lazy {
 		return Lazy(func() Exp {
@@ -26,16 +34,23 @@ func main() {
 		})
 	}
 
-	show(cond(
+	show("8", cond(
 		list(lazy(True), lazy(quote("a"))),
 		list(lazy(True), lazy(quote("b"))),
 	))
-	show(cond(
+	show("9", cond(
 		list(lazy(False), lazy(quote("a"))),
 		list(lazy(True), lazy(quote("b"))),
 	))
 
-	show(cons(quote("a"), list(quote("b"), quote("c"))))
+	show("10", cons("a", list("b", "c")))
+
+	e, a := list("quote", "x"), Nil
+	show("13", apply(
+		atom,
+		e,
+	))
+	show("12", eval(e, a))
 }
 
 func cons(args ...Exp) Exp {
@@ -60,6 +75,8 @@ func String(e Exp) string {
 	switch t := e.(type) {
 	case string:
 		fmt.Fprint(w, t)
+	case Lazy:
+		fmt.Fprint(w, "lazy")
 	case []Exp:
 		list := make([]string, len(t))
 		for i, e := range t {
@@ -78,7 +95,7 @@ type Lazy func() Exp
 
 var (
 	Nil    Exp  = list()
-	True   Exp  = quote("t")
+	True   Exp  = "t"
 	False  Exp  = Nil
 	t      Func = nil
 	lambda Exp  = "lambda"
@@ -99,11 +116,14 @@ func apply(f Func, args ...Exp) Exp {
 }
 
 func quote(args ...Exp) Exp {
+	checklen(1, args)
+	return args[0]
+
 	switch len(args) {
 	case 0:
 		return "quote"
 	case 1:
-		return args[0]
+		return list("quote", args[0])
 	default:
 		panic("quote")
 	}
@@ -162,8 +182,12 @@ func boolean(e Exp) bool {
 	return fmt.Sprintf("%v", e) == "t"
 }
 
+func debug(name string, args ...Exp) {
+	fmt.Printf("%s%s\n", name, String(list(args...)))
+}
+
 func cond(args ...Exp) Exp {
-	fmt.Printf("cond(%v)\n", args)
+	debug("cond", args...)
 	for i, a := range args {
 		switch t := a.(type) {
 		case []Exp:
@@ -171,6 +195,7 @@ func cond(args ...Exp) Exp {
 				panic(fmt.Errorf("len[%d] = %d", i, len(t)))
 			}
 			p, e := t[0], t[1]
+			fmt.Printf("p,e = %s, %s\n", String(p), String(e))
 			pl, ok := p.(Lazy)
 			if !ok {
 				panic("p not lazy")
