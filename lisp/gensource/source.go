@@ -55,19 +55,6 @@ func main() {
 	show("12", eval(e, a))
 }
 
-func cons(args ...Exp) Exp {
-	checklen(2, args)
-	x, y := args[0], args[1]
-	if IsAtom(y) {
-		panic("cons to atom")
-	}
-	slice := y.([]Exp)
-	var out []Exp
-	out = append(out, x)
-	out = append(out, slice...)
-	return out
-}
-
 type Exp interface{}
 
 func String(e Exp) string {
@@ -136,35 +123,35 @@ func apply(f Func, args ...Exp) Exp {
 	return f(args...)
 }
 
-func quote(args ...Exp) Exp {
-	checklen(1, args)
-	return args[0]
-
-	switch len(args) {
-	case 0:
-		return "quote"
-	case 1:
-		return list("quote", args[0])
-	default:
-		panic("quote")
-	}
-}
-
 func checklen(n int, args []Exp) {
 	if len(args) != n {
 		panic(fmt.Errorf("len = %d vs %d", len(args), n))
 	}
 }
 
-func car(args ...Exp) Exp {
+func list(args ...Exp) Exp {
+	return args
+}
+
+func boolean(e Exp) bool {
+	return fmt.Sprintf("%v", e) == "t"
+}
+
+// ----------------------------------------------------------------------
+// AXIOMS
+// ----------------------------------------------------------------------
+
+//
+// #1
+//
+func quote(args ...Exp) Exp {
 	checklen(1, args)
 	return args[0]
 }
 
-func cdr(args ...Exp) Exp {
-	checklen(1, args)
-	return args[1:]
-}
+//
+// #2
+//
 
 func atom(args ...Exp) Exp {
 	checklen(1, args)
@@ -184,6 +171,10 @@ func atom(args ...Exp) Exp {
 	}
 }
 
+//
+// #3
+//
+
 func eq(args ...Exp) Exp {
 	checklen(2, args)
 	s := func(e Exp) string {
@@ -195,21 +186,46 @@ func eq(args ...Exp) Exp {
 	return False
 }
 
-func list(args ...Exp) Exp {
-	return args
+//
+// #4
+//
+
+func car(args ...Exp) Exp {
+	checklen(1, args)
+	return args[0]
 }
 
-func boolean(e Exp) bool {
-	return fmt.Sprintf("%v", e) == "t"
+//
+// #5
+//
+
+func cdr(args ...Exp) Exp {
+	checklen(1, args)
+	return args[1:]
 }
 
-func debug(name string, args ...Exp) {
-	return
-	fmt.Printf("%s%s\n", name, String(list(args...)))
+//
+// #6
+//
+
+func cons(args ...Exp) Exp {
+	checklen(2, args)
+	x, y := args[0], args[1]
+	if IsAtom(y) {
+		panic("cons to atom")
+	}
+	slice := y.([]Exp)
+	var out []Exp
+	out = append(out, x)
+	out = append(out, slice...)
+	return out
 }
+
+//
+// #7
+//
 
 func cond(args ...Exp) Exp {
-	debug("cond", args...)
 	for i, a := range args {
 		switch t := a.(type) {
 		case []Exp:
@@ -234,4 +250,15 @@ func cond(args ...Exp) Exp {
 		}
 	}
 	panic("cond")
+}
+
+//
+// #8
+//
+
+func display(args ...Exp) Exp {
+	checklen(1, args)
+	a := args[0]
+	fmt.Printf("(display %s)\n", a)
+	return a
 }

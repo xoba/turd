@@ -151,7 +151,7 @@ func Tofunc(defun exp.Expression) (string, []byte, error) {
 	w := new(bytes.Buffer)
 
 	fmt.Fprintf(w, "func %[1]s(args ... Exp) Exp {\n", name)
-	fmt.Fprintf(w, "debug(%q,args...)\n", name)
+	//fmt.Fprintf(w, "debug(%q,args...)\n", name)
 	fmt.Fprintf(w, "checklen(%d,args)\n", len(args.List()))
 	for i, a := range args.List() {
 		if !IsAtom(a) {

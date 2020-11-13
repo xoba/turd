@@ -57,19 +57,6 @@ func main() {
 	show("12", eval(e, a))
 }
 
-func cons(args ...Exp) Exp {
-	checklen(2, args)
-	x, y := args[0], args[1]
-	if IsAtom(y) {
-		panic("cons to atom")
-	}
-	slice := y.([]Exp)
-	var out []Exp
-	out = append(out, x)
-	out = append(out, slice...)
-	return out
-}
-
 type Exp interface{}
 
 func String(e Exp) string {
@@ -138,35 +125,35 @@ func apply(f Func, args ...Exp) Exp {
 	return f(args...)
 }
 
-func quote(args ...Exp) Exp {
-	checklen(1, args)
-	return args[0]
-
-	switch len(args) {
-	case 0:
-		return "quote"
-	case 1:
-		return list("quote", args[0])
-	default:
-		panic("quote")
-	}
-}
-
 func checklen(n int, args []Exp) {
 	if len(args) != n {
 		panic(fmt.Errorf("len = %d vs %d", len(args), n))
 	}
 }
 
-func car(args ...Exp) Exp {
+func list(args ...Exp) Exp {
+	return args
+}
+
+func boolean(e Exp) bool {
+	return fmt.Sprintf("%v", e) == "t"
+}
+
+// ----------------------------------------------------------------------
+// AXIOMS
+// ----------------------------------------------------------------------
+
+//
+// #1
+//
+func quote(args ...Exp) Exp {
 	checklen(1, args)
 	return args[0]
 }
 
-func cdr(args ...Exp) Exp {
-	checklen(1, args)
-	return args[1:]
-}
+//
+// #2
+//
 
 func atom(args ...Exp) Exp {
 	checklen(1, args)
@@ -186,6 +173,10 @@ func atom(args ...Exp) Exp {
 	}
 }
 
+//
+// #3
+//
+
 func eq(args ...Exp) Exp {
 	checklen(2, args)
 	s := func(e Exp) string {
@@ -197,21 +188,46 @@ func eq(args ...Exp) Exp {
 	return False
 }
 
-func list(args ...Exp) Exp {
-	return args
+//
+// #4
+//
+
+func car(args ...Exp) Exp {
+	checklen(1, args)
+	return args[0]
 }
 
-func boolean(e Exp) bool {
-	return fmt.Sprintf("%v", e) == "t"
+//
+// #5
+//
+
+func cdr(args ...Exp) Exp {
+	checklen(1, args)
+	return args[1:]
 }
 
-func debug(name string, args ...Exp) {
-	return
-	fmt.Printf("%s%s\n", name, String(list(args...)))
+//
+// #6
+//
+
+func cons(args ...Exp) Exp {
+	checklen(2, args)
+	x, y := args[0], args[1]
+	if IsAtom(y) {
+		panic("cons to atom")
+	}
+	slice := y.([]Exp)
+	var out []Exp
+	out = append(out, x)
+	out = append(out, slice...)
+	return out
 }
+
+//
+// #7
+//
 
 func cond(args ...Exp) Exp {
-	debug("cond", args...)
 	for i, a := range args {
 		switch t := a.(type) {
 		case []Exp:
@@ -238,10 +254,20 @@ func cond(args ...Exp) Exp {
 	panic("cond")
 }
 
+//
+// #8
+//
+
+func display(args ...Exp) Exp {
+	checklen(1, args)
+	a := args[0]
+	fmt.Printf("(display %s)\n", a)
+	return a
+}
+
 var env_and = list(quote("and"), list(quote("label"), quote("and"), list(quote("lambda"), list(quote("x"), quote("y")), list(quote("cond"), list(quote("x"), list(quote("cond"), list(quote("y"), list(quote("quote"), quote("t"))), list(list(quote("quote"), quote("t")), list()))), list(list(quote("quote"), quote("t")), list(quote("quote"), list()))))))
 
 func and(args ...Exp) Exp {
-	debug("and", args...)
 	checklen(2, args)
 	x := args[0]
 	y := args[1]
@@ -299,7 +325,6 @@ func and(args ...Exp) Exp {
 var env_xappend = list(quote("xappend"), list(quote("label"), quote("xappend"), list(quote("lambda"), list(quote("x"), quote("y")), list(quote("cond"), list(list(quote("null"), quote("x")), quote("y")), list(list(quote("quote"), quote("t")), list(quote("cons"), list(quote("car"), quote("x")), list(quote("xappend"), list(quote("cdr"), quote("x")), quote("y"))))))))
 
 func xappend(args ...Exp) Exp {
-	debug("xappend", args...)
 	checklen(2, args)
 	x := args[0]
 	y := args[1]
@@ -347,7 +372,6 @@ func xappend(args ...Exp) Exp {
 var env_assoc = list(quote("assoc"), list(quote("label"), quote("assoc"), list(quote("lambda"), list(quote("x"), quote("y")), list(quote("cond"), list(list(quote("eq"), list(quote("caar"), quote("y")), quote("x")), list(quote("cadar"), quote("y"))), list(list(quote("quote"), quote("t")), list(quote("assoc"), quote("x"), list(quote("cdr"), quote("y"))))))))
 
 func assoc(args ...Exp) Exp {
-	debug("assoc", args...)
 	checklen(2, args)
 	x := args[0]
 	y := args[1]
@@ -395,7 +419,6 @@ func assoc(args ...Exp) Exp {
 var env_caaaar = list(quote("caaaar"), list(quote("label"), quote("caaaar"), list(quote("lambda"), list(quote("x")), list(quote("car"), list(quote("car"), list(quote("car"), list(quote("car"), quote("x"))))))))
 
 func caaaar(args ...Exp) Exp {
-	debug("caaaar", args...)
 	checklen(1, args)
 	x := args[0]
 	return apply(
@@ -416,7 +439,6 @@ func caaaar(args ...Exp) Exp {
 var env_caaadr = list(quote("caaadr"), list(quote("label"), quote("caaadr"), list(quote("lambda"), list(quote("x")), list(quote("car"), list(quote("car"), list(quote("car"), list(quote("cdr"), quote("x"))))))))
 
 func caaadr(args ...Exp) Exp {
-	debug("caaadr", args...)
 	checklen(1, args)
 	x := args[0]
 	return apply(
@@ -437,7 +459,6 @@ func caaadr(args ...Exp) Exp {
 var env_caaar = list(quote("caaar"), list(quote("label"), quote("caaar"), list(quote("lambda"), list(quote("x")), list(quote("car"), list(quote("car"), list(quote("car"), quote("x")))))))
 
 func caaar(args ...Exp) Exp {
-	debug("caaar", args...)
 	checklen(1, args)
 	x := args[0]
 	return apply(
@@ -455,7 +476,6 @@ func caaar(args ...Exp) Exp {
 var env_caadar = list(quote("caadar"), list(quote("label"), quote("caadar"), list(quote("lambda"), list(quote("x")), list(quote("car"), list(quote("car"), list(quote("cdr"), list(quote("car"), quote("x"))))))))
 
 func caadar(args ...Exp) Exp {
-	debug("caadar", args...)
 	checklen(1, args)
 	x := args[0]
 	return apply(
@@ -476,7 +496,6 @@ func caadar(args ...Exp) Exp {
 var env_caaddr = list(quote("caaddr"), list(quote("label"), quote("caaddr"), list(quote("lambda"), list(quote("x")), list(quote("car"), list(quote("car"), list(quote("cdr"), list(quote("cdr"), quote("x"))))))))
 
 func caaddr(args ...Exp) Exp {
-	debug("caaddr", args...)
 	checklen(1, args)
 	x := args[0]
 	return apply(
@@ -497,7 +516,6 @@ func caaddr(args ...Exp) Exp {
 var env_caadr = list(quote("caadr"), list(quote("label"), quote("caadr"), list(quote("lambda"), list(quote("x")), list(quote("car"), list(quote("car"), list(quote("cdr"), quote("x")))))))
 
 func caadr(args ...Exp) Exp {
-	debug("caadr", args...)
 	checklen(1, args)
 	x := args[0]
 	return apply(
@@ -515,7 +533,6 @@ func caadr(args ...Exp) Exp {
 var env_caar = list(quote("caar"), list(quote("label"), quote("caar"), list(quote("lambda"), list(quote("x")), list(quote("car"), list(quote("car"), quote("x"))))))
 
 func caar(args ...Exp) Exp {
-	debug("caar", args...)
 	checklen(1, args)
 	x := args[0]
 	return apply(
@@ -530,7 +547,6 @@ func caar(args ...Exp) Exp {
 var env_cadaar = list(quote("cadaar"), list(quote("label"), quote("cadaar"), list(quote("lambda"), list(quote("x")), list(quote("car"), list(quote("cdr"), list(quote("car"), list(quote("car"), quote("x"))))))))
 
 func cadaar(args ...Exp) Exp {
-	debug("cadaar", args...)
 	checklen(1, args)
 	x := args[0]
 	return apply(
@@ -551,7 +567,6 @@ func cadaar(args ...Exp) Exp {
 var env_cadadr = list(quote("cadadr"), list(quote("label"), quote("cadadr"), list(quote("lambda"), list(quote("x")), list(quote("car"), list(quote("cdr"), list(quote("car"), list(quote("cdr"), quote("x"))))))))
 
 func cadadr(args ...Exp) Exp {
-	debug("cadadr", args...)
 	checklen(1, args)
 	x := args[0]
 	return apply(
@@ -572,7 +587,6 @@ func cadadr(args ...Exp) Exp {
 var env_cadar = list(quote("cadar"), list(quote("label"), quote("cadar"), list(quote("lambda"), list(quote("x")), list(quote("car"), list(quote("cdr"), list(quote("car"), quote("x")))))))
 
 func cadar(args ...Exp) Exp {
-	debug("cadar", args...)
 	checklen(1, args)
 	x := args[0]
 	return apply(
@@ -590,7 +604,6 @@ func cadar(args ...Exp) Exp {
 var env_caddar = list(quote("caddar"), list(quote("label"), quote("caddar"), list(quote("lambda"), list(quote("x")), list(quote("car"), list(quote("cdr"), list(quote("cdr"), list(quote("car"), quote("x"))))))))
 
 func caddar(args ...Exp) Exp {
-	debug("caddar", args...)
 	checklen(1, args)
 	x := args[0]
 	return apply(
@@ -611,7 +624,6 @@ func caddar(args ...Exp) Exp {
 var env_cadddr = list(quote("cadddr"), list(quote("label"), quote("cadddr"), list(quote("lambda"), list(quote("x")), list(quote("car"), list(quote("cdr"), list(quote("cdr"), list(quote("cdr"), quote("x"))))))))
 
 func cadddr(args ...Exp) Exp {
-	debug("cadddr", args...)
 	checklen(1, args)
 	x := args[0]
 	return apply(
@@ -632,7 +644,6 @@ func cadddr(args ...Exp) Exp {
 var env_caddr = list(quote("caddr"), list(quote("label"), quote("caddr"), list(quote("lambda"), list(quote("x")), list(quote("car"), list(quote("cdr"), list(quote("cdr"), quote("x")))))))
 
 func caddr(args ...Exp) Exp {
-	debug("caddr", args...)
 	checklen(1, args)
 	x := args[0]
 	return apply(
@@ -650,7 +661,6 @@ func caddr(args ...Exp) Exp {
 var env_cadr = list(quote("cadr"), list(quote("label"), quote("cadr"), list(quote("lambda"), list(quote("x")), list(quote("car"), list(quote("cdr"), quote("x"))))))
 
 func cadr(args ...Exp) Exp {
-	debug("cadr", args...)
 	checklen(1, args)
 	x := args[0]
 	return apply(
@@ -665,7 +675,6 @@ func cadr(args ...Exp) Exp {
 var env_cdaaar = list(quote("cdaaar"), list(quote("label"), quote("cdaaar"), list(quote("lambda"), list(quote("x")), list(quote("cdr"), list(quote("car"), list(quote("car"), list(quote("car"), quote("x"))))))))
 
 func cdaaar(args ...Exp) Exp {
-	debug("cdaaar", args...)
 	checklen(1, args)
 	x := args[0]
 	return apply(
@@ -686,7 +695,6 @@ func cdaaar(args ...Exp) Exp {
 var env_cdaadr = list(quote("cdaadr"), list(quote("label"), quote("cdaadr"), list(quote("lambda"), list(quote("x")), list(quote("cdr"), list(quote("car"), list(quote("car"), list(quote("cdr"), quote("x"))))))))
 
 func cdaadr(args ...Exp) Exp {
-	debug("cdaadr", args...)
 	checklen(1, args)
 	x := args[0]
 	return apply(
@@ -707,7 +715,6 @@ func cdaadr(args ...Exp) Exp {
 var env_cdaar = list(quote("cdaar"), list(quote("label"), quote("cdaar"), list(quote("lambda"), list(quote("x")), list(quote("cdr"), list(quote("car"), list(quote("car"), quote("x")))))))
 
 func cdaar(args ...Exp) Exp {
-	debug("cdaar", args...)
 	checklen(1, args)
 	x := args[0]
 	return apply(
@@ -725,7 +732,6 @@ func cdaar(args ...Exp) Exp {
 var env_cdadar = list(quote("cdadar"), list(quote("label"), quote("cdadar"), list(quote("lambda"), list(quote("x")), list(quote("cdr"), list(quote("car"), list(quote("cdr"), list(quote("car"), quote("x"))))))))
 
 func cdadar(args ...Exp) Exp {
-	debug("cdadar", args...)
 	checklen(1, args)
 	x := args[0]
 	return apply(
@@ -746,7 +752,6 @@ func cdadar(args ...Exp) Exp {
 var env_cdaddr = list(quote("cdaddr"), list(quote("label"), quote("cdaddr"), list(quote("lambda"), list(quote("x")), list(quote("cdr"), list(quote("car"), list(quote("cdr"), list(quote("cdr"), quote("x"))))))))
 
 func cdaddr(args ...Exp) Exp {
-	debug("cdaddr", args...)
 	checklen(1, args)
 	x := args[0]
 	return apply(
@@ -767,7 +772,6 @@ func cdaddr(args ...Exp) Exp {
 var env_cdadr = list(quote("cdadr"), list(quote("label"), quote("cdadr"), list(quote("lambda"), list(quote("x")), list(quote("cdr"), list(quote("car"), list(quote("cdr"), quote("x")))))))
 
 func cdadr(args ...Exp) Exp {
-	debug("cdadr", args...)
 	checklen(1, args)
 	x := args[0]
 	return apply(
@@ -785,7 +789,6 @@ func cdadr(args ...Exp) Exp {
 var env_cdar = list(quote("cdar"), list(quote("label"), quote("cdar"), list(quote("lambda"), list(quote("x")), list(quote("cdr"), list(quote("car"), quote("x"))))))
 
 func cdar(args ...Exp) Exp {
-	debug("cdar", args...)
 	checklen(1, args)
 	x := args[0]
 	return apply(
@@ -800,7 +803,6 @@ func cdar(args ...Exp) Exp {
 var env_cddaar = list(quote("cddaar"), list(quote("label"), quote("cddaar"), list(quote("lambda"), list(quote("x")), list(quote("cdr"), list(quote("cdr"), list(quote("car"), list(quote("car"), quote("x"))))))))
 
 func cddaar(args ...Exp) Exp {
-	debug("cddaar", args...)
 	checklen(1, args)
 	x := args[0]
 	return apply(
@@ -821,7 +823,6 @@ func cddaar(args ...Exp) Exp {
 var env_cddadr = list(quote("cddadr"), list(quote("label"), quote("cddadr"), list(quote("lambda"), list(quote("x")), list(quote("cdr"), list(quote("cdr"), list(quote("car"), list(quote("cdr"), quote("x"))))))))
 
 func cddadr(args ...Exp) Exp {
-	debug("cddadr", args...)
 	checklen(1, args)
 	x := args[0]
 	return apply(
@@ -842,7 +843,6 @@ func cddadr(args ...Exp) Exp {
 var env_cddar = list(quote("cddar"), list(quote("label"), quote("cddar"), list(quote("lambda"), list(quote("x")), list(quote("cdr"), list(quote("cdr"), list(quote("car"), quote("x")))))))
 
 func cddar(args ...Exp) Exp {
-	debug("cddar", args...)
 	checklen(1, args)
 	x := args[0]
 	return apply(
@@ -860,7 +860,6 @@ func cddar(args ...Exp) Exp {
 var env_cdddar = list(quote("cdddar"), list(quote("label"), quote("cdddar"), list(quote("lambda"), list(quote("x")), list(quote("cdr"), list(quote("cdr"), list(quote("cdr"), list(quote("car"), quote("x"))))))))
 
 func cdddar(args ...Exp) Exp {
-	debug("cdddar", args...)
 	checklen(1, args)
 	x := args[0]
 	return apply(
@@ -881,7 +880,6 @@ func cdddar(args ...Exp) Exp {
 var env_cddddr = list(quote("cddddr"), list(quote("label"), quote("cddddr"), list(quote("lambda"), list(quote("x")), list(quote("cdr"), list(quote("cdr"), list(quote("cdr"), list(quote("cdr"), quote("x"))))))))
 
 func cddddr(args ...Exp) Exp {
-	debug("cddddr", args...)
 	checklen(1, args)
 	x := args[0]
 	return apply(
@@ -902,7 +900,6 @@ func cddddr(args ...Exp) Exp {
 var env_cdddr = list(quote("cdddr"), list(quote("label"), quote("cdddr"), list(quote("lambda"), list(quote("x")), list(quote("cdr"), list(quote("cdr"), list(quote("cdr"), quote("x")))))))
 
 func cdddr(args ...Exp) Exp {
-	debug("cdddr", args...)
 	checklen(1, args)
 	x := args[0]
 	return apply(
@@ -920,7 +917,6 @@ func cdddr(args ...Exp) Exp {
 var env_cddr = list(quote("cddr"), list(quote("label"), quote("cddr"), list(quote("lambda"), list(quote("x")), list(quote("cdr"), list(quote("cdr"), quote("x"))))))
 
 func cddr(args ...Exp) Exp {
-	debug("cddr", args...)
 	checklen(1, args)
 	x := args[0]
 	return apply(
@@ -932,10 +928,9 @@ func cddr(args ...Exp) Exp {
 	)
 }
 
-var env_eval = list(quote("eval"), list(quote("label"), quote("eval"), list(quote("lambda"), list(quote("e"), quote("a")), list(quote("cond"), list(list(quote("atom"), quote("e")), list(quote("assoc"), quote("e"), quote("a"))), list(list(quote("atom"), list(quote("car"), quote("e"))), list(quote("cond"), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("quote"))), list(quote("cadr"), quote("e"))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("atom"))), list(quote("atom"), list(quote("eval"), list(quote("cadr"), quote("e")), quote("a")))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("eq"))), list(quote("eq"), list(quote("eval"), list(quote("cadr"), quote("e")), quote("a")), list(quote("eval"), list(quote("caddr"), quote("e")), quote("a")))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("car"))), list(quote("car"), list(quote("eval"), list(quote("cadr"), quote("e")), quote("a")))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("cdr"))), list(quote("cdr"), list(quote("eval"), list(quote("cadr"), quote("e")), quote("a")))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("cons"))), list(quote("cons"), list(quote("eval"), list(quote("cadr"), quote("e")), quote("a")), list(quote("eval"), list(quote("caddr"), quote("e")), quote("a")))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("cond"))), list(quote("evcon"), list(quote("cdr"), quote("e")), quote("a"))), list(list(quote("quote"), quote("t")), list(quote("eval"), list(quote("cons"), list(quote("assoc"), list(quote("car"), quote("e")), quote("a")), list(quote("cdr"), quote("e"))), quote("a"))))), list(list(quote("eq"), list(quote("caar"), quote("e")), list(quote("quote"), quote("label"))), list(quote("eval"), list(quote("cons"), list(quote("caddar"), quote("e")), list(quote("cdr"), quote("e"))), list(quote("cons"), list(quote("list"), list(quote("cadar"), quote("e")), list(quote("car"), quote("e"))), quote("a")))), list(list(quote("eq"), list(quote("caar"), quote("e")), list(quote("quote"), quote("lambda"))), list(quote("eval"), list(quote("caddar"), quote("e")), list(quote("xappend"), list(quote("pair"), list(quote("cadar"), quote("e")), list(quote("evlis"), list(quote("cdr"), quote("e")), quote("a"))), quote("a"))))))))
+var env_eval = list(quote("eval"), list(quote("label"), quote("eval"), list(quote("lambda"), list(quote("e"), quote("a")), list(quote("cond"), list(list(quote("atom"), quote("e")), list(quote("assoc"), quote("e"), quote("a"))), list(list(quote("atom"), list(quote("car"), quote("e"))), list(quote("cond"), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("quote"))), list(quote("cadr"), quote("e"))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("atom"))), list(quote("atom"), list(quote("eval"), list(quote("cadr"), quote("e")), quote("a")))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("eq"))), list(quote("eq"), list(quote("eval"), list(quote("cadr"), quote("e")), quote("a")), list(quote("eval"), list(quote("caddr"), quote("e")), quote("a")))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("display"))), list(quote("display"), list(quote("eval"), list(quote("cadr"), quote("e")), quote("a")))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("car"))), list(quote("car"), list(quote("eval"), list(quote("cadr"), quote("e")), quote("a")))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("cdr"))), list(quote("cdr"), list(quote("eval"), list(quote("cadr"), quote("e")), quote("a")))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("cons"))), list(quote("cons"), list(quote("eval"), list(quote("cadr"), quote("e")), quote("a")), list(quote("eval"), list(quote("caddr"), quote("e")), quote("a")))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("cond"))), list(quote("evcon"), list(quote("cdr"), quote("e")), quote("a"))), list(list(quote("quote"), quote("t")), list(quote("eval"), list(quote("cons"), list(quote("assoc"), list(quote("car"), quote("e")), quote("a")), list(quote("cdr"), quote("e"))), quote("a"))))), list(list(quote("eq"), list(quote("caar"), quote("e")), list(quote("quote"), quote("label"))), list(quote("eval"), list(quote("cons"), list(quote("caddar"), quote("e")), list(quote("cdr"), quote("e"))), list(quote("cons"), list(quote("list"), list(quote("cadar"), quote("e")), list(quote("car"), quote("e"))), quote("a")))), list(list(quote("eq"), list(quote("caar"), quote("e")), list(quote("quote"), quote("lambda"))), list(quote("eval"), list(quote("caddar"), quote("e")), list(quote("xappend"), list(quote("pair"), list(quote("cadar"), quote("e")), list(quote("evlis"), list(quote("cdr"), quote("e")), quote("a"))), quote("a"))))))))
 
 func eval(args ...Exp) Exp {
-	debug("eval", args...)
 	checklen(2, args)
 	e := args[0]
 	a := args[1]
@@ -1047,6 +1042,34 @@ func eval(args ...Exp) Exp {
 									eval,
 									apply(
 										caddr,
+										e,
+									),
+									a,
+								),
+							)
+						},
+					),
+					list(
+						func() Exp {
+							return apply(
+								eq,
+								apply(
+									car,
+									e,
+								),
+								apply(
+									quote,
+									display,
+								),
+							)
+						},
+						func() Exp {
+							return apply(
+								display,
+								apply(
+									eval,
+									apply(
+										cadr,
 										e,
 									),
 									a,
@@ -1298,7 +1321,6 @@ func eval(args ...Exp) Exp {
 var env_evcon = list(quote("evcon"), list(quote("label"), quote("evcon"), list(quote("lambda"), list(quote("c"), quote("a")), list(quote("cond"), list(list(quote("eval"), list(quote("caar"), quote("c")), quote("a")), list(quote("eval"), list(quote("cadar"), quote("c")), quote("a"))), list(list(quote("quote"), quote("t")), list(quote("evcon"), list(quote("cdr"), quote("c")), quote("a")))))))
 
 func evcon(args ...Exp) Exp {
-	debug("evcon", args...)
 	checklen(2, args)
 	c := args[0]
 	a := args[1]
@@ -1350,7 +1372,6 @@ func evcon(args ...Exp) Exp {
 var env_evlis = list(quote("evlis"), list(quote("label"), quote("evlis"), list(quote("lambda"), list(quote("m"), quote("a")), list(quote("cond"), list(list(quote("null"), quote("m")), list(quote("quote"), list())), list(list(quote("quote"), quote("t")), list(quote("cons"), list(quote("eval"), list(quote("car"), quote("m")), quote("a")), list(quote("evlis"), list(quote("cdr"), quote("m")), quote("a"))))))))
 
 func evlis(args ...Exp) Exp {
-	debug("evlis", args...)
 	checklen(2, args)
 	m := args[0]
 	a := args[1]
@@ -1405,7 +1426,6 @@ func evlis(args ...Exp) Exp {
 var env_not = list(quote("not"), list(quote("label"), quote("not"), list(quote("lambda"), list(quote("x")), list(quote("cond"), list(quote("x"), list(quote("quote"), list())), list(list(quote("quote"), quote("t")), list(quote("quote"), quote("t")))))))
 
 func not(args ...Exp) Exp {
-	debug("not", args...)
 	checklen(1, args)
 	x := args[0]
 	return apply(
@@ -1441,7 +1461,6 @@ func not(args ...Exp) Exp {
 var env_null = list(quote("null"), list(quote("label"), quote("null"), list(quote("lambda"), list(quote("x")), list(quote("eq"), quote("x"), list(quote("quote"), list())))))
 
 func null(args ...Exp) Exp {
-	debug("null", args...)
 	checklen(1, args)
 	x := args[0]
 	return apply(
@@ -1457,7 +1476,6 @@ func null(args ...Exp) Exp {
 var env_pair = list(quote("pair"), list(quote("label"), quote("pair"), list(quote("lambda"), list(quote("x"), quote("y")), list(quote("cond"), list(list(quote("and"), list(quote("null"), quote("x")), list(quote("null"), quote("y"))), list(quote("quote"), list())), list(list(quote("and"), list(quote("not"), list(quote("atom"), quote("x"))), list(quote("not"), list(quote("atom"), quote("y")))), list(quote("cons"), list(quote("list"), list(quote("car"), quote("x")), list(quote("car"), quote("y"))), list(quote("pair"), list(quote("cdr"), quote("x")), list(quote("cdr"), quote("y")))))))))
 
 func pair(args ...Exp) Exp {
-	debug("pair", args...)
 	checklen(2, args)
 	x := args[0]
 	y := args[1]
@@ -1538,7 +1556,6 @@ func pair(args ...Exp) Exp {
 var env_subst = list(quote("subst"), list(quote("label"), quote("subst"), list(quote("lambda"), list(quote("x"), quote("y"), quote("z")), list(quote("cond"), list(list(quote("atom"), quote("z")), list(quote("cond"), list(list(quote("eq"), quote("z"), quote("y")), quote("x")), list(list(quote("quote"), quote("t")), quote("z")))), list(list(quote("quote"), quote("t")), list(quote("cons"), list(quote("subst"), quote("x"), quote("y"), list(quote("car"), quote("z"))), list(quote("subst"), quote("x"), quote("y"), list(quote("cdr"), quote("z")))))))))
 
 func subst(args ...Exp) Exp {
-	debug("subst", args...)
 	checklen(3, args)
 	x := args[0]
 	y := args[1]
