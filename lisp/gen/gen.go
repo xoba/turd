@@ -8,7 +8,22 @@ import (
 	"strings"
 )
 
+type Exp interface{}
+
+type Func func(...Exp) Exp
+
+type Lazy func() Exp
+
 var env Exp
+
+var (
+	Nil    Exp = list()
+	t      Exp = "t"
+	True   Exp = "t"
+	False  Exp = Nil
+	lambda Exp = "lambda"
+	label  Exp = "label"
+)
 
 func main() {
 
@@ -24,7 +39,7 @@ func main() {
 	show("3", apply(atom, apply(quote, "howdy")))
 	show("4", atom(list()))
 	show("5", atom(list("a")))
-	show("6", eq("a", "a"))
+	show("6", display(eq("a", "a")))
 	show("7", eq("a", "b"))
 
 	f1 := and("t", "t")
@@ -56,8 +71,6 @@ func main() {
 	))
 	show("12", eval(e, a))
 }
-
-type Exp interface{}
 
 func String(e Exp) string {
 	return StringLazy(e, false)
@@ -99,19 +112,6 @@ func StringLazy(e Exp, evalLazy bool) string {
 	return w.String()
 }
 
-type Func func(...Exp) Exp
-
-type Lazy func() Exp
-
-var (
-	Nil    Exp  = list()
-	True   Exp  = "t"
-	False  Exp  = Nil
-	t      Func = nil
-	lambda Exp  = "lambda"
-	label  Exp  = "label"
-)
-
 func IsAtom(e Exp) bool {
 	switch e.(type) {
 	case string:
@@ -127,7 +127,7 @@ func apply(f Func, args ...Exp) Exp {
 
 func checklen(n int, args []Exp) {
 	if len(args) != n {
-		panic(fmt.Errorf("len = %d vs %d", len(args), n))
+		panic(fmt.Errorf("expected %d args, got %d", n, len(args)))
 	}
 }
 
@@ -144,7 +144,7 @@ func boolean(e Exp) bool {
 // ----------------------------------------------------------------------
 
 //
-// #1
+// #1 (1-8 from paul graham)
 //
 func quote(args ...Exp) Exp {
 	checklen(1, args)
@@ -157,10 +157,8 @@ func quote(args ...Exp) Exp {
 
 func atom(args ...Exp) Exp {
 	checklen(1, args)
-	if len(args) != 1 {
-		panic("args")
-	}
-	switch t := args[0].(type) {
+	x := args[0]
+	switch t := x.(type) {
 	case string:
 		return True
 	case []Exp:
@@ -169,7 +167,7 @@ func atom(args ...Exp) Exp {
 		}
 		return False
 	default:
-		return False
+		panic("illegal atom call")
 	}
 }
 
@@ -182,7 +180,8 @@ func eq(args ...Exp) Exp {
 	s := func(e Exp) string {
 		return fmt.Sprintf("%s", e)
 	}
-	if s(args[0]) == s(args[1]) {
+	x, y := args[0], args[1]
+	if s(x) == s(y) {
 		return True
 	}
 	return False
@@ -255,7 +254,7 @@ func cond(args ...Exp) Exp {
 }
 
 //
-// #8
+// #8 (from chaitin)
 //
 
 func display(args ...Exp) Exp {
