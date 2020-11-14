@@ -213,9 +213,9 @@ func CompileLazy(e exp.Expression) ([]byte, error) {
 		return nil, err
 	}
 	f := func(s string) string {
-		return fmt.Sprintf(`func() Exp {
+		return fmt.Sprintf(`Func(func(...Exp) Exp {
 return %s
-}`, string(s))
+})`, string(s))
 	}
 	fmt.Fprintf(w, "list(\n%s,\n%s,\n)", f(string(pb)), f(string(eb)))
 	return w.Bytes(), nil
