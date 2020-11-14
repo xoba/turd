@@ -10,20 +10,18 @@ type Exp interface{}
 
 type Func func(...Exp) Exp
 
-type Lazy func() Exp
-
 var env Exp
 
 var (
-	Nil    Exp = list()
-	t      Exp = "t"
-	True   Exp = "t"
-	False  Exp = Nil
-	lambda Exp = "lambda"
-	label  Exp = "label"
+	Nil   Exp = list()
+	t     Exp = "t"
+	True  Exp = "t"
+	False Exp = Nil
 )
 
 func main() {
+
+	fmt.Printf("and = %s\n", env_and)
 
 	show := func(msg string, e Exp) {
 		fmt.Printf("%s: %s\n", msg, StringLazy(e, true))
@@ -45,8 +43,8 @@ func main() {
 	show("14", f1)
 	show("15", and("t", list()))
 
-	lazy := func(e Exp) Lazy {
-		return Lazy(func() Exp {
+	lazy := func(e Exp) Func {
+		return Func(func(...Exp) Exp {
 			return e
 		})
 	}
@@ -86,10 +84,6 @@ func StringLazy(e Exp, evalLazy bool) string {
 	switch t := e.(type) {
 	case string:
 		fmt.Fprint(w, t)
-	case Lazy:
-		return show(func(...Exp) Exp {
-			return t()
-		})
 	case func() Exp:
 		return show(func(...Exp) Exp {
 			return t()

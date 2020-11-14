@@ -16,11 +16,9 @@ type node struct {
 }
 
 func (n *node) Expression() (exp.Expression, error) {
-
 	newQuote := func(e exp.Expression) exp.Expression {
 		return exp.NewList(exp.NewString("quote"), e)
 	}
-
 	if len(n.Value) > 0 {
 		if runes := []rune(n.Value); runes[0] == '\'' {
 			return newQuote(exp.NewString(string(runes[1:]))), nil

@@ -48,6 +48,7 @@ func CompileDef(cnfg.Config) error {
 			}
 		}
 	}
+	//fmt.Printf("%d defs = %q\n", len(defs), defs)
 	var names []string
 	for _, def := range defs {
 		buf, err := ioutil.ReadFile(def)
@@ -58,6 +59,7 @@ func CompileDef(cnfg.Config) error {
 		if err != nil {
 			return err
 		}
+		//fmt.Printf("%s -> %s\n", def, e)
 		e = translateAtoms("append", "xappend", e)
 		{
 			name, env, err := ToEnv(e)
@@ -77,9 +79,9 @@ func CompileDef(cnfg.Config) error {
 
 	}
 
-	fmt.Fprintf(f, "\n\nfunc init() { env = list(\n")
+	fmt.Fprintf(f, "\n\nfunc init() { env = list(")
 	for _, n := range names {
-		fmt.Fprintf(f, "env_%s,\n", n)
+		fmt.Fprintf(f, "env_%s,", n)
 	}
 	fmt.Fprintf(f, ")}\n\n")
 
@@ -92,7 +94,12 @@ func CompileDef(cnfg.Config) error {
 	return nil
 }
 
+// TODO: instead, express this as a string (not as code) that can be parsed like lisp.Read()
 func ToEnv(defun exp.Expression) (string, []byte, error) {
+	return ToEnv0(defun)
+}
+
+func ToEnv0(defun exp.Expression) (string, []byte, error) {
 	if Car(defun).String() != "defun" {
 		return "", nil, fmt.Errorf("not a defun")
 	}
@@ -214,33 +221,26 @@ return %s
 	return w.Bytes(), nil
 }
 
-// TODO: deal with "append" to not conflict with golang's keyword with same name
 func Compile(e exp.Expression) ([]byte, error) {
+	//	fmt.Printf("%d compile(%q)\n", len(e.List()), e)
 	w := new(bytes.Buffer)
 	indent := func(msg string, list []string) {
 		fmt.Fprintf(w, "%s(\n%s,\n)", msg, strings.Join(list, ",\n"))
 	}
 	switch {
 	case e.Atom() != nil:
-		var atom string
-		switch a := e.Atom().String(); a {
-		case "quote", "atom", "eq", "car", "cdr", "cons", "cond":
-			atom = a
-		default:
-			atom = a
-		}
-		fmt.Fprint(w, atom)
+		var x string
+		x = e.Atom().String()
+		fmt.Fprint(w, x)
 	default:
 		n := len(e.List())
 		switch {
 		case n == 0:
 			fmt.Fprintf(w, "Nil")
 		case n == 1:
-			sub, err := Compile(e.List()[0])
-			if err != nil {
-				return nil, err
-			}
-			fmt.Fprintf(w, "(%s)", string(sub))
+			return nil, fmt.Errorf("illegal list of length 1")
+		case n == 2 && in(e.List()[0].String(), "quote"):
+			fmt.Fprintf(w, "%q", e.List()[1])
 		case n > 1 && in(e.List()[0].String(), "cond"):
 			var list []string
 			for i, a := range e.List() {

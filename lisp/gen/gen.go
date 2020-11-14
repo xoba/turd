@@ -12,20 +12,18 @@ type Exp interface{}
 
 type Func func(...Exp) Exp
 
-type Lazy func() Exp
-
 var env Exp
 
 var (
-	Nil    Exp = list()
-	t      Exp = "t"
-	True   Exp = "t"
-	False  Exp = Nil
-	lambda Exp = "lambda"
-	label  Exp = "label"
+	Nil   Exp = list()
+	t     Exp = "t"
+	True  Exp = "t"
+	False Exp = Nil
 )
 
 func main() {
+
+	fmt.Printf("and = %s\n", env_and)
 
 	show := func(msg string, e Exp) {
 		fmt.Printf("%s: %s\n", msg, StringLazy(e, true))
@@ -39,7 +37,7 @@ func main() {
 	show("3", apply(atom, apply(quote, "howdy")))
 	show("4", atom(list()))
 	show("5", atom(list("a")))
-	show("6", display(eq("a", "a")))
+	show("6", eq("a", "a"))
 	show("7", eq("a", "b"))
 
 	f1 := and("t", "t")
@@ -47,8 +45,8 @@ func main() {
 	show("14", f1)
 	show("15", and("t", list()))
 
-	lazy := func(e Exp) Lazy {
-		return Lazy(func() Exp {
+	lazy := func(e Exp) Func {
+		return Func(func(...Exp) Exp {
 			return e
 		})
 	}
@@ -88,10 +86,6 @@ func StringLazy(e Exp, evalLazy bool) string {
 	switch t := e.(type) {
 	case string:
 		fmt.Fprint(w, t)
-	case Lazy:
-		return show(func(...Exp) Exp {
-			return t()
-		})
 	case func() Exp:
 		return show(func(...Exp) Exp {
 			return t()
@@ -284,18 +278,12 @@ func and(args ...Exp) Exp {
 							return y
 						},
 						func() Exp {
-							return apply(
-								quote,
-								t,
-							)
+							return "t"
 						},
 					),
 					list(
 						func() Exp {
-							return apply(
-								quote,
-								t,
-							)
+							return "t"
 						},
 						func() Exp {
 							return Nil
@@ -306,16 +294,10 @@ func and(args ...Exp) Exp {
 		),
 		list(
 			func() Exp {
-				return apply(
-					quote,
-					t,
-				)
+				return "t"
 			},
 			func() Exp {
-				return apply(
-					quote,
-					Nil,
-				)
+				return "()"
 			},
 		),
 	)
@@ -342,10 +324,7 @@ func xappend(args ...Exp) Exp {
 		),
 		list(
 			func() Exp {
-				return apply(
-					quote,
-					t,
-				)
+				return "t"
 			},
 			func() Exp {
 				return apply(
@@ -396,10 +375,7 @@ func assoc(args ...Exp) Exp {
 		),
 		list(
 			func() Exp {
-				return apply(
-					quote,
-					t,
-				)
+				return "t"
 			},
 			func() Exp {
 				return apply(
@@ -971,10 +947,7 @@ func eval(args ...Exp) Exp {
 									car,
 									e,
 								),
-								apply(
-									quote,
-									quote,
-								),
+								"quote",
 							)
 						},
 						func() Exp {
@@ -992,10 +965,7 @@ func eval(args ...Exp) Exp {
 									car,
 									e,
 								),
-								apply(
-									quote,
-									atom,
-								),
+								"atom",
 							)
 						},
 						func() Exp {
@@ -1020,10 +990,7 @@ func eval(args ...Exp) Exp {
 									car,
 									e,
 								),
-								apply(
-									quote,
-									eq,
-								),
+								"eq",
 							)
 						},
 						func() Exp {
@@ -1056,10 +1023,7 @@ func eval(args ...Exp) Exp {
 									car,
 									e,
 								),
-								apply(
-									quote,
-									display,
-								),
+								"display",
 							)
 						},
 						func() Exp {
@@ -1084,10 +1048,7 @@ func eval(args ...Exp) Exp {
 									car,
 									e,
 								),
-								apply(
-									quote,
-									car,
-								),
+								"car",
 							)
 						},
 						func() Exp {
@@ -1112,10 +1073,7 @@ func eval(args ...Exp) Exp {
 									car,
 									e,
 								),
-								apply(
-									quote,
-									cdr,
-								),
+								"cdr",
 							)
 						},
 						func() Exp {
@@ -1140,10 +1098,7 @@ func eval(args ...Exp) Exp {
 									car,
 									e,
 								),
-								apply(
-									quote,
-									cons,
-								),
+								"cons",
 							)
 						},
 						func() Exp {
@@ -1176,10 +1131,7 @@ func eval(args ...Exp) Exp {
 									car,
 									e,
 								),
-								apply(
-									quote,
-									cond,
-								),
+								"cond",
 							)
 						},
 						func() Exp {
@@ -1195,10 +1147,7 @@ func eval(args ...Exp) Exp {
 					),
 					list(
 						func() Exp {
-							return apply(
-								quote,
-								t,
-							)
+							return "t"
 						},
 						func() Exp {
 							return apply(
@@ -1233,10 +1182,7 @@ func eval(args ...Exp) Exp {
 						caar,
 						e,
 					),
-					apply(
-						quote,
-						label,
-					),
+					"label",
 				)
 			},
 			func() Exp {
@@ -1279,10 +1225,7 @@ func eval(args ...Exp) Exp {
 						caar,
 						e,
 					),
-					apply(
-						quote,
-						lambda,
-					),
+					"lambda",
 				)
 			},
 			func() Exp {
@@ -1349,10 +1292,7 @@ func evcon(args ...Exp) Exp {
 		),
 		list(
 			func() Exp {
-				return apply(
-					quote,
-					t,
-				)
+				return "t"
 			},
 			func() Exp {
 				return apply(
@@ -1384,18 +1324,12 @@ func evlis(args ...Exp) Exp {
 				)
 			},
 			func() Exp {
-				return apply(
-					quote,
-					Nil,
-				)
+				return "()"
 			},
 		),
 		list(
 			func() Exp {
-				return apply(
-					quote,
-					t,
-				)
+				return "t"
 			},
 			func() Exp {
 				return apply(
@@ -1434,24 +1368,15 @@ func not(args ...Exp) Exp {
 				return x
 			},
 			func() Exp {
-				return apply(
-					quote,
-					Nil,
-				)
+				return "()"
 			},
 		),
 		list(
 			func() Exp {
-				return apply(
-					quote,
-					t,
-				)
+				return "t"
 			},
 			func() Exp {
-				return apply(
-					quote,
-					t,
-				)
+				return "t"
 			},
 		),
 	)
@@ -1465,10 +1390,7 @@ func null(args ...Exp) Exp {
 	return apply(
 		eq,
 		x,
-		apply(
-			quote,
-			Nil,
-		),
+		"()",
 	)
 }
 
@@ -1495,10 +1417,7 @@ func pair(args ...Exp) Exp {
 				)
 			},
 			func() Exp {
-				return apply(
-					quote,
-					Nil,
-				)
+				return "()"
 			},
 		),
 		list(
@@ -1585,10 +1504,7 @@ func subst(args ...Exp) Exp {
 					),
 					list(
 						func() Exp {
-							return apply(
-								quote,
-								t,
-							)
+							return "t"
 						},
 						func() Exp {
 							return z
@@ -1599,10 +1515,7 @@ func subst(args ...Exp) Exp {
 		),
 		list(
 			func() Exp {
-				return apply(
-					quote,
-					t,
-				)
+				return "t"
 			},
 			func() Exp {
 				return apply(
@@ -1632,44 +1545,5 @@ func subst(args ...Exp) Exp {
 }
 
 func init() {
-	env = list(
-		env_and,
-		env_xappend,
-		env_assoc,
-		env_caaaar,
-		env_caaadr,
-		env_caaar,
-		env_caadar,
-		env_caaddr,
-		env_caadr,
-		env_caar,
-		env_cadaar,
-		env_cadadr,
-		env_cadar,
-		env_caddar,
-		env_cadddr,
-		env_caddr,
-		env_cadr,
-		env_cdaaar,
-		env_cdaadr,
-		env_cdaar,
-		env_cdadar,
-		env_cdaddr,
-		env_cdadr,
-		env_cdar,
-		env_cddaar,
-		env_cddadr,
-		env_cddar,
-		env_cdddar,
-		env_cddddr,
-		env_cdddr,
-		env_cddr,
-		env_eval,
-		env_evcon,
-		env_evlis,
-		env_not,
-		env_null,
-		env_pair,
-		env_subst,
-	)
+	env = list(env_and, env_xappend, env_assoc, env_caaaar, env_caaadr, env_caaar, env_caadar, env_caaddr, env_caadr, env_caar, env_cadaar, env_cadadr, env_cadar, env_caddar, env_cadddr, env_caddr, env_cadr, env_cdaaar, env_cdaadr, env_cdaar, env_cdadar, env_cdaddr, env_cdadr, env_cdar, env_cddaar, env_cddadr, env_cddar, env_cdddar, env_cddddr, env_cdddr, env_cddr, env_eval, env_evcon, env_evlis, env_not, env_null, env_pair, env_subst)
 }
