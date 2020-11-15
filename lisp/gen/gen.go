@@ -109,15 +109,6 @@ func String(e Exp) string {
 	return w.String()
 }
 
-func IsAtom(e Exp) bool {
-	switch e.(type) {
-	case string:
-		return true
-	default:
-		return false
-	}
-}
-
 func apply(f Func, args ...Exp) Exp {
 	return f(args...)
 }
@@ -228,14 +219,21 @@ func cdr(args ...Exp) Exp {
 
 func cons(args ...Exp) Exp {
 	checklen(2, args)
+	IsAtom := func(e Exp) bool {
+		switch e.(type) {
+		case string:
+			return true
+		default:
+			return false
+		}
+	}
 	x, y := args[0], args[1]
 	if IsAtom(y) {
 		panic("cons to atom")
 	}
-	slice := y.([]Exp)
 	var out []Exp
 	out = append(out, x)
-	out = append(out, slice...)
+	out = append(out, y.([]Exp)...)
 	return out
 }
 
