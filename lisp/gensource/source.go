@@ -21,9 +21,6 @@ var (
 
 func main() {
 
-	fmt.Printf("and = %v\n", env_and)
-	fmt.Printf("and = %s\n", String(env_and))
-
 	test := func(msg string, e Exp, expected string) {
 		got := String(e)
 		fmt.Printf("%s: %s\n", msg, got)
@@ -31,6 +28,9 @@ func main() {
 			fmt.Printf("*** expected %q, got %q\n", expected, got)
 		}
 	}
+	test("0", testing(list("abc", "2")), "abc")
+	//return
+
 	test("1", quote("howdy"), "howdy")
 
 	test("2", atom(quote("howdy")), "t")
@@ -66,6 +66,7 @@ func main() {
 	test("10", cons("a", list("b", "c")), "(a b c)")
 
 	e, a := list("quote", "x"), Nil
+
 	test("13", apply(
 		atom,
 		e,
@@ -73,6 +74,9 @@ func main() {
 
 	fmt.Printf("eval(%s)\n", e)
 	test("12", eval(e, a), "x")
+
+	test("16", eval(list("eq", "a", "a"), a), "t")
+
 }
 
 func String(e Exp) string {
@@ -176,7 +180,17 @@ func eq(args ...Exp) Exp {
 
 func car(args ...Exp) Exp {
 	checklen(1, args)
-	return args[0]
+	switch t := args[0].(type) {
+	case []Exp:
+		switch len(t) {
+		case 0:
+			return Nil
+		default:
+			return t[0]
+		}
+	default:
+		panic("car needs list")
+	}
 }
 
 //
@@ -185,7 +199,17 @@ func car(args ...Exp) Exp {
 
 func cdr(args ...Exp) Exp {
 	checklen(1, args)
-	return args[1:]
+	switch t := args[0].(type) {
+	case []Exp:
+		switch len(t) {
+		case 0, 1:
+			return Nil
+		default:
+			return t[1:]
+		}
+	default:
+		panic("cdr needs list")
+	}
 }
 
 //
@@ -211,7 +235,6 @@ func cons(args ...Exp) Exp {
 
 func cond(args ...Exp) Exp {
 	for i, a := range args {
-		fmt.Printf("cond[%d]\n", i)
 		switch t := a.(type) {
 		case []Exp:
 			if len(t) != 2 {
@@ -223,7 +246,6 @@ func cond(args ...Exp) Exp {
 				panic("p not lazy")
 			}
 			v := pl()
-			fmt.Printf("cond(%d; %s\n", i, v)
 			if boolean(v) {
 				el, ok := e.(Func)
 				if !ok {

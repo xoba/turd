@@ -23,9 +23,6 @@ var (
 
 func main() {
 
-	fmt.Printf("and = %v\n", env_and)
-	fmt.Printf("and = %s\n", String(env_and))
-
 	test := func(msg string, e Exp, expected string) {
 		got := String(e)
 		fmt.Printf("%s: %s\n", msg, got)
@@ -33,6 +30,9 @@ func main() {
 			fmt.Printf("*** expected %q, got %q\n", expected, got)
 		}
 	}
+	test("0", testing(list("abc", "2")), "abc")
+	//return
+
 	test("1", quote("howdy"), "howdy")
 
 	test("2", atom(quote("howdy")), "t")
@@ -68,6 +68,7 @@ func main() {
 	test("10", cons("a", list("b", "c")), "(a b c)")
 
 	e, a := list("quote", "x"), Nil
+
 	test("13", apply(
 		atom,
 		e,
@@ -75,6 +76,9 @@ func main() {
 
 	fmt.Printf("eval(%s)\n", e)
 	test("12", eval(e, a), "x")
+
+	test("16", eval(list("eq", "a", "a"), a), "t")
+
 }
 
 func String(e Exp) string {
@@ -178,7 +182,17 @@ func eq(args ...Exp) Exp {
 
 func car(args ...Exp) Exp {
 	checklen(1, args)
-	return args[0]
+	switch t := args[0].(type) {
+	case []Exp:
+		switch len(t) {
+		case 0:
+			return Nil
+		default:
+			return t[0]
+		}
+	default:
+		panic("car needs list")
+	}
 }
 
 //
@@ -187,7 +201,17 @@ func car(args ...Exp) Exp {
 
 func cdr(args ...Exp) Exp {
 	checklen(1, args)
-	return args[1:]
+	switch t := args[0].(type) {
+	case []Exp:
+		switch len(t) {
+		case 0, 1:
+			return Nil
+		default:
+			return t[1:]
+		}
+	default:
+		panic("cdr needs list")
+	}
 }
 
 //
@@ -213,7 +237,6 @@ func cons(args ...Exp) Exp {
 
 func cond(args ...Exp) Exp {
 	for i, a := range args {
-		fmt.Printf("cond[%d]\n", i)
 		switch t := a.(type) {
 		case []Exp:
 			if len(t) != 2 {
@@ -225,7 +248,6 @@ func cond(args ...Exp) Exp {
 				panic("p not lazy")
 			}
 			v := pl()
-			fmt.Printf("cond(%d; %s\n", i, v)
 			if boolean(v) {
 				el, ok := e.(Func)
 				if !ok {
@@ -1125,6 +1147,20 @@ func subst(args ...Exp) Exp {
 	)
 }
 
+var env_testing = list(quote("testing"), list(quote("label"), quote("testing"), list(quote("lambda"), list(quote("x")), list(quote("display"), list(quote("car"), quote("x"))))))
+
+func testing(args ...Exp) Exp {
+	checklen(1, args)
+	x := args[0]
+	return apply(
+		display,
+		apply(
+			car,
+			x,
+		),
+	)
+}
+
 func init() {
-	env = list(env_and, env_xappend, env_assoc, env_caaaar, env_caaadr, env_caaar, env_caadar, env_caaddr, env_caadr, env_caar, env_cadaar, env_cadadr, env_cadar, env_caddar, env_cadddr, env_caddr, env_cadr, env_cdaaar, env_cdaadr, env_cdaar, env_cdadar, env_cdaddr, env_cdadr, env_cdar, env_cddaar, env_cddadr, env_cddar, env_cdddar, env_cddddr, env_cdddr, env_cddr, env_eval, env_evcon, env_evlis, env_not, env_null, env_pair, env_subst)
+	env = list(env_and, env_xappend, env_assoc, env_caaaar, env_caaadr, env_caaar, env_caadar, env_caaddr, env_caadr, env_caar, env_cadaar, env_cadadr, env_cadar, env_caddar, env_cadddr, env_caddr, env_cadr, env_cdaaar, env_cdaadr, env_cdaar, env_cdadar, env_cdaddr, env_cdadr, env_cdar, env_cddaar, env_cddadr, env_cddar, env_cdddar, env_cddddr, env_cdddr, env_cddr, env_eval, env_evcon, env_evlis, env_not, env_null, env_pair, env_subst, env_testing)
 }
