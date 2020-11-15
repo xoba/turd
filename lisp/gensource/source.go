@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"strings"
+
+	"github.com/xoba/turd/lisp"
+	"github.com/xoba/turd/lisp/exp"
 )
 
 type Exp interface{}
@@ -19,7 +22,87 @@ var (
 	False Exp = Nil
 )
 
+func check(e error) {
+	if e != nil {
+		panic(e)
+	}
+}
+
+func ToExp(e exp.Expression) Exp {
+	if err := e.Error(); err != nil {
+		return err
+	}
+	if a := e.Atom(); a != nil {
+		return a.String()
+	}
+	var list []Exp
+	for _, x := range e.List() {
+		list = append(list, ToExp(x))
+	}
+	return list
+}
+
 func main() {
+
+	{
+
+		var last string
+		test := func(msg, input, expect string) {
+			if msg == "" {
+				return
+			}
+			if msg != last {
+				fmt.Println()
+			}
+			last = msg
+			fmt.Printf("%-10s %-20s -> %s\n", msg+":", input, expect)
+			in, err := lisp.Read(input)
+			check(err)
+			res := eval(ToExp(in), Nil)
+			if got := String(res); got != expect {
+				panic(fmt.Errorf("expected %q, got %q\n", expect, res))
+			}
+		}
+
+		test("quote", "(quote a)", "a")
+		test("quote", "(quote (a b c))", "(a b c)")
+
+		test("atom", "(atom 'a)", "t")
+		test("atom", "(atom '(a b c))", "()")
+		test("atom", "(atom '())", "t")
+		test("atom", "(atom 'a)", "t")
+		test("atom", "(atom '(atom 'a))", "()")
+
+		test("eq", "(eq 'a 'a)", "t")
+		test("eq", "(eq 'a 'b)", "()")
+		test("eq", "(eq '() '())", "t")
+
+		test("car", "(car '(a b c))", "a")
+		test("cdr", "(cdr '(a b c))", "(b c)")
+
+		test("cons", "(cons 'a '(b c))", "(a b c)")
+		test("cons", "(cons 'a (cons 'b (cons 'c '())))", "(a b c)")
+		test("cons", "(car (cons 'a '(b c)))", "a")
+		test("cons", "(cdr (cons 'a '(b c)))", "(b c)")
+
+		test("cond", "(cond ((eq 'a 'b) 'first) ((atom 'a) 'second))", "second")
+		test("cond", "(cond ((eq 'a 'a) 'first) ((atom 'a) 'second))", "first")
+
+		test("lambda", "((lambda (x) (cons x '(b))) 'a)", "(a b)")
+		test("", "", "")
+		test("", "", "")
+		test("", "", "")
+		test("", "", "")
+		test("", "", "")
+		test("", "", "")
+		test("", "", "")
+		test("", "", "")
+		test("", "", "")
+		test("", "", "")
+
+	}
+
+	return
 
 	test := func(msg string, e Exp, expected string) {
 		got := String(e)
@@ -153,7 +236,7 @@ func atom(args ...Exp) Exp {
 		}
 		return False
 	default:
-		panic("illegal atom call")
+		panic(fmt.Errorf("illegal atom call: %T %v", x, x))
 	}
 }
 
@@ -161,12 +244,17 @@ func atom(args ...Exp) Exp {
 // #3
 //
 
+// TODO:
+// got string problems:
+//   eq([]main.Exp [],[]main.Exp []) = true
+//   eq([]main.Exp [],string ()) = false
 func eq(args ...Exp) Exp {
 	checklen(2, args)
 	s := func(e Exp) string {
-		return fmt.Sprintf("%s", e)
+		return fmt.Sprintf("%T %s", e, e)
 	}
 	x, y := args[0], args[1]
+	fmt.Printf("eq(%s,%s) = %v\n", s(x), s(y), s(x) == s(y))
 	if s(x) == s(y) {
 		return True
 	}
