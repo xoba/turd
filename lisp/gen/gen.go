@@ -72,6 +72,8 @@ func main() {
 		atom,
 		e,
 	), "()")
+
+	fmt.Printf("eval(%s)\n", e)
 	test("12", eval(e, a), "x")
 }
 
@@ -211,6 +213,7 @@ func cons(args ...Exp) Exp {
 
 func cond(args ...Exp) Exp {
 	for i, a := range args {
+		fmt.Printf("cond[%d]\n", i)
 		switch t := a.(type) {
 		case []Exp:
 			if len(t) != 2 {
@@ -221,7 +224,9 @@ func cond(args ...Exp) Exp {
 			if !ok {
 				panic("p not lazy")
 			}
-			if boolean(pl()) {
+			v := pl()
+			fmt.Printf("cond(%d; %s\n", i, v)
+			if boolean(v) {
 				el, ok := e.(Func)
 				if !ok {
 					panic("e not lazy")
@@ -259,25 +264,21 @@ func and(args ...Exp) Exp {
 				return x
 			}),
 			Func(func(...Exp) Exp {
-				return apply(
-					cond,
-					list(
-						Func(func(...Exp) Exp {
-							return y
-						}),
-						Func(func(...Exp) Exp {
-							return "t"
-						}),
-					),
-					list(
-						Func(func(...Exp) Exp {
-							return "t"
-						}),
-						Func(func(...Exp) Exp {
-							return Nil
-						}),
-					),
-				)
+				return apply(cond, list(
+					Func(func(...Exp) Exp {
+						return y
+					}),
+					Func(func(...Exp) Exp {
+						return "t"
+					}),
+				), list(
+					Func(func(...Exp) Exp {
+						return "t"
+					}),
+					Func(func(...Exp) Exp {
+						return Nil
+					}),
+				))
 			}),
 		),
 		list(
@@ -301,10 +302,7 @@ func xappend(args ...Exp) Exp {
 		cond,
 		list(
 			Func(func(...Exp) Exp {
-				return apply(
-					null,
-					x,
-				)
+				return apply(null, x)
 			}),
 			Func(func(...Exp) Exp {
 				return y
@@ -315,21 +313,7 @@ func xappend(args ...Exp) Exp {
 				return "t"
 			}),
 			Func(func(...Exp) Exp {
-				return apply(
-					cons,
-					apply(
-						car,
-						x,
-					),
-					apply(
-						xappend,
-						apply(
-							cdr,
-							x,
-						),
-						y,
-					),
-				)
+				return apply(cons, apply(car, x), apply(xappend, apply(cdr, x), y))
 			}),
 		),
 	)
@@ -345,20 +329,10 @@ func assoc(args ...Exp) Exp {
 		cond,
 		list(
 			Func(func(...Exp) Exp {
-				return apply(
-					eq,
-					apply(
-						caar,
-						y,
-					),
-					x,
-				)
+				return apply(eq, apply(caar, y), x)
 			}),
 			Func(func(...Exp) Exp {
-				return apply(
-					cadar,
-					y,
-				)
+				return apply(cadar, y)
 			}),
 		),
 		list(
@@ -366,14 +340,7 @@ func assoc(args ...Exp) Exp {
 				return "t"
 			}),
 			Func(func(...Exp) Exp {
-				return apply(
-					assoc,
-					x,
-					apply(
-						cdr,
-						y,
-					),
-				)
+				return apply(assoc, x, apply(cdr, y))
 			}),
 		),
 	)
@@ -901,348 +868,97 @@ func eval(args ...Exp) Exp {
 		cond,
 		list(
 			Func(func(...Exp) Exp {
-				return apply(
-					atom,
-					e,
-				)
+				return apply(atom, e)
 			}),
 			Func(func(...Exp) Exp {
-				return apply(
-					assoc,
-					e,
-					a,
-				)
+				return apply(assoc, e, a)
 			}),
 		),
 		list(
 			Func(func(...Exp) Exp {
-				return apply(
-					atom,
-					apply(
-						car,
-						e,
-					),
-				)
+				return apply(atom, apply(car, e))
 			}),
 			Func(func(...Exp) Exp {
-				return apply(
-					cond,
-					list(
-						Func(func(...Exp) Exp {
-							return apply(
-								eq,
-								apply(
-									car,
-									e,
-								),
-								"quote",
-							)
-						}),
-						Func(func(...Exp) Exp {
-							return apply(
-								cadr,
-								e,
-							)
-						}),
-					),
-					list(
-						Func(func(...Exp) Exp {
-							return apply(
-								eq,
-								apply(
-									car,
-									e,
-								),
-								"atom",
-							)
-						}),
-						Func(func(...Exp) Exp {
-							return apply(
-								atom,
-								apply(
-									eval,
-									apply(
-										cadr,
-										e,
-									),
-									a,
-								),
-							)
-						}),
-					),
-					list(
-						Func(func(...Exp) Exp {
-							return apply(
-								eq,
-								apply(
-									car,
-									e,
-								),
-								"eq",
-							)
-						}),
-						Func(func(...Exp) Exp {
-							return apply(
-								eq,
-								apply(
-									eval,
-									apply(
-										cadr,
-										e,
-									),
-									a,
-								),
-								apply(
-									eval,
-									apply(
-										caddr,
-										e,
-									),
-									a,
-								),
-							)
-						}),
-					),
-					list(
-						Func(func(...Exp) Exp {
-							return apply(
-								eq,
-								apply(
-									car,
-									e,
-								),
-								"display",
-							)
-						}),
-						Func(func(...Exp) Exp {
-							return apply(
-								display,
-								apply(
-									eval,
-									apply(
-										cadr,
-										e,
-									),
-									a,
-								),
-							)
-						}),
-					),
-					list(
-						Func(func(...Exp) Exp {
-							return apply(
-								eq,
-								apply(
-									car,
-									e,
-								),
-								"car",
-							)
-						}),
-						Func(func(...Exp) Exp {
-							return apply(
-								car,
-								apply(
-									eval,
-									apply(
-										cadr,
-										e,
-									),
-									a,
-								),
-							)
-						}),
-					),
-					list(
-						Func(func(...Exp) Exp {
-							return apply(
-								eq,
-								apply(
-									car,
-									e,
-								),
-								"cdr",
-							)
-						}),
-						Func(func(...Exp) Exp {
-							return apply(
-								cdr,
-								apply(
-									eval,
-									apply(
-										cadr,
-										e,
-									),
-									a,
-								),
-							)
-						}),
-					),
-					list(
-						Func(func(...Exp) Exp {
-							return apply(
-								eq,
-								apply(
-									car,
-									e,
-								),
-								"cons",
-							)
-						}),
-						Func(func(...Exp) Exp {
-							return apply(
-								cons,
-								apply(
-									eval,
-									apply(
-										cadr,
-										e,
-									),
-									a,
-								),
-								apply(
-									eval,
-									apply(
-										caddr,
-										e,
-									),
-									a,
-								),
-							)
-						}),
-					),
-					list(
-						Func(func(...Exp) Exp {
-							return apply(
-								eq,
-								apply(
-									car,
-									e,
-								),
-								"cond",
-							)
-						}),
-						Func(func(...Exp) Exp {
-							return apply(
-								evcon,
-								apply(
-									cdr,
-									e,
-								),
-								a,
-							)
-						}),
-					),
-					list(
-						Func(func(...Exp) Exp {
-							return "t"
-						}),
-						Func(func(...Exp) Exp {
-							return apply(
-								eval,
-								apply(
-									cons,
-									apply(
-										assoc,
-										apply(
-											car,
-											e,
-										),
-										a,
-									),
-									apply(
-										cdr,
-										e,
-									),
-								),
-								a,
-							)
-						}),
-					),
-				)
+				return apply(cond, list(
+					Func(func(...Exp) Exp {
+						return apply(eq, apply(car, e), "quote")
+					}),
+					Func(func(...Exp) Exp {
+						return apply(cadr, e)
+					}),
+				), list(
+					Func(func(...Exp) Exp {
+						return apply(eq, apply(car, e), "atom")
+					}),
+					Func(func(...Exp) Exp {
+						return apply(atom, apply(eval, apply(cadr, e), a))
+					}),
+				), list(
+					Func(func(...Exp) Exp {
+						return apply(eq, apply(car, e), "eq")
+					}),
+					Func(func(...Exp) Exp {
+						return apply(eq, apply(eval, apply(cadr, e), a), apply(eval, apply(caddr, e), a))
+					}),
+				), list(
+					Func(func(...Exp) Exp {
+						return apply(eq, apply(car, e), "display")
+					}),
+					Func(func(...Exp) Exp {
+						return apply(display, apply(eval, apply(cadr, e), a))
+					}),
+				), list(
+					Func(func(...Exp) Exp {
+						return apply(eq, apply(car, e), "car")
+					}),
+					Func(func(...Exp) Exp {
+						return apply(car, apply(eval, apply(cadr, e), a))
+					}),
+				), list(
+					Func(func(...Exp) Exp {
+						return apply(eq, apply(car, e), "cdr")
+					}),
+					Func(func(...Exp) Exp {
+						return apply(cdr, apply(eval, apply(cadr, e), a))
+					}),
+				), list(
+					Func(func(...Exp) Exp {
+						return apply(eq, apply(car, e), "cons")
+					}),
+					Func(func(...Exp) Exp {
+						return apply(cons, apply(eval, apply(cadr, e), a), apply(eval, apply(caddr, e), a))
+					}),
+				), list(
+					Func(func(...Exp) Exp {
+						return apply(eq, apply(car, e), "cond")
+					}),
+					Func(func(...Exp) Exp {
+						return apply(evcon, apply(cdr, e), a)
+					}),
+				), list(
+					Func(func(...Exp) Exp {
+						return "t"
+					}),
+					Func(func(...Exp) Exp {
+						return apply(eval, apply(cons, apply(assoc, apply(car, e), a), apply(cdr, e)), a)
+					}),
+				))
 			}),
 		),
 		list(
 			Func(func(...Exp) Exp {
-				return apply(
-					eq,
-					apply(
-						caar,
-						e,
-					),
-					"label",
-				)
+				return apply(eq, apply(caar, e), "label")
 			}),
 			Func(func(...Exp) Exp {
-				return apply(
-					eval,
-					apply(
-						cons,
-						apply(
-							caddar,
-							e,
-						),
-						apply(
-							cdr,
-							e,
-						),
-					),
-					apply(
-						cons,
-						apply(
-							list,
-							apply(
-								cadar,
-								e,
-							),
-							apply(
-								car,
-								e,
-							),
-						),
-						a,
-					),
-				)
+				return apply(eval, apply(cons, apply(caddar, e), apply(cdr, e)), apply(cons, apply(list, apply(cadar, e), apply(car, e)), a))
 			}),
 		),
 		list(
 			Func(func(...Exp) Exp {
-				return apply(
-					eq,
-					apply(
-						caar,
-						e,
-					),
-					"lambda",
-				)
+				return apply(eq, apply(caar, e), "lambda")
 			}),
 			Func(func(...Exp) Exp {
-				return apply(
-					eval,
-					apply(
-						caddar,
-						e,
-					),
-					apply(
-						xappend,
-						apply(
-							pair,
-							apply(
-								cadar,
-								e,
-							),
-							apply(
-								evlis,
-								apply(
-									cdr,
-									e,
-								),
-								a,
-							),
-						),
-						a,
-					),
-				)
+				return apply(eval, apply(caddar, e), apply(xappend, apply(pair, apply(cadar, e), apply(evlis, apply(cdr, e), a)), a))
 			}),
 		),
 	)
@@ -1258,24 +974,10 @@ func evcon(args ...Exp) Exp {
 		cond,
 		list(
 			Func(func(...Exp) Exp {
-				return apply(
-					eval,
-					apply(
-						caar,
-						c,
-					),
-					a,
-				)
+				return apply(eval, apply(caar, c), a)
 			}),
 			Func(func(...Exp) Exp {
-				return apply(
-					eval,
-					apply(
-						cadar,
-						c,
-					),
-					a,
-				)
+				return apply(eval, apply(cadar, c), a)
 			}),
 		),
 		list(
@@ -1283,14 +985,7 @@ func evcon(args ...Exp) Exp {
 				return "t"
 			}),
 			Func(func(...Exp) Exp {
-				return apply(
-					evcon,
-					apply(
-						cdr,
-						c,
-					),
-					a,
-				)
+				return apply(evcon, apply(cdr, c), a)
 			}),
 		),
 	)
@@ -1306,10 +1001,7 @@ func evlis(args ...Exp) Exp {
 		cond,
 		list(
 			Func(func(...Exp) Exp {
-				return apply(
-					null,
-					m,
-				)
+				return apply(null, m)
 			}),
 			Func(func(...Exp) Exp {
 				return "()"
@@ -1320,25 +1012,7 @@ func evlis(args ...Exp) Exp {
 				return "t"
 			}),
 			Func(func(...Exp) Exp {
-				return apply(
-					cons,
-					apply(
-						eval,
-						apply(
-							car,
-							m,
-						),
-						a,
-					),
-					apply(
-						evlis,
-						apply(
-							cdr,
-							m,
-						),
-						a,
-					),
-				)
+				return apply(cons, apply(eval, apply(car, m), a), apply(evlis, apply(cdr, m), a))
 			}),
 		),
 	)
@@ -1392,17 +1066,7 @@ func pair(args ...Exp) Exp {
 		cond,
 		list(
 			Func(func(...Exp) Exp {
-				return apply(
-					and,
-					apply(
-						null,
-						x,
-					),
-					apply(
-						null,
-						y,
-					),
-				)
+				return apply(and, apply(null, x), apply(null, y))
 			}),
 			Func(func(...Exp) Exp {
 				return "()"
@@ -1410,50 +1074,10 @@ func pair(args ...Exp) Exp {
 		),
 		list(
 			Func(func(...Exp) Exp {
-				return apply(
-					and,
-					apply(
-						not,
-						apply(
-							atom,
-							x,
-						),
-					),
-					apply(
-						not,
-						apply(
-							atom,
-							y,
-						),
-					),
-				)
+				return apply(and, apply(not, apply(atom, x)), apply(not, apply(atom, y)))
 			}),
 			Func(func(...Exp) Exp {
-				return apply(
-					cons,
-					apply(
-						list,
-						apply(
-							car,
-							x,
-						),
-						apply(
-							car,
-							y,
-						),
-					),
-					apply(
-						pair,
-						apply(
-							cdr,
-							x,
-						),
-						apply(
-							cdr,
-							y,
-						),
-					),
-				)
+				return apply(cons, apply(list, apply(car, x), apply(car, y)), apply(pair, apply(cdr, x), apply(cdr, y)))
 			}),
 		),
 	)
@@ -1470,35 +1094,24 @@ func subst(args ...Exp) Exp {
 		cond,
 		list(
 			Func(func(...Exp) Exp {
-				return apply(
-					atom,
-					z,
-				)
+				return apply(atom, z)
 			}),
 			Func(func(...Exp) Exp {
-				return apply(
-					cond,
-					list(
-						Func(func(...Exp) Exp {
-							return apply(
-								eq,
-								z,
-								y,
-							)
-						}),
-						Func(func(...Exp) Exp {
-							return x
-						}),
-					),
-					list(
-						Func(func(...Exp) Exp {
-							return "t"
-						}),
-						Func(func(...Exp) Exp {
-							return z
-						}),
-					),
-				)
+				return apply(cond, list(
+					Func(func(...Exp) Exp {
+						return apply(eq, z, y)
+					}),
+					Func(func(...Exp) Exp {
+						return x
+					}),
+				), list(
+					Func(func(...Exp) Exp {
+						return "t"
+					}),
+					Func(func(...Exp) Exp {
+						return z
+					}),
+				))
 			}),
 		),
 		list(
@@ -1506,27 +1119,7 @@ func subst(args ...Exp) Exp {
 				return "t"
 			}),
 			Func(func(...Exp) Exp {
-				return apply(
-					cons,
-					apply(
-						subst,
-						x,
-						y,
-						apply(
-							car,
-							z,
-						),
-					),
-					apply(
-						subst,
-						x,
-						y,
-						apply(
-							cdr,
-							z,
-						),
-					),
-				)
+				return apply(cons, apply(subst, x, y, apply(car, z)), apply(subst, x, y, apply(cdr, z)))
 			}),
 		),
 	)

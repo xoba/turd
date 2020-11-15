@@ -71,6 +71,7 @@ func main() {
 		e,
 	), "()")
 
+	fmt.Printf("eval(%s)\n", e)
 	test("12", eval(e, a), "x")
 }
 
@@ -210,6 +211,7 @@ func cons(args ...Exp) Exp {
 
 func cond(args ...Exp) Exp {
 	for i, a := range args {
+		fmt.Printf("cond[%d]\n", i)
 		switch t := a.(type) {
 		case []Exp:
 			if len(t) != 2 {
@@ -220,7 +222,9 @@ func cond(args ...Exp) Exp {
 			if !ok {
 				panic("p not lazy")
 			}
-			if boolean(pl()) {
+			v := pl()
+			fmt.Printf("cond(%d; %s\n", i, v)
+			if boolean(v) {
 				el, ok := e.(Func)
 				if !ok {
 					panic("e not lazy")

@@ -166,7 +166,7 @@ func Tofunc(defun exp.Expression) (string, []byte, error) {
 		}
 		fmt.Fprintf(w, "%s := args[%d];\n", a.Atom(), i)
 	}
-	code, err := Compile(body)
+	code, err := Compile(body, true)
 	if err != nil {
 		return name, nil, err
 	}
@@ -204,11 +204,11 @@ func CompileLazy(e exp.Expression) ([]byte, error) {
 	if len(list) != 2 {
 		return nil, fmt.Errorf("malformed cond: %s %s", e)
 	}
-	pb, err := Compile(list[0])
+	pb, err := Compile(list[0], false)
 	if err != nil {
 		return nil, err
 	}
-	eb, err := Compile(list[1])
+	eb, err := Compile(list[1], false)
 	if err != nil {
 		return nil, err
 	}
@@ -221,11 +221,15 @@ return %s
 	return w.Bytes(), nil
 }
 
-func Compile(e exp.Expression) ([]byte, error) {
+func Compile(e exp.Expression, indent bool) ([]byte, error) {
 	//	fmt.Printf("%d compile(%q)\n", len(e.List()), e)
 	w := new(bytes.Buffer)
-	indent := func(msg string, list []string) {
-		fmt.Fprintf(w, "%s(\n%s,\n)", msg, strings.Join(list, ",\n"))
+	emit := func(msg string, list []string) {
+		if indent {
+			fmt.Fprintf(w, "%s(\n%s,\n)", msg, strings.Join(list, ",\n"))
+		} else {
+			fmt.Fprintf(w, "%s(%s)", msg, strings.Join(list, ","))
+		}
 	}
 	switch {
 	case e.Atom() != nil:
@@ -246,7 +250,9 @@ func Compile(e exp.Expression) ([]byte, error) {
 			for i, a := range e.List() {
 				var f func(exp.Expression) ([]byte, error)
 				if i == 0 {
-					f = Compile
+					f = func(e exp.Expression) ([]byte, error) {
+						return Compile(e, true)
+					}
 				} else {
 					f = CompileLazy
 				}
@@ -256,17 +262,17 @@ func Compile(e exp.Expression) ([]byte, error) {
 				}
 				list = append(list, string(sub))
 			}
-			indent("apply", list)
+			emit("apply", list)
 		default:
 			var list []string
 			for _, a := range e.List() {
-				sub, err := Compile(a)
+				sub, err := Compile(a, indent)
 				if err != nil {
 					return nil, err
 				}
 				list = append(list, string(sub))
 			}
-			indent("apply", list)
+			emit("apply", list)
 		}
 	}
 	return w.Bytes(), nil
