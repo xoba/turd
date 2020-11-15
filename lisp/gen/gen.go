@@ -77,8 +77,16 @@ func main() {
 	fmt.Printf("eval(%s)\n", e)
 	test("12", eval(e, a), "x")
 
-	test("16", eval(list("eq", "a", "a"), a), "t")
-
+	{
+		e := list("eq", list("quote", "a"), list("quote", "a"))
+		fmt.Printf("testing %s\n", e)
+		test("16", eval(e, a), "t")
+	}
+	{
+		e := list("eq", list("quote", "a"), list("quote", "b"))
+		fmt.Printf("testing %s\n", e)
+		test("16", eval(e, a), "()")
+	}
 }
 
 func String(e Exp) string {
