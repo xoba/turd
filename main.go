@@ -19,6 +19,7 @@ import (
 	"github.com/xoba/turd/gossip"
 	"github.com/xoba/turd/infl"
 	"github.com/xoba/turd/lisp"
+	"github.com/xoba/turd/lisp/gen"
 	"github.com/xoba/turd/poset"
 	"github.com/xoba/turd/taws"
 	"github.com/xoba/turd/tnet"
@@ -45,6 +46,7 @@ func main() {
 
 func Run(c cnfg.Config) error {
 	modes := map[string]func(cnfg.Config) error{
+		"test":      gen.Run,
 		"compile":   lisp.CompileDef,
 		"connect":   Connect,
 		"dd":        dd.Run,

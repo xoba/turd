@@ -1,4 +1,4 @@
-package main
+package gen
 
 import (
 	"bytes"
@@ -6,6 +6,7 @@ import (
 	"log"
 	"strings"
 
+	"github.com/xoba/turd/cnfg"
 	"github.com/xoba/turd/lisp"
 	"github.com/xoba/turd/lisp/exp"
 )
@@ -39,12 +40,6 @@ func ToExp(e exp.Expression) Exp {
 
 func Eval(e Exp) Exp {
 	return eval([]Exp{e, env}...)
-}
-
-func main() {
-	if err := Run(); err != nil {
-		log.Fatal(err)
-	}
 }
 
 func Expression(n *lisp.Node) (Exp, error) {
@@ -85,8 +80,7 @@ func Read(s string) (Exp, error) {
 	return Expression(n)
 }
 
-func Run() error {
-
+func Run(cnfg.Config) error {
 	var last string
 	test := func(msg, input, expect string) {
 		if msg == "" {
