@@ -17,6 +17,10 @@
      ('t (eval (cons (assoc (car e) a)
 		     (cdr e))
 	       a))))
+
+   ((eq (caar e) 'macro) ; starting to play with a "macro" idea
+    (cdr e))
+   
    ((eq (caar e) 'label)
     (eval (cons (caddar e) (cdr e))
 	  (cons (list (cadar e) (car e)) a)))

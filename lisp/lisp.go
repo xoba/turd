@@ -963,7 +963,7 @@ func Evcon(c, a exp.Expression) exp.Expression {
 }
 
 func Read(s string) (exp.Expression, error) {
-	n, err := parse(s)
+	n, err := NewNode(s)
 	if err != nil {
 		return nil, err
 	}

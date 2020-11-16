@@ -48,7 +48,7 @@ func (n *node) Expression() (exp.Expression, error) {
 	return exp.NewList(list...), nil
 }
 
-func parse(s string) (*node, error) {
+func NewNode(s string) (*node, error) {
 	{
 		uncommented := func(s string) string {
 			z := new(bytes.Buffer)

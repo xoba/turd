@@ -140,6 +140,24 @@ func Run() error {
 	test("eval", "(eval '(f '(b c)) '((f (lambda (x) (cons 'a x)))))", "(a b c)")
 	test("eval", "(eval '((label firstatom (lambda (x) (cond ((atom x) x) ('t (firstatom (car x)))))) y) '((y ((a b) (c d)))))", "a")
 	test("eval", "(eval '((lambda (x y) (cons x (cdr y))) 'a '(b c d)) '())", "(a c d)")
+
+	test("macro", `((macro test (x) (cdr x))
+ 'a 'b 'c)`, "(a b c)")
+
+	test("", "", "")
+	test("", "", "")
+	test("", "", "")
+	test("", "", "")
+	test("", "", "")
+	test("", "", "")
+	test("", "", "")
+	test("", "", "")
+	test("", "", "")
+	test("", "", "")
+	test("", "", "")
+	test("", "", "")
+	test("", "", "")
+	test("", "", "")
 	test("", "", "")
 	test("", "", "")
 	test("", "", "")
@@ -380,7 +398,7 @@ func cond(args ...Exp) Exp {
 			return fmt.Errorf("cond %T", t)
 		}
 	}
-	return fmt.Errorf("cond fallthrough with %d args", len(args))
+	return fmt.Errorf("cond fallthrough")
 }
 
 //
