@@ -58,6 +58,7 @@ func main() {
 			in, err := lisp.Read(input)
 			check(err)
 			fmt.Printf("%-10s %-20s -> %s\n", msg+":", in, expect)
+			in = lisp.SanitizeGo(in)
 			res := eval(ToExp(in), env)
 			if got := String(res); got != expect {
 				panic(fmt.Errorf("expected %q, got %q\n", expect, got))
