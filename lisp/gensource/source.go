@@ -254,7 +254,6 @@ func eq(args ...Exp) Exp {
 	}
 	x, y := args[0], args[1]
 	sx, sy := s(x), s(y)
-	fmt.Printf("eq(%q,%q) = %v\n", sx, sy, sx == sy)
 	if sx == sy {
 		return True
 	}

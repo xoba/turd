@@ -215,7 +215,7 @@ func CompileLazy(e exp.Expression) ([]byte, error) {
 	f := func(s string) string {
 		return fmt.Sprintf(`Func(func(...Exp) Exp {
 return %s
-})`, string(s))
+})`, s)
 	}
 	fmt.Fprintf(w, "list(\n%s,\n%s,\n)", f(string(pb)), f(string(eb)))
 	return w.Bytes(), nil
@@ -244,7 +244,18 @@ func Compile(e exp.Expression, indent bool) ([]byte, error) {
 		case n == 1:
 			return nil, fmt.Errorf("illegal list of length 1")
 		case n == 2 && in(e.List()[0].String(), "quote"):
-			fmt.Fprintf(w, "%q", e.List()[1])
+			x := e.List()[1]
+			switch {
+			case x.Atom() != nil:
+				fmt.Fprintf(w, "%q", x)
+			default:
+
+				compiled, err := Compile(e.List()[1], false)
+				if err != nil {
+					return nil, err
+				}
+				fmt.Fprintf(w, string(compiled))
+			}
 		case n > 1 && in(e.List()[0].String(), "cond"):
 			var list []string
 			for i, a := range e.List() {

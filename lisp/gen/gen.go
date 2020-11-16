@@ -256,7 +256,6 @@ func eq(args ...Exp) Exp {
 	}
 	x, y := args[0], args[1]
 	sx, sy := s(x), s(y)
-	fmt.Printf("eq(%q,%q) = %v\n", sx, sy, sx == sy)
 	if sx == sy {
 		return True
 	}
@@ -404,7 +403,7 @@ func and(args ...Exp) Exp {
 				return "t"
 			}),
 			Func(func(...Exp) Exp {
-				return "()"
+				return Nil
 			}),
 		),
 	)
@@ -1122,7 +1121,7 @@ func evlis(args ...Exp) Exp {
 				return apply(null, m)
 			}),
 			Func(func(...Exp) Exp {
-				return "()"
+				return Nil
 			}),
 		),
 		list(
@@ -1148,7 +1147,7 @@ func not(args ...Exp) Exp {
 				return x
 			}),
 			Func(func(...Exp) Exp {
-				return "()"
+				return Nil
 			}),
 		),
 		list(
@@ -1170,7 +1169,7 @@ func null(args ...Exp) Exp {
 	return apply(
 		eq,
 		x,
-		"()",
+		Nil,
 	)
 }
 
@@ -1187,7 +1186,7 @@ func pair(args ...Exp) Exp {
 				return apply(and, apply(null, x), apply(null, y))
 			}),
 			Func(func(...Exp) Exp {
-				return "()"
+				return Nil
 			}),
 		),
 		list(
