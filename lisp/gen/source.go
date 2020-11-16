@@ -133,6 +133,7 @@ func Run(cnfg.Config) error {
 			log.Fatal(err)
 		}
 
+		// TODO: these should be equal
 		fmt.Printf("read %s vs %s\n", in, in2)
 
 		in = SanitizeGo(in)

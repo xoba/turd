@@ -59,6 +59,9 @@ func parseTokens(list []string) (Exp, error) {
 	case 0:
 		return nil, fmt.Errorf("can't parse empty list")
 	case 1:
+		if runes := []rune(list[0]); runes[0] == '\'' {
+			return []Exp{"quote", string(runes[1:])}, nil
+		}
 		return list[0], nil
 	default:
 		if list[0] != "(" || list[n-1] != ")" {
