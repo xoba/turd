@@ -46,21 +46,21 @@ func main() {
 
 func Run(c cnfg.Config) error {
 	modes := map[string]func(cnfg.Config) error{
-		"test":      gen.Run,
-		"compile":   lisp.CompileDef,
-		"connect":   Connect,
-		"dd":        dd.Run,
-		"gossip":    gossip.Run,
-		"hnode":     RunHTMLNode,
-		"infbig":    infl.RunBig,
-		"inflation": infl.Run,
-		"keys":      tnet.SharedKey,
-		"launch":    LaunchNode,
-		"lisp":      lisp.Lisp,
-		"poset":     poset.Run,
-		"listen":    Listen,
-		"script":    lisp.Run,
-		"trie":      trie.Run,
+		"lisptest":    gen.Run,
+		"lispcompile": lisp.CompileDef,
+		"connect":     Connect,
+		"dd":          dd.Run,
+		"gossip":      gossip.Run,
+		"hnode":       RunHTMLNode,
+		"infbig":      infl.RunBig,
+		"inflation":   infl.Run,
+		"keys":        tnet.SharedKey,
+		"launch":      LaunchNode,
+		"lisp":        lisp.Lisp,
+		"poset":       poset.Run,
+		"listen":      Listen,
+		"script":      lisp.Run,
+		"trie":        trie.Run,
 	}
 	handler, ok := modes[c.Mode]
 	if !ok {

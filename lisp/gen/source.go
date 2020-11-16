@@ -1,3 +1,4 @@
+// compiles lisp stuff
 package gen
 
 import (
@@ -16,9 +17,8 @@ type Exp interface{}
 
 type Func func(...Exp) Exp
 
-var env Exp
-
 var (
+	env   Exp
 	Nil   Exp = list()
 	True  Exp = "t"
 	False Exp = Nil
