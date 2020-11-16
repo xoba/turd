@@ -243,10 +243,6 @@ func atom(args ...Exp) Exp {
 // #3
 //
 
-// TODO:
-// got string problems:
-//   eq([]main.Exp [],[]main.Exp []) = true
-//   eq([]main.Exp [],string ()) = false
 func eq(args ...Exp) Exp {
 	checklen(2, args)
 	s := func(e Exp) string {
