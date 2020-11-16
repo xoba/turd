@@ -189,7 +189,10 @@ func Tofunc(defun exp.Expression) (string, []byte, error) {
 
 	fmt.Fprintf(w, "func %[1]s(args ... Exp) Exp {\n", name)
 	//fmt.Fprintf(w, "debug(%q,args...)\n", name)
-	fmt.Fprintf(w, "checklen(%d,args)\n", len(args.List()))
+	fmt.Fprintf(w, `if err:= checklen(%d,args); err != nil {
+return err
+}
+`, len(args.List()))
 	for i, a := range args.List() {
 		if !IsAtom(a) {
 			return name, nil, fmt.Errorf("not atom: %s", a)

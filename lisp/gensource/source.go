@@ -3,12 +3,14 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/xoba/turd/lisp"
 	"github.com/xoba/turd/lisp/exp"
 )
 
+// valid types: string, []Exp, Func, or error
 type Exp interface{}
 
 type Func func(...Exp) Exp
@@ -17,20 +19,13 @@ var env Exp
 
 var (
 	Nil   Exp = list()
-	t     Exp = "t"
 	True  Exp = "t"
 	False Exp = Nil
 )
 
-func check(e error) {
-	if e != nil {
-		panic(e)
-	}
-}
-
 func ToExp(e exp.Expression) Exp {
 	if err := e.Error(); err != nil {
-		panic(err)
+		return err
 	}
 	if a := e.Atom(); a != nil {
 		return a.String()
@@ -42,56 +37,66 @@ func ToExp(e exp.Expression) Exp {
 	return list
 }
 
+func Eval(e Exp) Exp {
+	return eval([]Exp{e, env}...)
+}
+
 func main() {
+	if err := Run(); err != nil {
+		log.Fatal(err)
+	}
+}
 
-	{
+func Run() error {
 
-		var last string
-		test := func(msg, input, expect string) {
-			if msg == "" {
-				return
-			}
-			if msg != last {
-				fmt.Println()
-			}
-			last = msg
-			in, err := lisp.Read(input)
-			check(err)
-			fmt.Printf("%-10s %-20s -> %s\n", msg+":", in, expect)
-			in = lisp.SanitizeGo(in)
-			res := eval(ToExp(in), env)
-			if got := String(res); got != expect {
-				panic(fmt.Errorf("expected %q, got %q\n", expect, got))
-			}
+	var last string
+	test := func(msg, input, expect string) {
+		if msg == "" {
+			return
 		}
+		if msg != last {
+			fmt.Println()
+		}
+		last = msg
+		in, err := lisp.Read(input)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("%-10s %-20s -> %s\n", msg+":", in, expect)
+		in = lisp.SanitizeGo(in)
+		res := Eval(ToExp(in))
+		if got := String(res); got != expect {
+			log.Fatalf("expected %q, got %q\n", expect, got)
+		}
+	}
 
-		test("quote", "(quote a)", "a")
-		test("quote", "(quote (a b c))", "(a b c)")
+	test("quote", "(quote a)", "a")
+	test("quote", "(quote (a b c))", "(a b c)")
 
-		test("atom", "(atom 'a)", "t")
-		test("atom", "(atom '(a b c))", "()")
-		test("atom", "(atom '())", "t")
-		test("atom", "(atom 'a)", "t")
-		test("atom", "(atom '(atom 'a))", "()")
+	test("atom", "(atom 'a)", "t")
+	test("atom", "(atom '(a b c))", "()")
+	test("atom", "(atom '())", "t")
+	test("atom", "(atom 'a)", "t")
+	test("atom", "(atom '(atom 'a))", "()")
 
-		test("eq", "(eq 'a 'a)", "t")
-		test("eq", "(eq 'a 'b)", "()")
-		test("eq", "(eq '() '())", "t")
+	test("eq", "(eq 'a 'a)", "t")
+	test("eq", "(eq 'a 'b)", "()")
+	test("eq", "(eq '() '())", "t")
 
-		test("car", "(car '(a b c))", "a")
-		test("cdr", "(cdr '(a b c))", "(b c)")
+	test("car", "(car '(a b c))", "a")
+	test("cdr", "(cdr '(a b c))", "(b c)")
 
-		test("cons", "(cons 'a '(b c))", "(a b c)")
-		test("cons", "(cons 'a (cons 'b (cons 'c '())))", "(a b c)")
-		test("cons", "(car (cons 'a '(b c)))", "a")
-		test("cons", "(cdr (cons 'a '(b c)))", "(b c)")
+	test("cons", "(cons 'a '(b c))", "(a b c)")
+	test("cons", "(cons 'a (cons 'b (cons 'c '())))", "(a b c)")
+	test("cons", "(car (cons 'a '(b c)))", "a")
+	test("cons", "(cdr (cons 'a '(b c)))", "(b c)")
 
-		test("cond", "(cond ((eq 'a 'b) 'first) ((atom 'a) 'second))", "second")
-		test("cond", "(cond ((eq 'a 'a) 'first) ((atom 'a) 'second))", "first")
+	test("cond", "(cond ((eq 'a 'b) 'first) ((atom 'a) 'second))", "second")
+	test("cond", "(cond ((eq 'a 'a) 'first) ((atom 'a) 'second))", "first")
 
-		test("lambda", "((lambda (x) (cons x '(b))) 'a)", "(a b)")
+	test("lambda", "((lambda (x) (cons x '(b))) 'a)", "(a b)")
 
-		test("label", `(
+	test("label", `(
  (label subst 
 	(lambda (x y z)
 	  (cond ((atom z) (
@@ -101,112 +106,45 @@ func main() {
 			  (subst x y (cdr z))))))
 	)
  'm 'b '(a b (a b c) d))`, "(a m (a m c) d)")
-		test("label", "(subst 'm 'b '(a b (a b c) d))", "(a m (a m c) d)")
+	test("label", "(subst 'm 'b '(a b (a b c) d))", "(a m (a m c) d)")
 
-		test("cxr", "(cadr '((a b) (c d) e))", "(c d)")
-		test("cxr", "(caddr '((a b) (c d) e))", "e")
-		test("cxr", "(cdar '((a b) (c d) e))", "(b)")
+	test("cxr", "(cadr '((a b) (c d) e))", "(c d)")
+	test("cxr", "(caddr '((a b) (c d) e))", "e")
+	test("cxr", "(cdar '((a b) (c d) e))", "(b)")
 
-		test("list", "(cons 'a (cons 'b (cons 'c '())))", "(a b c)")
-		test("list", "(list 'a 'b 'c)", "(a b c)")
+	test("list", "(cons 'a (cons 'b (cons 'c '())))", "(a b c)")
+	test("list", "(list 'a 'b 'c)", "(a b c)")
 
-		test("null", "(null 'a)", "()")
-		test("null", "(null '())", "t")
+	test("null", "(null 'a)", "()")
+	test("null", "(null '())", "t")
 
-		test("and", "(and (atom 'a) (eq 'a 'a))", "t")
-		test("and", "(and (atom 'a) (eq 'a 'b))", "()")
+	test("and", "(and (atom 'a) (eq 'a 'a))", "t")
+	test("and", "(and (atom 'a) (eq 'a 'b))", "()")
 
-		test("not", "(not (eq 'a 'a))", "()")
-		test("not", "(not (eq 'a 'b))", "t")
+	test("not", "(not (eq 'a 'a))", "()")
+	test("not", "(not (eq 'a 'b))", "t")
 
-		test("append", "(append '(a b) '(c d))", "(a b c d)")
-		test("append", "(append '() '(c d))", "(c d)")
+	test("append", "(append '(a b) '(c d))", "(a b c d)")
+	test("append", "(append '() '(c d))", "(c d)")
 
-		test("pair", "(pair '(x y z) '(a b c))", "((x a) (y b) (z c))")
+	test("pair", "(pair '(x y z) '(a b c))", "((x a) (y b) (z c))")
 
-		test("assoc", "(assoc 'x '((x a) (y b)))", "a")
-		test("assoc", "(assoc 'x '((x c) (y b)))", "c")
-		test("assoc", "(assoc 'y '((x c) (y b)))", "b")
+	test("assoc", "(assoc 'x '((x a) (y b)))", "a")
+	test("assoc", "(assoc 'x '((x c) (y b)))", "c")
+	test("assoc", "(assoc 'y '((x c) (y b)))", "b")
 
-		test("eval", "(eval 'x '((x a) (y b)))", "a")
-		test("eval", "(eval '(eq 'a 'a) '())", "t")
-		test("eval", "(eval '(cons x '(b c)) '((x a) (y b)))", "(a b c)")
-		test("eval", "(eval '(cond ((atom x) 'atom) ('t 'list)) '((x '(a b))))", "list")
-		test("eval", "(eval '(f '(b c)) '((f (lambda (x) (cons 'a x)))))", "(a b c)")
-		test("eval", "(eval '((label firstatom (lambda (x) (cond ((atom x) x) ('t (firstatom (car x)))))) y) '((y ((a b) (c d)))))", "a")
-		test("eval", "(eval '((lambda (x y) (cons x (cdr y))) 'a '(b c d)) '())", "(a c d)")
-		test("", "", "")
-		test("", "", "")
-		test("", "", "")
+	test("eval", "(eval 'x '((x a) (y b)))", "a")
+	test("eval", "(eval '(eq 'a 'a) '())", "t")
+	test("eval", "(eval '(cons x '(b c)) '((x a) (y b)))", "(a b c)")
+	test("eval", "(eval '(cond ((atom x) 'atom) ('t 'list)) '((x '(a b))))", "list")
+	test("eval", "(eval '(f '(b c)) '((f (lambda (x) (cons 'a x)))))", "(a b c)")
+	test("eval", "(eval '((label firstatom (lambda (x) (cond ((atom x) x) ('t (firstatom (car x)))))) y) '((y ((a b) (c d)))))", "a")
+	test("eval", "(eval '((lambda (x y) (cons x (cdr y))) 'a '(b c d)) '())", "(a c d)")
+	test("", "", "")
+	test("", "", "")
+	test("", "", "")
 
-	}
-
-	return
-
-	test := func(msg string, e Exp, expected string) {
-		got := String(e)
-		fmt.Printf("%s: %s\n", msg, got)
-		if got != expected {
-			fmt.Printf("*** expected %q, got %q\n", expected, got)
-		}
-	}
-	test("0", testing(list("abc", "2")), "abc")
-	//return
-
-	test("1", quote("howdy"), "howdy")
-
-	test("2", atom(quote("howdy")), "t")
-	test("11", atom(list("quote", "a")), "()")
-	test("12", atom("x"), "t")
-
-	test("3", apply(atom, apply(quote, "howdy")), "t")
-	test("4", atom(list()), "t")
-	test("5", atom(list("a")), "()")
-	test("6", eq("a", "a"), "t")
-	test("7", eq("a", "b"), "()")
-
-	f1 := and("t", "t")
-
-	test("14", f1, "t")
-	test("15", and("t", list()), "()")
-
-	lazy := func(e Exp) Func {
-		return Func(func(...Exp) Exp {
-			return e
-		})
-	}
-
-	test("8", cond(
-		list(lazy(True), lazy(quote("a"))),
-		list(lazy(True), lazy(quote("b"))),
-	), "a")
-	test("9", cond(
-		list(lazy(False), lazy(quote("a"))),
-		list(lazy(True), lazy(quote("b"))),
-	), "b")
-
-	test("10", cons("a", list("b", "c")), "(a b c)")
-
-	e, a := list("quote", "x"), Nil
-
-	test("13", apply(
-		atom,
-		e,
-	), "()")
-
-	fmt.Printf("eval(%s)\n", e)
-	test("12", eval(e, a), "x")
-
-	{
-		e := list("eq", list("quote", "a"), list("quote", "a"))
-		fmt.Printf("testing %s\n", e)
-		test("16", eval(e, a), "t")
-	}
-	{
-		e := list("eq", list("quote", "a"), list("quote", "b"))
-		fmt.Printf("testing %s\n", e)
-		test("16", eval(e, a), "()")
-	}
+	return nil
 }
 
 func String(e Exp) string {
@@ -228,22 +166,36 @@ func String(e Exp) string {
 	return w.String()
 }
 
+func checkargs(args []Exp) error {
+	for _, a := range args {
+		switch t := a.(type) {
+		case string:
+		case []Exp:
+		case Func:
+		case error:
+			return t
+		default:
+			return fmt.Errorf("illegal type: %T %v", t, t)
+		}
+	}
+	return nil
+}
+
 func apply(f Func, args ...Exp) Exp {
+	if err := checkargs(args); err != nil {
+		return err
+	}
 	return f(args...)
 }
 
-func checklen(n int, args []Exp) {
+func checklen(n int, args []Exp) error {
 	if len(args) != n {
-		panic(fmt.Errorf("expected %d args, got %d", n, len(args)))
+		return fmt.Errorf("expected %d args, got %d", n, len(args))
 	}
-}
-
-func list(args ...Exp) Exp {
-	return args
-}
-
-func boolean(e Exp) bool {
-	return fmt.Sprintf("%v", e) == "t"
+	if err := checkargs(args); err != nil {
+		return err
+	}
+	return nil
 }
 
 // ----------------------------------------------------------------------
@@ -254,7 +206,9 @@ func boolean(e Exp) bool {
 // #1
 //
 func quote(args ...Exp) Exp {
-	checklen(1, args)
+	if err := checklen(1, args); err != nil {
+		return err
+	}
 	return args[0]
 }
 
@@ -263,7 +217,9 @@ func quote(args ...Exp) Exp {
 //
 
 func atom(args ...Exp) Exp {
-	checklen(1, args)
+	if err := checklen(1, args); err != nil {
+		return err
+	}
 	x := args[0]
 	switch t := x.(type) {
 	case string:
@@ -274,7 +230,7 @@ func atom(args ...Exp) Exp {
 		}
 		return False
 	default:
-		panic(fmt.Errorf("illegal atom call: %T %v", x, x))
+		return fmt.Errorf("illegal atom call: %T %v", t, t)
 	}
 }
 
@@ -283,9 +239,11 @@ func atom(args ...Exp) Exp {
 //
 
 func eq(args ...Exp) Exp {
-	checklen(2, args)
+	if err := checklen(2, args); err != nil {
+		return err
+	}
 	s := func(e Exp) string {
-		return fmt.Sprintf("%T %s", e, e)
+		return String(e)
 	}
 	x, y := args[0], args[1]
 	sx, sy := s(x), s(y)
@@ -300,7 +258,9 @@ func eq(args ...Exp) Exp {
 //
 
 func car(args ...Exp) Exp {
-	checklen(1, args)
+	if err := checklen(1, args); err != nil {
+		return err
+	}
 	x := args[0]
 	switch t := x.(type) {
 	case []Exp:
@@ -311,7 +271,7 @@ func car(args ...Exp) Exp {
 			return t[0]
 		}
 	default:
-		panic("car needs list")
+		return fmt.Errorf("car needs list, got %T %v", t, t)
 	}
 }
 
@@ -320,7 +280,9 @@ func car(args ...Exp) Exp {
 //
 
 func cdr(args ...Exp) Exp {
-	checklen(1, args)
+	if err := checklen(1, args); err != nil {
+		return err
+	}
 	x := args[0]
 	switch t := x.(type) {
 	case []Exp:
@@ -331,7 +293,7 @@ func cdr(args ...Exp) Exp {
 			return t[1:]
 		}
 	default:
-		panic("cdr needs list")
+		return fmt.Errorf("cdr needs list, got %T %v", t, t)
 	}
 }
 
@@ -340,7 +302,9 @@ func cdr(args ...Exp) Exp {
 //
 
 func cons(args ...Exp) Exp {
-	checklen(2, args)
+	if err := checklen(2, args); err != nil {
+		return err
+	}
 	x, y := args[0], args[1]
 	IsAtom := func(e Exp) bool {
 		switch e.(type) {
@@ -353,7 +317,7 @@ func cons(args ...Exp) Exp {
 		}
 	}
 	if IsAtom(y) {
-		panic(fmt.Errorf("cons atom %T %v", t, t))
+		return fmt.Errorf("cons got %T %v", y, y)
 	}
 	var out []Exp
 	out = append(out, x)
@@ -366,28 +330,41 @@ func cons(args ...Exp) Exp {
 //
 
 func cond(args ...Exp) Exp {
+	if err := checkargs(args); err != nil {
+		return err
+	}
+	boolean := func(e Exp) bool {
+		switch t := e.(type) {
+		case string:
+			return t == "t"
+		default:
+			return false
+		}
+	}
 	for _, a := range args {
 		switch t := a.(type) {
 		case []Exp:
-			checklen(2, t)
+			if err := checklen(2, t); err != nil {
+				return err
+			}
 			p, e := t[0], t[1]
 			pl, ok := p.(Func)
 			if !ok {
-				panic("p not lazy")
+				return fmt.Errorf("p not lazy")
 			}
 			v := pl()
 			if boolean(v) {
 				el, ok := e.(Func)
 				if !ok {
-					panic("e not lazy")
+					return fmt.Errorf("e not lazy")
 				}
 				return el()
 			}
 		default:
-			panic(fmt.Errorf("cond %T", t))
+			return fmt.Errorf("cond %T", t)
 		}
 	}
-	panic(fmt.Errorf("cond fallthrough with %d args", len(args)))
+	return fmt.Errorf("cond fallthrough with %d args", len(args))
 }
 
 //
@@ -395,8 +372,18 @@ func cond(args ...Exp) Exp {
 //
 
 func display(args ...Exp) Exp {
-	checklen(1, args)
+	if err := checklen(1, args); err != nil {
+		return err
+	}
 	a := args[0]
-	fmt.Printf("(display %s)\n", a)
+	fmt.Printf("(display %s)\n", String(a))
 	return a
+}
+
+//
+// #9
+//
+
+func list(args ...Exp) Exp {
+	return args
 }
