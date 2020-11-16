@@ -57,12 +57,12 @@ func main() {
 				fmt.Println()
 			}
 			last = msg
-			fmt.Printf("%-10s %-20s -> %s\n", msg+":", input, expect)
 			in, err := lisp.Read(input)
 			check(err)
-			res := eval(ToExp(in), Nil)
+			fmt.Printf("%-10s %-20s -> %s\n", msg+":", in, expect)
+			res := eval(ToExp(in), env)
 			if got := String(res); got != expect {
-				panic(fmt.Errorf("expected %q, got %q\n", expect, res))
+				panic(fmt.Errorf("expected %q, got %q\n", expect, got))
 			}
 		}
 
@@ -91,10 +91,25 @@ func main() {
 		test("cond", "(cond ((eq 'a 'a) 'first) ((atom 'a) 'second))", "first")
 
 		test("lambda", "((lambda (x) (cons x '(b))) 'a)", "(a b)")
-		test("", "", "")
-		test("", "", "")
-		test("", "", "")
-		test("", "", "")
+
+		test("label", `(
+ (label subst 
+	(lambda (x y z)
+	  (cond ((atom z) (
+			   cond ((eq z y) x)
+				('t z)))
+		('t (cons (subst x y (car z))
+			  (subst x y (cdr z))))))
+	)
+ 'm 'b '(a b (a b c) d))`, "(a m (a m c) d)")
+		test("label", "(subst 'm 'b '(a b (a b c) d))", "(a m (a m c) d)")
+
+		test("cxr", "(cadr '((a b) (c d) e))", "(c d)")
+		test("cxr", "(caddr '((a b) (c d) e))", "e")
+		test("cxr", "(cdar '((a b) (c d) e))", "(b)")
+
+		test("list", "(cons 'a (cons 'b (cons 'c '())))", "(a b c)")
+		test("list", "(list 'a 'b 'c)", "(a b c)")
 		test("", "", "")
 		test("", "", "")
 		test("", "", "")
@@ -245,10 +260,6 @@ func atom(args ...Exp) Exp {
 // #3
 //
 
-// TODO:
-// got string problems:
-//   eq([]main.Exp [],[]main.Exp []) = true
-//   eq([]main.Exp [],string ()) = false
 func eq(args ...Exp) Exp {
 	checklen(2, args)
 	s := func(e Exp) string {
@@ -364,7 +375,7 @@ func cond(args ...Exp) Exp {
 func display(args ...Exp) Exp {
 	checklen(1, args)
 	a := args[0]
-	fmt.Printf("(display %T %s)\n", a, a)
+	fmt.Printf("(display %s)\n", a)
 	return a
 }
 
@@ -975,7 +986,7 @@ func cddr(args ...Exp) Exp {
 	)
 }
 
-var env_eval = list(quote("eval"), list(quote("label"), quote("eval"), list(quote("lambda"), list(quote("e"), quote("a")), list(quote("cond"), list(list(quote("atom"), quote("e")), list(quote("assoc"), quote("e"), quote("a"))), list(list(quote("atom"), list(quote("car"), quote("e"))), list(quote("cond"), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("quote"))), list(quote("cadr"), quote("e"))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("atom"))), list(quote("atom"), list(quote("eval"), list(quote("cadr"), quote("e")), quote("a")))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("eq"))), list(quote("eq"), list(quote("eval"), list(quote("cadr"), quote("e")), quote("a")), list(quote("eval"), list(quote("caddr"), quote("e")), quote("a")))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("display"))), list(quote("display"), list(quote("eval"), list(quote("cadr"), quote("e")), quote("a")))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("car"))), list(quote("car"), list(quote("eval"), list(quote("cadr"), quote("e")), quote("a")))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("cdr"))), list(quote("cdr"), list(quote("eval"), list(quote("cadr"), quote("e")), quote("a")))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("cons"))), list(quote("cons"), list(quote("eval"), list(quote("cadr"), quote("e")), quote("a")), list(quote("eval"), list(quote("caddr"), quote("e")), quote("a")))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("cond"))), list(quote("evcon"), list(quote("cdr"), quote("e")), quote("a"))), list(list(quote("quote"), quote("t")), list(quote("eval"), list(quote("cons"), list(quote("assoc"), list(quote("car"), quote("e")), quote("a")), list(quote("cdr"), quote("e"))), quote("a"))))), list(list(quote("eq"), list(quote("caar"), quote("e")), list(quote("quote"), quote("label"))), list(quote("eval"), list(quote("cons"), list(quote("caddar"), quote("e")), list(quote("cdr"), quote("e"))), list(quote("cons"), list(quote("list"), list(quote("cadar"), quote("e")), list(quote("car"), quote("e"))), quote("a")))), list(list(quote("eq"), list(quote("caar"), quote("e")), list(quote("quote"), quote("lambda"))), list(quote("eval"), list(quote("caddar"), quote("e")), list(quote("xappend"), list(quote("pair"), list(quote("cadar"), quote("e")), list(quote("evlis"), list(quote("cdr"), quote("e")), quote("a"))), quote("a"))))))))
+var env_eval = list(quote("eval"), list(quote("label"), quote("eval"), list(quote("lambda"), list(quote("e"), quote("a")), list(quote("cond"), list(list(quote("atom"), quote("e")), list(quote("assoc"), quote("e"), quote("a"))), list(list(quote("atom"), list(quote("car"), quote("e"))), list(quote("cond"), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("quote"))), list(quote("cadr"), quote("e"))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("atom"))), list(quote("atom"), list(quote("eval"), list(quote("cadr"), quote("e")), quote("a")))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("eq"))), list(quote("eq"), list(quote("eval"), list(quote("cadr"), quote("e")), quote("a")), list(quote("eval"), list(quote("caddr"), quote("e")), quote("a")))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("display"))), list(quote("display"), list(quote("eval"), list(quote("cadr"), quote("e")), quote("a")))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("car"))), list(quote("car"), list(quote("eval"), list(quote("cadr"), quote("e")), quote("a")))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("cdr"))), list(quote("cdr"), list(quote("eval"), list(quote("cadr"), quote("e")), quote("a")))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("cons"))), list(quote("cons"), list(quote("eval"), list(quote("cadr"), quote("e")), quote("a")), list(quote("eval"), list(quote("caddr"), quote("e")), quote("a")))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("cond"))), list(quote("evcon"), list(quote("cdr"), quote("e")), quote("a"))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("list"))), list(quote("evlis"), list(quote("cdr"), quote("e")), quote("a"))), list(list(quote("quote"), quote("t")), list(quote("eval"), list(quote("cons"), list(quote("assoc"), list(quote("car"), quote("e")), quote("a")), list(quote("cdr"), quote("e"))), quote("a"))))), list(list(quote("eq"), list(quote("caar"), quote("e")), list(quote("quote"), quote("label"))), list(quote("eval"), list(quote("cons"), list(quote("caddar"), quote("e")), list(quote("cdr"), quote("e"))), list(quote("cons"), list(quote("list"), list(quote("cadar"), quote("e")), list(quote("car"), quote("e"))), quote("a")))), list(list(quote("eq"), list(quote("caar"), quote("e")), list(quote("quote"), quote("lambda"))), list(quote("eval"), list(quote("caddar"), quote("e")), list(quote("xappend"), list(quote("pair"), list(quote("cadar"), quote("e")), list(quote("evlis"), list(quote("cdr"), quote("e")), quote("a"))), quote("a"))))))))
 
 func eval(args ...Exp) Exp {
 	checklen(2, args)
@@ -1051,6 +1062,13 @@ func eval(args ...Exp) Exp {
 					}),
 					Func(func(...Exp) Exp {
 						return apply(evcon, apply(cdr, e), a)
+					}),
+				), list(
+					Func(func(...Exp) Exp {
+						return apply(eq, apply(car, e), "list")
+					}),
+					Func(func(...Exp) Exp {
+						return apply(evlis, apply(cdr, e), a)
 					}),
 				), list(
 					Func(func(...Exp) Exp {

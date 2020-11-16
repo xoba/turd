@@ -55,12 +55,12 @@ func main() {
 				fmt.Println()
 			}
 			last = msg
-			fmt.Printf("%-10s %-20s -> %s\n", msg+":", input, expect)
 			in, err := lisp.Read(input)
 			check(err)
-			res := eval(ToExp(in), Nil)
+			fmt.Printf("%-10s %-20s -> %s\n", msg+":", in, expect)
+			res := eval(ToExp(in), env)
 			if got := String(res); got != expect {
-				panic(fmt.Errorf("expected %q, got %q\n", expect, res))
+				panic(fmt.Errorf("expected %q, got %q\n", expect, got))
 			}
 		}
 
@@ -89,10 +89,25 @@ func main() {
 		test("cond", "(cond ((eq 'a 'a) 'first) ((atom 'a) 'second))", "first")
 
 		test("lambda", "((lambda (x) (cons x '(b))) 'a)", "(a b)")
-		test("", "", "")
-		test("", "", "")
-		test("", "", "")
-		test("", "", "")
+
+		test("label", `(
+ (label subst 
+	(lambda (x y z)
+	  (cond ((atom z) (
+			   cond ((eq z y) x)
+				('t z)))
+		('t (cons (subst x y (car z))
+			  (subst x y (cdr z))))))
+	)
+ 'm 'b '(a b (a b c) d))`, "(a m (a m c) d)")
+		test("label", "(subst 'm 'b '(a b (a b c) d))", "(a m (a m c) d)")
+
+		test("cxr", "(cadr '((a b) (c d) e))", "(c d)")
+		test("cxr", "(caddr '((a b) (c d) e))", "e")
+		test("cxr", "(cdar '((a b) (c d) e))", "(b)")
+
+		test("list", "(cons 'a (cons 'b (cons 'c '())))", "(a b c)")
+		test("list", "(list 'a 'b 'c)", "(a b c)")
 		test("", "", "")
 		test("", "", "")
 		test("", "", "")
@@ -358,6 +373,6 @@ func cond(args ...Exp) Exp {
 func display(args ...Exp) Exp {
 	checklen(1, args)
 	a := args[0]
-	fmt.Printf("(display %T %s)\n", a, a)
+	fmt.Printf("(display %s)\n", a)
 	return a
 }
