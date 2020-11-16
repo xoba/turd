@@ -10,12 +10,12 @@ import (
 	"github.com/xoba/turd/lisp/exp"
 )
 
-type node struct {
+type Node struct {
 	Value    string  `json:"V,omitempty"`
-	Children []*node `json:"C,omitempty"`
+	Children []*Node `json:"C,omitempty"`
 }
 
-func (n *node) Expression() (exp.Expression, error) {
+func (n *Node) Expression() (exp.Expression, error) {
 	newQuote := func(e exp.Expression) exp.Expression {
 		return exp.NewList(exp.NewString("quote"), e)
 	}
@@ -48,7 +48,7 @@ func (n *node) Expression() (exp.Expression, error) {
 	return exp.NewList(list...), nil
 }
 
-func NewNode(s string) (*node, error) {
+func NewNode(s string) (*Node, error) {
 	{
 		uncommented := func(s string) string {
 			z := new(bytes.Buffer)
@@ -81,18 +81,18 @@ func NewNode(s string) (*node, error) {
 	return nodes, nil
 }
 
-func parseTokens(list []string) (*node, error) {
+func parseTokens(list []string) (*Node, error) {
 	switch n := len(list); n {
 	case 0:
 		return nil, fmt.Errorf("can't parse empty list")
 	case 1:
-		return &node{Value: list[0]}, nil
+		return &Node{Value: list[0]}, nil
 	default:
 		if list[0] != "(" || list[n-1] != ")" {
 			return nil, fmt.Errorf("not a list: %q", list)
 		}
 		list = list[1 : n-1]
-		var out node
+		var out Node
 		var indent int
 		var current []string
 		for _, x := range list {
@@ -119,7 +119,7 @@ func parseTokens(list []string) (*node, error) {
 	}
 }
 
-func (n node) String() string {
+func (n Node) String() string {
 	buf, _ := json.Marshal(n)
 	return string(buf)
 }

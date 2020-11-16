@@ -31,15 +31,15 @@ chan         else         goto         package      switch
 const        fallthrough  if           range        type
 continue     for          import       return       var
 `)
-	add("functions", `	append cap close complex copy delete imag len
-	make new panic print println real recover
+	add("functions", `      append cap close complex copy delete imag len
+       make new panic print println real recover
 `)
-	add("constants", `	true false iota
+	add("constants", `      true false iota
 `)
 	add("zero", "nil")
-	add("types", `	bool byte complex64 complex128 error float32 float64
-	int int8 int16 int32 int64 rune string
-	uint uint8 uint16 uint32 uint64 uintptr
+	add("types", `  bool byte complex64 complex128 error float32 float64
+       int int8 int16 int32 int64 rune string
+       uint uint8 uint16 uint32 uint64 uintptr
 `)
 	for _, x := range list {
 		e = translateAtoms(x, "go_sanitized_"+x, e)
