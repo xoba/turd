@@ -41,7 +41,7 @@ continue     for          import       return       var
 	uint uint8 uint16 uint32 uint64 uintptr
 `)
 	for _, x := range list {
-		e = translateAtoms(x, "x"+x, e)
+		e = translateAtoms(x, "go_sanitized_"+x, e)
 	}
 	return e
 }

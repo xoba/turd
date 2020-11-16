@@ -439,9 +439,9 @@ func and(args ...Exp) Exp {
 	)
 }
 
-var env_xappend = list(quote("xappend"), list(quote("label"), quote("xappend"), list(quote("lambda"), list(quote("x"), quote("y")), list(quote("cond"), list(list(quote("null"), quote("x")), quote("y")), list(list(quote("quote"), quote("t")), list(quote("cons"), list(quote("car"), quote("x")), list(quote("xappend"), list(quote("cdr"), quote("x")), quote("y"))))))))
+var env_go_sanitized_append = list(quote("go_sanitized_append"), list(quote("label"), quote("go_sanitized_append"), list(quote("lambda"), list(quote("x"), quote("y")), list(quote("cond"), list(list(quote("null"), quote("x")), quote("y")), list(list(quote("quote"), quote("t")), list(quote("cons"), list(quote("car"), quote("x")), list(quote("go_sanitized_append"), list(quote("cdr"), quote("x")), quote("y"))))))))
 
-func xappend(args ...Exp) Exp {
+func go_sanitized_append(args ...Exp) Exp {
 	checklen(2, args)
 	x := args[0]
 	y := args[1]
@@ -460,7 +460,7 @@ func xappend(args ...Exp) Exp {
 				return "t"
 			}),
 			Func(func(...Exp) Exp {
-				return apply(cons, apply(car, x), apply(xappend, apply(cdr, x), y))
+				return apply(cons, apply(car, x), apply(go_sanitized_append, apply(cdr, x), y))
 			}),
 		),
 	)
@@ -1005,7 +1005,7 @@ func cddr(args ...Exp) Exp {
 	)
 }
 
-var env_eval = list(quote("eval"), list(quote("label"), quote("eval"), list(quote("lambda"), list(quote("e"), quote("a")), list(quote("cond"), list(list(quote("atom"), quote("e")), list(quote("assoc"), quote("e"), quote("a"))), list(list(quote("atom"), list(quote("car"), quote("e"))), list(quote("cond"), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("quote"))), list(quote("cadr"), quote("e"))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("atom"))), list(quote("atom"), list(quote("eval"), list(quote("cadr"), quote("e")), quote("a")))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("eq"))), list(quote("eq"), list(quote("eval"), list(quote("cadr"), quote("e")), quote("a")), list(quote("eval"), list(quote("caddr"), quote("e")), quote("a")))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("display"))), list(quote("display"), list(quote("eval"), list(quote("cadr"), quote("e")), quote("a")))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("car"))), list(quote("car"), list(quote("eval"), list(quote("cadr"), quote("e")), quote("a")))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("cdr"))), list(quote("cdr"), list(quote("eval"), list(quote("cadr"), quote("e")), quote("a")))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("cons"))), list(quote("cons"), list(quote("eval"), list(quote("cadr"), quote("e")), quote("a")), list(quote("eval"), list(quote("caddr"), quote("e")), quote("a")))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("cond"))), list(quote("evcon"), list(quote("cdr"), quote("e")), quote("a"))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("list"))), list(quote("evlis"), list(quote("cdr"), quote("e")), quote("a"))), list(list(quote("quote"), quote("t")), list(quote("eval"), list(quote("cons"), list(quote("assoc"), list(quote("car"), quote("e")), quote("a")), list(quote("cdr"), quote("e"))), quote("a"))))), list(list(quote("eq"), list(quote("caar"), quote("e")), list(quote("quote"), quote("label"))), list(quote("eval"), list(quote("cons"), list(quote("caddar"), quote("e")), list(quote("cdr"), quote("e"))), list(quote("cons"), list(quote("list"), list(quote("cadar"), quote("e")), list(quote("car"), quote("e"))), quote("a")))), list(list(quote("eq"), list(quote("caar"), quote("e")), list(quote("quote"), quote("lambda"))), list(quote("eval"), list(quote("caddar"), quote("e")), list(quote("xappend"), list(quote("pair"), list(quote("cadar"), quote("e")), list(quote("evlis"), list(quote("cdr"), quote("e")), quote("a"))), quote("a"))))))))
+var env_eval = list(quote("eval"), list(quote("label"), quote("eval"), list(quote("lambda"), list(quote("e"), quote("a")), list(quote("cond"), list(list(quote("atom"), quote("e")), list(quote("assoc"), quote("e"), quote("a"))), list(list(quote("atom"), list(quote("car"), quote("e"))), list(quote("cond"), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("quote"))), list(quote("cadr"), quote("e"))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("atom"))), list(quote("atom"), list(quote("eval"), list(quote("cadr"), quote("e")), quote("a")))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("eq"))), list(quote("eq"), list(quote("eval"), list(quote("cadr"), quote("e")), quote("a")), list(quote("eval"), list(quote("caddr"), quote("e")), quote("a")))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("display"))), list(quote("display"), list(quote("eval"), list(quote("cadr"), quote("e")), quote("a")))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("car"))), list(quote("car"), list(quote("eval"), list(quote("cadr"), quote("e")), quote("a")))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("cdr"))), list(quote("cdr"), list(quote("eval"), list(quote("cadr"), quote("e")), quote("a")))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("cons"))), list(quote("cons"), list(quote("eval"), list(quote("cadr"), quote("e")), quote("a")), list(quote("eval"), list(quote("caddr"), quote("e")), quote("a")))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("cond"))), list(quote("evcon"), list(quote("cdr"), quote("e")), quote("a"))), list(list(quote("eq"), list(quote("car"), quote("e")), list(quote("quote"), quote("list"))), list(quote("evlis"), list(quote("cdr"), quote("e")), quote("a"))), list(list(quote("quote"), quote("t")), list(quote("eval"), list(quote("cons"), list(quote("assoc"), list(quote("car"), quote("e")), quote("a")), list(quote("cdr"), quote("e"))), quote("a"))))), list(list(quote("eq"), list(quote("caar"), quote("e")), list(quote("quote"), quote("label"))), list(quote("eval"), list(quote("cons"), list(quote("caddar"), quote("e")), list(quote("cdr"), quote("e"))), list(quote("cons"), list(quote("list"), list(quote("cadar"), quote("e")), list(quote("car"), quote("e"))), quote("a")))), list(list(quote("eq"), list(quote("caar"), quote("e")), list(quote("quote"), quote("lambda"))), list(quote("eval"), list(quote("caddar"), quote("e")), list(quote("go_sanitized_append"), list(quote("pair"), list(quote("cadar"), quote("e")), list(quote("evlis"), list(quote("cdr"), quote("e")), quote("a"))), quote("a"))))))))
 
 func eval(args ...Exp) Exp {
 	checklen(2, args)
@@ -1112,7 +1112,7 @@ func eval(args ...Exp) Exp {
 				return apply(eq, apply(caar, e), "lambda")
 			}),
 			Func(func(...Exp) Exp {
-				return apply(eval, apply(caddar, e), apply(xappend, apply(pair, apply(cadar, e), apply(evlis, apply(cdr, e), a)), a))
+				return apply(eval, apply(caddar, e), apply(go_sanitized_append, apply(pair, apply(cadar, e), apply(evlis, apply(cdr, e), a)), a))
 			}),
 		),
 	)
@@ -1294,5 +1294,5 @@ func testing(args ...Exp) Exp {
 }
 
 func init() {
-	env = list(env_and, env_xappend, env_assoc, env_caaaar, env_caaadr, env_caaar, env_caadar, env_caaddr, env_caadr, env_caar, env_cadaar, env_cadadr, env_cadar, env_caddar, env_cadddr, env_caddr, env_cadr, env_cdaaar, env_cdaadr, env_cdaar, env_cdadar, env_cdaddr, env_cdadr, env_cdar, env_cddaar, env_cddadr, env_cddar, env_cdddar, env_cddddr, env_cdddr, env_cddr, env_eval, env_evcon, env_evlis, env_not, env_null, env_pair, env_subst, env_testing)
+	env = list(env_and, env_go_sanitized_append, env_assoc, env_caaaar, env_caaadr, env_caaar, env_caadar, env_caaddr, env_caadr, env_caar, env_cadaar, env_cadadr, env_cadar, env_caddar, env_cadddr, env_caddr, env_cadr, env_cdaaar, env_cdaadr, env_cdaar, env_cdadar, env_cdaddr, env_cdadr, env_cdar, env_cddaar, env_cddadr, env_cddar, env_cdddar, env_cddddr, env_cdddr, env_cddr, env_eval, env_evcon, env_evlis, env_not, env_null, env_pair, env_subst, env_testing)
 }
