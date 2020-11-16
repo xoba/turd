@@ -30,7 +30,7 @@ func check(e error) {
 
 func ToExp(e exp.Expression) Exp {
 	if err := e.Error(); err != nil {
-		return err
+		panic(err)
 	}
 	if a := e.Atom(); a != nil {
 		return a.String()
@@ -184,7 +184,6 @@ func String(e Exp) string {
 	case Func:
 		return String(t())
 	default:
-		// TODO: why do we get "panic: can't stringify type int 0"?
 		panic(fmt.Errorf("can't stringify type %T %v", t, t))
 	}
 	return w.String()
@@ -213,7 +212,7 @@ func boolean(e Exp) bool {
 // ----------------------------------------------------------------------
 
 //
-// #1 (1-8 from paul graham)
+// #1
 //
 func quote(args ...Exp) Exp {
 	checklen(1, args)
@@ -254,8 +253,9 @@ func eq(args ...Exp) Exp {
 		return fmt.Sprintf("%T %s", e, e)
 	}
 	x, y := args[0], args[1]
-	fmt.Printf("eq(%s,%s) = %v\n", s(x), s(y), s(x) == s(y))
-	if s(x) == s(y) {
+	sx, sy := s(x), s(y)
+	fmt.Printf("eq(%q,%q) = %v\n", sx, sy, sx == sy)
+	if sx == sy {
 		return True
 	}
 	return False
@@ -267,7 +267,8 @@ func eq(args ...Exp) Exp {
 
 func car(args ...Exp) Exp {
 	checklen(1, args)
-	switch t := args[0].(type) {
+	x := args[0]
+	switch t := x.(type) {
 	case []Exp:
 		switch len(t) {
 		case 0:
@@ -286,10 +287,11 @@ func car(args ...Exp) Exp {
 
 func cdr(args ...Exp) Exp {
 	checklen(1, args)
-	switch t := args[0].(type) {
+	x := args[0]
+	switch t := x.(type) {
 	case []Exp:
 		switch len(t) {
-		case 0, 1:
+		case 0:
 			return Nil
 		default:
 			return t[1:]
@@ -305,17 +307,19 @@ func cdr(args ...Exp) Exp {
 
 func cons(args ...Exp) Exp {
 	checklen(2, args)
+	x, y := args[0], args[1]
 	IsAtom := func(e Exp) bool {
 		switch e.(type) {
 		case string:
 			return true
-		default:
+		case []Exp:
 			return false
+		default:
+			panic("illegal type in cons")
 		}
 	}
-	x, y := args[0], args[1]
 	if IsAtom(y) {
-		panic("cons to atom")
+		panic(fmt.Errorf("cons atom %T %v", t, t))
 	}
 	var out []Exp
 	out = append(out, x)
@@ -328,12 +332,10 @@ func cons(args ...Exp) Exp {
 //
 
 func cond(args ...Exp) Exp {
-	for i, a := range args {
+	for _, a := range args {
 		switch t := a.(type) {
 		case []Exp:
-			if len(t) != 2 {
-				panic(fmt.Errorf("len[%d] = %d", i, len(t)))
-			}
+			checklen(2, t)
 			p, e := t[0], t[1]
 			pl, ok := p.(Func)
 			if !ok {
@@ -355,12 +357,12 @@ func cond(args ...Exp) Exp {
 }
 
 //
-// #8 (from chaitin)
+// #8
 //
 
 func display(args ...Exp) Exp {
 	checklen(1, args)
 	a := args[0]
-	fmt.Printf("(display %s)\n", a)
+	fmt.Printf("(display %T %s)\n", a, a)
 	return a
 }
