@@ -110,6 +110,23 @@ func main() {
 
 		test("list", "(cons 'a (cons 'b (cons 'c '())))", "(a b c)")
 		test("list", "(list 'a 'b 'c)", "(a b c)")
+
+		test("null", "(null 'a)", "()")
+		test("null", "(null '())", "t")
+
+		test("and", "(and (atom 'a) (eq 'a 'a))", "t")
+		test("and", "(and (atom 'a) (eq 'a 'b))", "()")
+
+		test("not", "(not (eq 'a 'a))", "()")
+		test("not", "(not (eq 'a 'b))", "t")
+
+		test("append", "(append '(a b) '(c d))", "(a b c d)")
+		test("append", "(append '() '(c d))", "(c d)")
+		test("", "", "")
+		test("", "", "")
+		test("", "", "")
+		test("", "", "")
+		test("", "", "")
 		test("", "", "")
 		test("", "", "")
 		test("", "", "")
