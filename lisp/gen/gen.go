@@ -200,6 +200,22 @@ func checklen(n int, args []Exp) error {
 	return nil
 }
 
+func expToBool(e Exp) bool {
+	switch t := e.(type) {
+	case string:
+		return t == "t"
+	default:
+		return false
+	}
+}
+
+func boolToExp(v bool) Exp {
+	if v {
+		return True
+	}
+	return False
+}
+
 // ----------------------------------------------------------------------
 // AXIOMS
 // ----------------------------------------------------------------------
@@ -241,18 +257,34 @@ func atom(args ...Exp) Exp {
 //
 
 func eq(args ...Exp) Exp {
+	out := eq0(args...)
+	//fmt.Printf("eq(%q,%q) = %q\n", args[0], args[1], out)
+	return out
+}
+
+func eq0(args ...Exp) Exp {
 	if err := checklen(2, args); err != nil {
 		return err
 	}
-	s := func(e Exp) string {
-		return String(e)
-	}
 	x, y := args[0], args[1]
-	sx, sy := s(x), s(y)
-	if sx == sy {
-		return True
+	switch tx := x.(type) {
+	case string:
+		switch ty := y.(type) {
+		case string: // both atoms
+			return boolToExp(tx == ty)
+		default:
+			return False
+		}
+	case []Exp:
+		switch ty := y.(type) {
+		case []Exp: // both lists
+			return boolToExp(len(tx) == 0 && len(ty) == 0)
+		default:
+			return False
+		}
+	default:
+		return fmt.Errorf("bad eq arguments")
 	}
-	return False
 }
 
 //
@@ -308,18 +340,10 @@ func cons(args ...Exp) Exp {
 		return err
 	}
 	x, y := args[0], args[1]
-	IsAtom := func(e Exp) bool {
-		switch e.(type) {
-		case string:
-			return true
-		case []Exp:
-			return false
-		default:
-			panic("illegal type in cons")
-		}
-	}
-	if IsAtom(y) {
-		return fmt.Errorf("cons got %T %v", y, y)
+	switch y.(type) {
+	case []Exp:
+	default:
+		return fmt.Errorf("cons needs a list")
 	}
 	var out []Exp
 	out = append(out, x)
@@ -335,14 +359,6 @@ func cond(args ...Exp) Exp {
 	if err := checkargs(args); err != nil {
 		return err
 	}
-	boolean := func(e Exp) bool {
-		switch t := e.(type) {
-		case string:
-			return t == "t"
-		default:
-			return false
-		}
-	}
 	for _, a := range args {
 		switch t := a.(type) {
 		case []Exp:
@@ -355,7 +371,7 @@ func cond(args ...Exp) Exp {
 				return fmt.Errorf("p not lazy")
 			}
 			v := pl()
-			if boolean(v) {
+			if expToBool(v) {
 				el, ok := e.(Func)
 				if !ok {
 					return fmt.Errorf("e not lazy")
@@ -383,7 +399,7 @@ func display(args ...Exp) Exp {
 }
 
 //
-// #9
+// #9 (kind of a like "quote" for multiple args)
 //
 
 func list(args ...Exp) Exp {
