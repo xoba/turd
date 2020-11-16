@@ -17,6 +17,7 @@ const (
 	pkg = "lisp/gen"
 )
 
+// TODO: also be able to invert this mapping... or simply reject reserved identifiers
 func SanitizeGo(e exp.Expression) exp.Expression {
 	// from the go spec
 	var list []string
