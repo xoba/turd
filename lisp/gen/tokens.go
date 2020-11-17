@@ -81,9 +81,11 @@ func tokenize(s string) ([]string, error) {
 	return out, nil
 }
 
-type stack []string
+type List []Exp
 
-func (s *stack) push(b string) {
+type stack []List
+
+func (s *stack) push(b List) {
 	*s = append(*s, b)
 }
 
@@ -91,10 +93,10 @@ func (s *stack) len() int {
 	return len(*s)
 }
 
-func (s *stack) pop() string {
+func (s *stack) pop() List {
 	n := s.len()
 	if n == 0 {
-		return ""
+		return nil
 	}
 	x := (*s)[n-1]
 	*s = (*s)[:n-1]

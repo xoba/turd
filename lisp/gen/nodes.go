@@ -7,21 +7,6 @@ import (
 	"strings"
 )
 
-func tokenize0(s string) ([]string, error) {
-	var out []string
-	s = strings.Replace(s, "(", " ( ", -1)
-	s = strings.Replace(s, ")", " ) ", -1)
-	s = strings.Replace(s, "'", " ' ", -1)
-	for _, x := range strings.Fields(s) {
-		x = strings.TrimSpace(x)
-		if len(x) == 0 {
-			continue
-		}
-		out = append(out, x)
-	}
-	return out, nil
-}
-
 func uncomment(s string) (string, error) {
 	w := new(bytes.Buffer)
 	scanner := bufio.NewScanner(strings.NewReader(s))
@@ -60,39 +45,29 @@ func NewNode(s string) (Exp, error) {
 }
 
 func parseTokens(list []string) (Exp, error) {
-	switch n := len(list); n {
-	case 0:
-		return nil, fmt.Errorf("can't parse empty list")
-	case 1:
-		return list[0], nil
-	default:
-		if list[0] != "(" || list[n-1] != ")" {
-			return nil, fmt.Errorf("not a list: %q", list)
-		}
-		list = list[1 : n-1]
-		var out []Exp
-		var indent int
-		var current []string
-		for _, x := range list {
-			switch {
-			case x == "(":
-				indent++
-			case x == ")":
-				indent--
-			}
-			current = append(current, x)
-			if indent == 0 {
-				c, err := parseTokens(current)
-				if err != nil {
-					return nil, err
-				}
-				out = append(out, c)
-				current = current[:0]
-			}
-		}
-		if indent != 0 {
-			return nil, fmt.Errorf("indent = %d", indent)
-		}
-		return out, nil
+	n := len(list)
+
+	if n == 0 {
+		return nil, fmt.Errorf("can't parse empty list of tokens")
 	}
+
+	s := new(stack)
+	var current List
+	for _, x := range list {
+		switch x {
+		case "'":
+			return nil, fmt.Errorf("can't handle quote")
+		case "(":
+			s.push(current)
+			current = make([]Exp, 0)
+		case ")":
+			x := s.pop()
+			x = append(x, current)
+			current = x
+		default:
+			current = append(current, x)
+		}
+	}
+	return current, nil
+
 }

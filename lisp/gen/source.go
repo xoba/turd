@@ -116,19 +116,21 @@ func translateAtoms(from, to string, e Exp) Exp {
 
 func TestParse(c cnfg.Config) error {
 	test0 := func(s string) error {
+		fmt.Printf("testing %s\n", s)
 		toks, err := tokenize(s)
 		if err != nil {
 			return err
 		}
-		buf, _ := json.Marshal(toks)
-		fmt.Printf("%s toks -> %s\n", s, string(buf))
-		return nil
-
-		nodes, err := parseTokens(toks)
+		if false {
+			buf, _ := json.Marshal(toks)
+			fmt.Printf("%s toks -> %s\n", s, string(buf))
+			return nil
+		}
+		exp, err := parseTokens(toks)
 		if err != nil {
 			return err
 		}
-		fmt.Printf("%q nodes -> %v\n", s, nodes)
+		fmt.Printf("  -> %v\n", exp)
 		return nil
 	}
 	test := func(s string) {
@@ -140,13 +142,14 @@ func TestParse(c cnfg.Config) error {
 		return test0(c.Lisp)
 	}
 
-	test("a")
+	test("a b")
 	test("(a b)")
+	test("(a b c)")
+	test("(a (x y) b c)")
+	test("(a (x (123) y) b c)")
+	test("(a (x (123 z) y) b c)")
+
 	test("'a")
-	test("' a dfg dfg dfgd gfdg fd")
-	test(`(a b c)`)
-	test(`"1 2 3" 4 () 5 "6 \"7 8"`)
-	test(`(a '"xyz pqr" b)`)
 
 	return nil
 }
