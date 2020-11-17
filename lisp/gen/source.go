@@ -58,83 +58,6 @@ func Expression(n *lisp.Node) (Exp, error) {
 	return list, nil
 }
 
-func Read(s string) (Exp, error) {
-	u, err := uncomment(s)
-	if err != nil {
-		return nil, err
-	}
-	toks, err := tokenize(u)
-	if err != nil {
-		return nil, err
-	}
-	e, err := parseTokens(toks)
-	if err != nil {
-		return nil, err
-	}
-	x, ok := e.([]Exp)
-	if !ok {
-		return nil, fmt.Errorf("expression not a list")
-	}
-	if len(x) != 1 {
-		return nil, fmt.Errorf("need just one element")
-	}
-	return x[0], nil
-
-	n, err := lisp.NewNode(s)
-	if err != nil {
-		return nil, err
-	}
-	return Expression(n)
-}
-
-func SanitizeGo(e Exp) Exp {
-	// from the go spec
-	var list []string
-	add := func(category, words string) {
-		list = append(list, strings.Fields(words)...)
-	}
-
-	add("keywords", `break        default      func         interface    select
-case         defer        go           map          struct
-chan         else         goto         package      switch
-const        fallthrough  if           range        type
-continue     for          import       return       var
-`)
-	add("functions", `      append cap close complex copy delete imag len
-       make new panic print println real recover
-`)
-	add("constants", `      true false iota
-`)
-	add("zero", "nil")
-	add("types", `  bool byte complex64 complex128 error float32 float64
-       int int8 int16 int32 int64 rune string
-       uint uint8 uint16 uint32 uint64 uintptr
-`)
-	for _, x := range list {
-		e = translateAtoms(x, "go_sanitized_"+x, e)
-	}
-	return e
-}
-
-func translateAtoms(from, to string, e Exp) Exp {
-	switch t := e.(type) {
-	case string:
-		if t == from {
-			return to
-		}
-		return t
-	case []Exp:
-		var out []Exp
-		for _, c := range t {
-			out = append(out, translateAtoms(from, to, c))
-		}
-		return out
-	default:
-		return fmt.Errorf("can't translate %T %v", t, t)
-	}
-	return e
-}
-
 func TestParse(c cnfg.Config) error {
 	test0 := func(s string) error {
 		fmt.Printf("testing %s\n", s)
@@ -188,11 +111,10 @@ func Run(cnfg.Config) error {
 			fmt.Println()
 		}
 		last = msg
-		in, err := Read(input)
+		in, err := Parse(input)
 		if err != nil {
 			log.Fatal(err)
 		}
-		in = SanitizeGo(in)
 		fmt.Printf("%-10s %-20s -> %s\n", msg+":", String(in), expect)
 		res := Eval(in)
 		if got := String(res); got != expect {
