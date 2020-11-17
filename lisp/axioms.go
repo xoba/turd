@@ -32,6 +32,8 @@ func String(e Exp) string {
 		return fmt.Sprintf("(%s)", strings.Join(list, " "))
 	case Func:
 		return String(t())
+	case error:
+		return fmt.Sprintf("error: %v", t)
 	default:
 		panic(fmt.Errorf("can't stringify type %T %v", t, t))
 	}
