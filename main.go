@@ -56,7 +56,7 @@ func Run(c cnfg.Config) error {
 		"keys":        tnet.SharedKey,
 		"launch":      LaunchNode,
 		"lisp":        lisp.Lisp,
-		"lispcompile": lisp.CompileDef,
+		"lispcompile": gen.CompileDef,
 		"lispparse":   gen.TestParse,
 		"lisptest":    gen.Run,
 		"listen":      Listen,
