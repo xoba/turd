@@ -37,23 +37,20 @@ func String(e Exp) string {
 	}
 }
 
-func one(args ...Exp) Exp {
-	x := args[0]
-	if f, ok := x.(Func); ok {
-		x = f()
+func manifest(a Exp) Exp {
+	if f, ok := a.(Func); ok {
+		a = f()
 	}
-	return x
+	return a
+}
+
+func one(args ...Exp) Exp {
+	return manifest(args[0])
 }
 
 func two(args ...Exp) (Exp, Exp) {
 	x, y := args[0], args[1]
-	if f, ok := x.(Func); ok {
-		x = f()
-	}
-	if f, ok := y.(Func); ok {
-		x = f()
-	}
-	return x, y
+	return manifest(x), manifest(y)
 }
 
 // ----------------------------------------------------------------------
@@ -67,7 +64,7 @@ func quote(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
 		return err
 	}
-	return one(args...)
+	return args[0]
 }
 
 //
@@ -169,16 +166,17 @@ func cons(args ...Exp) Exp {
 	if err := checklen(2, args); err != nil {
 		return err
 	}
-	x, y := two(args...)
+	x := args[0]
+	y := manifest(args[1])
 	switch y.(type) {
 	case []Exp:
+		var out []Exp
+		out = append(out, x)
+		out = append(out, y.([]Exp)...)
+		return out
 	default:
 		return fmt.Errorf("cons needs a list")
 	}
-	var out []Exp
-	out = append(out, x)
-	out = append(out, y.([]Exp)...)
-	return out
 }
 
 //
@@ -195,21 +193,19 @@ func cond(args ...Exp) Exp {
 			if err := checklen(2, t); err != nil {
 				return err
 			}
-			p, e := t[0], t[1]
-			pl, ok := p.(Func)
+			p, ok := t[0].(Func)
 			if !ok {
-				return fmt.Errorf("p not lazy")
+				return fmt.Errorf("cond predicate not lazy")
 			}
-			v := pl()
-			if expToBool(v) {
-				el, ok := e.(Func)
+			if expToBool(p()) {
+				e, ok := t[1].(Func)
 				if !ok {
-					return fmt.Errorf("e not lazy")
+					return fmt.Errorf("cond exp not lazy")
 				}
-				return el()
+				return e()
 			}
 		default:
-			return fmt.Errorf("cond %T", t)
+			return fmt.Errorf("illegal cond arg type %T", t)
 		}
 	}
 	return fmt.Errorf("cond fallthrough")
