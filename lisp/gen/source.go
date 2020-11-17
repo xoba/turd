@@ -59,6 +59,27 @@ func Expression(n *lisp.Node) (Exp, error) {
 }
 
 func Read(s string) (Exp, error) {
+	u, err := uncomment(s)
+	if err != nil {
+		return nil, err
+	}
+	toks, err := tokenize(u)
+	if err != nil {
+		return nil, err
+	}
+	e, err := parseTokens(toks)
+	if err != nil {
+		return nil, err
+	}
+	x, ok := e.([]Exp)
+	if !ok {
+		return nil, fmt.Errorf("expression not a list")
+	}
+	if len(x) != 1 {
+		return nil, fmt.Errorf("need just one element")
+	}
+	return x[0], nil
+
 	n, err := lisp.NewNode(s)
 	if err != nil {
 		return nil, err
@@ -167,19 +188,10 @@ func Run(cnfg.Config) error {
 			fmt.Println()
 		}
 		last = msg
-
 		in, err := Read(input)
 		if err != nil {
 			log.Fatal(err)
 		}
-
-		if false {
-			in, err = NewNode(input)
-			if err != nil {
-				log.Fatal(err)
-			}
-		}
-
 		in = SanitizeGo(in)
 		fmt.Printf("%-10s %-20s -> %s\n", msg+":", String(in), expect)
 		res := Eval(in)
