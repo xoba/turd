@@ -82,17 +82,58 @@ func tokenize(s string) ([]string, error) {
 	return out, nil
 }
 
+func expandQuotes(e Exp) (Exp, error) {
+	switch t1 := e.(type) {
+	case string:
+		if t1 == "'" {
+			return nil, fmt.Errorf("unexpanded quote")
+		}
+		return t1, nil
+	case []Exp:
+		var out []Exp
+		n := len(t1)
+		for i := 0; i < n; i++ {
+			c := t1[i]
+			switch t2 := c.(type) {
+			case string:
+				if t2 == "'" {
+					if i == n-1 {
+						return nil, fmt.Errorf("bad quote")
+					}
+					x, err := expandQuotes(t1[i+1])
+					if err != nil {
+						return nil, err
+					}
+					c = []Exp{
+						"quote",
+						x,
+					}
+					i++
+				}
+			default:
+				z, err := expandQuotes(c)
+				if err != nil {
+					return nil, err
+				}
+				c = z
+			}
+			out = append(out, c)
+		}
+		return out, nil
+	default:
+		return nil, fmt.Errorf("illegal type %T", t1)
+	}
+}
+
 func parseTokens(list []string) (Exp, error) {
 	if len(list) == 0 {
 		return nil, fmt.Errorf("can't parse empty list of tokens")
 	}
 
 	s := new(stack)
-	var current List
+	var current []Exp
 	for _, x := range list {
 		switch x {
-		case "'":
-			return nil, fmt.Errorf("can't handle quote")
 		case "(":
 			s.push(current)
 			current = make([]Exp, 0)
@@ -104,15 +145,12 @@ func parseTokens(list []string) (Exp, error) {
 			current = append(current, x)
 		}
 	}
-	return current, nil
-
+	return expandQuotes(current)
 }
 
-type List []Exp
+type stack [][]Exp
 
-type stack []List
-
-func (s *stack) push(b List) {
+func (s *stack) push(b []Exp) {
 	*s = append(*s, b)
 }
 
@@ -120,7 +158,7 @@ func (s *stack) len() int {
 	return len(*s)
 }
 
-func (s *stack) pop() List {
+func (s *stack) pop() []Exp {
 	n := s.len()
 	if n == 0 {
 		return nil

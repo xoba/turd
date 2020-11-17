@@ -150,6 +150,9 @@ func TestParse(c cnfg.Config) error {
 	test("(a (x (123 z) y) b c)")
 
 	test("'a")
+	test("'(a b c)")
+	test("'(a b 'c)")
+	test("'(a \"this is a test\" 'c)")
 
 	return nil
 }
