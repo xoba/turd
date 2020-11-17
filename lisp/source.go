@@ -152,13 +152,15 @@ func Run(cnfg.Config) error {
 	test("eval", "(eval '((label firstatom (lambda (x) (cond ((atom x) x) ('t (firstatom (car x)))))) y) '((y ((a b) (c d)))))", "a")
 	test("eval", "(eval '((lambda (x y) (cons x (cdr y))) 'a '(b c d)) '())", "(a c d)")
 
+	test("display", "(display ())", "()")
+	test("display", "(display 'a)", "a")
+
 	if false {
 		test("macro", `((macro test (x) (cdr x))
  'a 'b 'c)`, "(a b c)")
+		test("printf", "(printf 'a)", "()")
 	}
 
-	test("", "", "")
-	test("", "", "")
 	test("", "", "")
 	test("", "", "")
 	test("", "", "")

@@ -60,7 +60,7 @@ func two(args ...Exp) (Exp, Exp) {
 // ----------------------------------------------------------------------
 
 //
-// #1
+// axiom #1
 //
 func quote(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
@@ -70,7 +70,7 @@ func quote(args ...Exp) Exp {
 }
 
 //
-// #2
+// axiom #2
 //
 func atom(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
@@ -87,7 +87,7 @@ func atom(args ...Exp) Exp {
 }
 
 //
-// #3
+// axiom #3
 //
 func eq(args ...Exp) Exp {
 	if err := checklen(2, args); err != nil {
@@ -119,9 +119,8 @@ func eq(args ...Exp) Exp {
 }
 
 //
-// #4
+// axiom #4
 //
-
 func car(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
 		return err
@@ -140,9 +139,8 @@ func car(args ...Exp) Exp {
 }
 
 //
-// #5
+// axiom #5
 //
-
 func cdr(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
 		return err
@@ -161,9 +159,8 @@ func cdr(args ...Exp) Exp {
 }
 
 //
-// #6
+// axiom #6
 //
-
 func cons(args ...Exp) Exp {
 	if err := checklen(2, args); err != nil {
 		return err
@@ -182,9 +179,8 @@ func cons(args ...Exp) Exp {
 }
 
 //
-// #7
+// axiom #7
 //
-
 func cond(args ...Exp) Exp {
 	if err := checkargs(args); err != nil {
 		return err
@@ -214,9 +210,8 @@ func cond(args ...Exp) Exp {
 }
 
 //
-// #8
+// axiom #8
 //
-
 func display(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
 		return err
@@ -227,9 +222,30 @@ func display(args ...Exp) Exp {
 }
 
 //
-// #9 (kind of a like "quote" for multiple args)
+// axiom #9
 //
+func printf(args ...Exp) Exp {
+	if err := checkargs(args); err != nil {
+		return err
+	}
+	if len(args) == 0 {
+		return fmt.Errorf("printf needs at least one arg")
+	}
+	format, ok := car(manifest(args[0])).(string)
+	if !ok {
+		return fmt.Errorf("format needs to be a string")
+	}
+	var list []interface{}
+	for _, a := range args[1:] {
+		list = append(list, String(a))
+	}
+	fmt.Printf(format, list...)
+	return Nil
+}
 
+//
+// axiom #10 (kind of a like "quote" for multiple args)
+//
 func list(args ...Exp) Exp {
 	return args
 }

@@ -223,10 +223,12 @@ chan         else         goto         package      switch
 const        fallthrough  if           range        type
 continue     for          import       return       var
 `)
-	add("functions", `      append cap close complex copy delete imag len
+	add("functions",
+		`      append cap close complex copy delete imag len
        make new panic print println real recover
 `)
-	add("constants", `      true false iota
+	add("constants",
+		`      true false iota
 `)
 	add("zero", "nil")
 	add("types", `  bool byte complex64 complex128 error float32 float64
