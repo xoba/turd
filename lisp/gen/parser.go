@@ -29,7 +29,7 @@ func Parse(s string) (Exp, error) {
 	if len(x) != 1 {
 		return nil, fmt.Errorf("need just one element")
 	}
-	return SanitizeGo(x[0]), nil
+	return x[0], nil
 }
 
 func parseTokens(list []string) (Exp, error) {
@@ -211,9 +211,8 @@ func uncomment(s string) (string, error) {
 	return w.String(), nil
 }
 
-func SanitizeGo(e Exp) Exp {
-	// from the go spec
-	var list []string
+// from the go spec
+func GoIdentifiers() (list []string) {
 	add := func(category, words string) {
 		list = append(list, strings.Fields(words)...)
 	}
@@ -234,7 +233,18 @@ continue     for          import       return       var
        int int8 int16 int32 int64 rune string
        uint uint8 uint16 uint32 uint64 uintptr
 `)
-	for _, x := range list {
+	return
+}
+
+func UnsanitizeGo(e Exp) Exp {
+	for _, x := range GoIdentifiers() {
+		e = translateAtoms("go_sanitized_"+x, x, e)
+	}
+	return e
+}
+
+func SanitizeGo(e Exp) Exp {
+	for _, x := range GoIdentifiers() {
 		e = translateAtoms(x, "go_sanitized_"+x, e)
 	}
 	return e

@@ -25,7 +25,8 @@ var (
 )
 
 func Eval(e Exp) Exp {
-	return eval([]Exp{e, env}...)
+	e = SanitizeGo(e)
+	return UnsanitizeGo(eval([]Exp{e, env}...))
 }
 
 func Expression(n *lisp.Node) (Exp, error) {
