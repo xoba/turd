@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/xoba/turd/cnfg"
-	"github.com/xoba/turd/lisp/exp"
 )
 
 const pkg = "lisp/gen"
@@ -40,7 +39,6 @@ func CompileDef(cnfg.Config) error {
 			}
 		}
 	}
-	//fmt.Printf("%d defs = %q\n", len(defs), defs)
 	var names []string
 	for _, def := range defs {
 		buf, err := ioutil.ReadFile(def)
@@ -51,6 +49,7 @@ func CompileDef(cnfg.Config) error {
 		if err != nil {
 			return err
 		}
+		e = SanitizeGo(e)
 		{
 			name, env, err := ToEnv(e)
 			if err != nil {
@@ -122,9 +121,12 @@ func IsAtom(e Exp) bool {
 	}
 }
 
-func CompileLazy(e exp.Expression) ([]byte, error) {
+func CompileLazy(e Exp) ([]byte, error) {
 	w := new(bytes.Buffer)
-	list := e.List()
+	list, ok := e.([]Exp)
+	if !ok {
+		return nil, fmt.Errorf("lazy not a list")
+	}
 	if len(list) != 2 {
 		return nil, fmt.Errorf("malformed cond: %s %s", e)
 	}
@@ -165,25 +167,24 @@ func Compile(e Exp, indent bool) ([]byte, error) {
 			fmt.Fprintf(w, "Nil")
 		case n == 1:
 			return nil, fmt.Errorf("illegal list of length 1")
-		case n == 2 && in(e.List()[0].String(), "quote"):
-			x := e.List()[1]
-			switch {
-			case x.Atom() != nil:
-				fmt.Fprintf(w, "%q", x)
+		case n == 2 && String(e[0]) == "quote":
+			x := e[1]
+			switch t := x.(type) {
+			case string:
+				fmt.Fprintf(w, "%q", t)
 			default:
-
-				compiled, err := Compile(e.List()[1], false)
+				compiled, err := Compile(x, false)
 				if err != nil {
 					return nil, err
 				}
 				fmt.Fprintf(w, string(compiled))
 			}
-		case n > 1 && in(e.List()[0].String(), "cond"):
+		case n > 1 && String(e[0]) == "cond":
 			var list []string
-			for i, a := range e.List() {
+			for i, a := range e {
 				var f func(Exp) ([]byte, error)
 				if i == 0 {
-					f = func(e exp.Expression) ([]byte, error) {
+					f = func(e Exp) ([]byte, error) {
 						return Compile(e, true)
 					}
 				} else {
@@ -198,7 +199,7 @@ func Compile(e Exp, indent bool) ([]byte, error) {
 			emit("apply", list)
 		default:
 			var list []string
-			for _, a := range e.List() {
+			for _, a := range e {
 				sub, err := Compile(a, indent)
 				if err != nil {
 					return nil, err
@@ -224,21 +225,17 @@ func Gofmt(file string) error {
 
 // TODO: instead, express this as a string (not as code) that can be parsed like lisp.Read()
 func ToEnv(defun Exp) (string, []byte, error) {
-	return ToEnv0(defun)
-}
-
-func ToEnv0(defun Exp) (string, []byte, error) {
-	if Car(defun).String() != "defun" {
+	if String(car(defun)) != "defun" {
 		return "", nil, fmt.Errorf("not a defun")
 	}
-	name := Car(Cdr(defun))
-	args := Car(Cdr(Cdr(defun)))
-	body := Car(Cdr(Cdr(Cdr(defun))))
-	q := func(s string) exp.Expression {
-		return exp.NewString(s)
+	name := car(cdr(defun))
+	args := car(cdr(cdr(defun)))
+	body := car(cdr(cdr(cdr(defun))))
+	q := func(s string) Exp {
+		return s
 	}
-	nl := func(args ...exp.Expression) exp.Expression {
-		return exp.NewList(args...)
+	nl := func(args ...Exp) Exp {
+		return args
 	}
 	e := nl(
 		name,
@@ -253,5 +250,27 @@ func ToEnv0(defun Exp) (string, []byte, error) {
 		),
 	)
 	exp, err := ToExpression(e)
-	return name.String(), exp, err
+	return String(name), exp, err
+}
+
+func ToExpression(e Exp) ([]byte, error) {
+	w := new(bytes.Buffer)
+	switch t := e.(type) {
+	case string:
+		fmt.Fprintf(w, "quote(%q)", t)
+	case []Exp:
+		list := t
+		var parts []string
+		for _, x := range list {
+			buf, err := ToExpression(x)
+			if err != nil {
+				return nil, err
+			}
+			parts = append(parts, string(buf))
+		}
+		fmt.Fprintf(w, "list(%s)", strings.Join(parts, ","))
+	default:
+		return nil, fmt.Errorf("ToExpression switch fallthrough: %T", t)
+	}
+	return w.Bytes(), nil
 }
