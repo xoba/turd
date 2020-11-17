@@ -9,4 +9,5 @@ type Config struct {
 	Seed           int
 	Delete         bool
 	Debug          bool
+	Lisp           string
 }

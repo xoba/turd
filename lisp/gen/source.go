@@ -3,6 +3,7 @@ package gen
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
@@ -111,6 +112,43 @@ func translateAtoms(from, to string, e Exp) Exp {
 		return fmt.Errorf("can't translate %T %v", t, t)
 	}
 	return e
+}
+
+func TestParse(c cnfg.Config) error {
+	test0 := func(s string) error {
+		toks, err := tokenize(s)
+		if err != nil {
+			return err
+		}
+		buf, _ := json.Marshal(toks)
+		fmt.Printf("%s toks -> %s\n", s, string(buf))
+		return nil
+
+		nodes, err := parseTokens(toks)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("%q nodes -> %v\n", s, nodes)
+		return nil
+	}
+	test := func(s string) {
+		if err := test0(s); err != nil {
+			log.Fatal(err)
+		}
+	}
+	if c.Lisp != "" {
+		return test0(c.Lisp)
+	}
+
+	test("a")
+	test("(a b)")
+	test("'a")
+	test("' a dfg dfg dfgd gfdg fd")
+	test(`(a b c)`)
+	test(`"1 2 3" 4 () 5 "6 \"7 8"`)
+	test(`(a '"xyz pqr" b)`)
+
+	return nil
 }
 
 func Run(cnfg.Config) error {

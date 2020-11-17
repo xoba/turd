@@ -30,6 +30,7 @@ import (
 func main() {
 	var c cnfg.Config
 	flag.StringVar(&c.Mode, "m", "lisp", "mode to run")
+	flag.StringVar(&c.Lisp, "lisp", "", "lisp code")
 	flag.StringVar(&c.PublicKeyFile, "pub", "pub.dat", "public key file")
 	flag.StringVar(&c.PrivateKeyFile, "priv", "priv.dat", "private key file")
 	flag.StringVar(&c.AWSProfile, "aws", "", "aws profile")
@@ -46,8 +47,6 @@ func main() {
 
 func Run(c cnfg.Config) error {
 	modes := map[string]func(cnfg.Config) error{
-		"lisptest":    gen.Run,
-		"lispcompile": lisp.CompileDef,
 		"connect":     Connect,
 		"dd":          dd.Run,
 		"gossip":      gossip.Run,
@@ -57,8 +56,11 @@ func Run(c cnfg.Config) error {
 		"keys":        tnet.SharedKey,
 		"launch":      LaunchNode,
 		"lisp":        lisp.Lisp,
-		"poset":       poset.Run,
+		"lispcompile": lisp.CompileDef,
+		"lispparse":   gen.TestParse,
+		"lisptest":    gen.Run,
 		"listen":      Listen,
+		"poset":       poset.Run,
 		"script":      lisp.Run,
 		"trie":        trie.Run,
 	}

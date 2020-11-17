@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func tokenize(s string) ([]string, error) {
+func tokenize0(s string) ([]string, error) {
 	var out []string
 	s = strings.Replace(s, "(", " ( ", -1)
 	s = strings.Replace(s, ")", " ) ", -1)
@@ -22,33 +22,36 @@ func tokenize(s string) ([]string, error) {
 	return out, nil
 }
 
-func NewNode(s string) (Exp, error) {
-	{
-		uncommented := func(s string) string {
-			z := new(bytes.Buffer)
-			for _, r := range s {
-				if r == ';' {
-					break
-				}
-				z.WriteRune(r)
+func uncomment(s string) (string, error) {
+	w := new(bytes.Buffer)
+	scanner := bufio.NewScanner(strings.NewReader(s))
+	for scanner.Scan() {
+		line := scanner.Text()
+		z := new(bytes.Buffer)
+		for _, r := range line {
+			if r == ';' {
+				break
 			}
-			return z.String()
+			z.WriteRune(r)
 		}
-		w := new(bytes.Buffer)
-		scanner := bufio.NewScanner(strings.NewReader(s))
-		for scanner.Scan() {
-			fmt.Fprintf(w, "%s\n", uncommented(scanner.Text()))
-		}
-		if err := scanner.Err(); err != nil {
-			return nil, err
-		}
-		s = w.String()
+		fmt.Fprintf(w, "%s\n", z.String())
 	}
+	if err := scanner.Err(); err != nil {
+		return "", err
+	}
+	return w.String(), nil
+}
+
+func NewNode(s string) (Exp, error) {
+	u, err := uncomment(s)
+	if err != nil {
+		return nil, err
+	}
+	s = u
 	toks, err := tokenize(s)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("toks = %q\n", toks)
 	nodes, err := parseTokens(toks)
 	if err != nil {
 		return nil, err
