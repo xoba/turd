@@ -1,5 +1,5 @@
 // compiled lisp stuff
-package gen
+package lisp
 
 import (
 	"bytes"
@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/xoba/turd/cnfg"
-	"github.com/xoba/turd/lisp"
 )
 
 // valid types: string, []Exp, Func, or error
@@ -27,36 +26,6 @@ var (
 func Eval(e Exp) Exp {
 	e = SanitizeGo(e)
 	return UnsanitizeGo(eval([]Exp{e, env}...))
-}
-
-func Expression(n *lisp.Node) (Exp, error) {
-	if len(n.Value) > 0 {
-		if runes := []rune(n.Value); runes[0] == '\'' {
-			return []Exp{"quote", string(runes[1:])}, nil
-		}
-		return n.Value, nil
-	}
-	var list []Exp
-	var lastQuote bool
-	for _, c := range n.Children {
-		if c.Value == "'" {
-			lastQuote = true
-			continue
-		}
-		e, err := Expression(c)
-		if err != nil {
-			return nil, err
-		}
-		if lastQuote {
-			e = []Exp{"quote", e}
-			lastQuote = false
-		}
-		list = append(list, e)
-	}
-	if lastQuote {
-		return nil, fmt.Errorf("errant quote")
-	}
-	return list, nil
 }
 
 func TestParse(c cnfg.Config) error {

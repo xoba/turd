@@ -1,4 +1,4 @@
-package gen
+package lisp
 
 import (
 	"bytes"
@@ -12,7 +12,7 @@ import (
 	"github.com/xoba/turd/cnfg"
 )
 
-const pkg = "lisp/gen"
+const pkg = "lisp"
 
 func CompileDef(cnfg.Config) error {
 	if err := os.MkdirAll(pkg, os.ModePerm); err != nil {
