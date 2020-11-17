@@ -11,6 +11,7 @@ func tokenize(s string) ([]string, error) {
 	var out []string
 	s = strings.Replace(s, "(", " ( ", -1)
 	s = strings.Replace(s, ")", " ) ", -1)
+	s = strings.Replace(s, "'", " ' ", -1)
 	for _, x := range strings.Fields(s) {
 		x = strings.TrimSpace(x)
 		if len(x) == 0 {
@@ -47,6 +48,7 @@ func NewNode(s string) (Exp, error) {
 	if err != nil {
 		return nil, err
 	}
+	fmt.Printf("toks = %q\n", toks)
 	nodes, err := parseTokens(toks)
 	if err != nil {
 		return nil, err
@@ -59,9 +61,6 @@ func parseTokens(list []string) (Exp, error) {
 	case 0:
 		return nil, fmt.Errorf("can't parse empty list")
 	case 1:
-		if runes := []rune(list[0]); runes[0] == '\'' {
-			return []Exp{"quote", string(runes[1:])}, nil
-		}
 		return list[0], nil
 	default:
 		if list[0] != "(" || list[n-1] != ")" {

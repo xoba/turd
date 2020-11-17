@@ -128,13 +128,13 @@ func Run(cnfg.Config) error {
 		if err != nil {
 			log.Fatal(err)
 		}
-		in2, err := NewNode(input)
-		if err != nil {
-			log.Fatal(err)
-		}
 
-		// TODO: these should be equal
-		fmt.Printf("read %s vs %s\n", in, in2)
+		if false {
+			in, err = NewNode(input)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
 
 		in = SanitizeGo(in)
 		fmt.Printf("%-10s %-20s -> %s\n", msg+":", String(in), expect)
@@ -144,8 +144,11 @@ func Run(cnfg.Config) error {
 		}
 	}
 
-	test("quote", "(quote a)", "a")
-	test("quote", "(quote (a b c))", "(a b c)")
+	test("quote1", "(quote a)", "a")
+	test("quote1", "(quote (a b c))", "(a b c)")
+
+	test("quote2", "'a", "a")
+	test("quote2", "'(a b c)", "(a b c)")
 
 	test("atom", "(atom 'a)", "t")
 	test("atom", "(atom '(a b c))", "()")
