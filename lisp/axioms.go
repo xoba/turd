@@ -1,6 +1,9 @@
 package lisp
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // valid types: string, []Exp, Func, or error
 type Exp interface{}
@@ -14,6 +17,45 @@ var (
 	False Exp = Nil
 )
 
+func String(e Exp) string {
+	switch t := e.(type) {
+	case string:
+		return t
+	case []Exp:
+		if len(t) == 2 && t[0] == "quote" {
+			return fmt.Sprintf("'%s", String(t[1]))
+		}
+		var list []string
+		for _, e := range t {
+			list = append(list, String(e))
+		}
+		return fmt.Sprintf("(%s)", strings.Join(list, " "))
+	case Func:
+		return String(t())
+	default:
+		panic(fmt.Errorf("can't stringify type %T %v", t, t))
+	}
+}
+
+func one(args ...Exp) Exp {
+	x := args[0]
+	if f, ok := x.(Func); ok {
+		x = f()
+	}
+	return x
+}
+
+func two(args ...Exp) (Exp, Exp) {
+	x, y := args[0], args[1]
+	if f, ok := x.(Func); ok {
+		x = f()
+	}
+	if f, ok := y.(Func); ok {
+		x = f()
+	}
+	return x, y
+}
+
 // ----------------------------------------------------------------------
 // AXIOMS
 // ----------------------------------------------------------------------
@@ -25,26 +67,21 @@ func quote(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
 		return err
 	}
-	return args[0]
+	return one(args...)
 }
 
 //
 // #2
 //
-
 func atom(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
 		return err
 	}
-	x := args[0]
-	switch t := x.(type) {
+	switch t := one(args...).(type) {
 	case string:
 		return True
 	case []Exp:
-		if len(t) == 0 {
-			return True
-		}
-		return False
+		return boolToExp(len(t) == 0)
 	default:
 		return fmt.Errorf("illegal atom call: %T %v", t, t)
 	}
@@ -53,35 +90,32 @@ func atom(args ...Exp) Exp {
 //
 // #3
 //
-
 func eq(args ...Exp) Exp {
-	out := eq0(args...)
-	//fmt.Printf("eq(%q,%q) = %q\n", args[0], args[1], out)
-	return out
-}
-
-func eq0(args ...Exp) Exp {
 	if err := checklen(2, args); err != nil {
 		return err
 	}
-	x, y := args[0], args[1]
-	switch tx := x.(type) {
+	x, y := two(args...)
+	switch x := x.(type) {
 	case string:
-		switch ty := y.(type) {
+		switch y := y.(type) {
 		case string: // both atoms
-			return boolToExp(tx == ty)
-		default:
+			return boolToExp(x == y)
+		case []Exp:
 			return False
+		default:
+			return fmt.Errorf("bad second argument to eq: %T", y)
 		}
 	case []Exp:
-		switch ty := y.(type) {
-		case []Exp: // both lists
-			return boolToExp(len(tx) == 0 && len(ty) == 0)
-		default:
+		switch y := y.(type) {
+		case string:
 			return False
+		case []Exp: // both lists
+			return boolToExp(len(x) == 0 && len(y) == 0)
+		default:
+			return fmt.Errorf("bad second argument to eq: %T", y)
 		}
 	default:
-		return fmt.Errorf("bad eq arguments")
+		return fmt.Errorf("bad first argument to eq: %T", x)
 	}
 }
 
@@ -93,8 +127,7 @@ func car(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
 		return err
 	}
-	x := args[0]
-	switch t := x.(type) {
+	switch t := one(args...).(type) {
 	case []Exp:
 		switch len(t) {
 		case 0:
@@ -115,8 +148,7 @@ func cdr(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
 		return err
 	}
-	x := args[0]
-	switch t := x.(type) {
+	switch t := one(args...).(type) {
 	case []Exp:
 		switch len(t) {
 		case 0:
@@ -137,7 +169,7 @@ func cons(args ...Exp) Exp {
 	if err := checklen(2, args); err != nil {
 		return err
 	}
-	x, y := args[0], args[1]
+	x, y := two(args...)
 	switch y.(type) {
 	case []Exp:
 	default:
@@ -191,7 +223,7 @@ func display(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
 		return err
 	}
-	a := args[0]
+	a := one(args...)
 	fmt.Printf("(display %s)\n", String(a))
 	return a
 }

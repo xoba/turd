@@ -2,11 +2,9 @@
 package lisp
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
-	"strings"
 
 	"github.com/xoba/turd/cnfg"
 )
@@ -180,28 +178,6 @@ func Run(cnfg.Config) error {
 	return nil
 }
 
-func String(e Exp) string {
-	w := new(bytes.Buffer)
-	switch t := e.(type) {
-	case string:
-		fmt.Fprint(w, t)
-	case []Exp:
-		if len(t) == 2 && t[0] == "quote" {
-			return fmt.Sprintf("'%s", String(t[1]))
-		}
-		var list []string
-		for _, e := range t {
-			list = append(list, String(e))
-		}
-		fmt.Fprintf(w, "(%s)", strings.Join(list, " "))
-	case Func:
-		return String(t())
-	default:
-		panic(fmt.Errorf("can't stringify type %T %v", t, t))
-	}
-	return w.String()
-}
-
 func checkargs(args []Exp) error {
 	for _, a := range args {
 		switch t := a.(type) {
@@ -211,7 +187,7 @@ func checkargs(args []Exp) error {
 		case error:
 			return t
 		default:
-			return fmt.Errorf("illegal type: %T %v", t, t)
+			return fmt.Errorf("illegal exp type: %T %v", t, t)
 		}
 	}
 	return nil
@@ -226,7 +202,7 @@ func apply(f Func, args ...Exp) Exp {
 
 func checklen(n int, args []Exp) error {
 	if len(args) != n {
-		return fmt.Errorf("expected %d args, got %d", n, len(args))
+		return fmt.Errorf("expected %d, got %d args", n, len(args))
 	}
 	if err := checkargs(args); err != nil {
 		return err
