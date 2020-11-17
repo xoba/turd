@@ -3,6 +3,7 @@ package gen
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"io"
 	"strings"
 	"unicode"
@@ -79,6 +80,32 @@ func tokenize(s string) ([]string, error) {
 	}
 	reset(current)
 	return out, nil
+}
+
+func parseTokens(list []string) (Exp, error) {
+	if len(list) == 0 {
+		return nil, fmt.Errorf("can't parse empty list of tokens")
+	}
+
+	s := new(stack)
+	var current List
+	for _, x := range list {
+		switch x {
+		case "'":
+			return nil, fmt.Errorf("can't handle quote")
+		case "(":
+			s.push(current)
+			current = make([]Exp, 0)
+		case ")":
+			x := s.pop()
+			x = append(x, current)
+			current = x
+		default:
+			current = append(current, x)
+		}
+	}
+	return current, nil
+
 }
 
 type List []Exp

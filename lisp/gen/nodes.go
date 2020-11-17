@@ -43,31 +43,3 @@ func NewNode(s string) (Exp, error) {
 	}
 	return nodes, nil
 }
-
-func parseTokens(list []string) (Exp, error) {
-	n := len(list)
-
-	if n == 0 {
-		return nil, fmt.Errorf("can't parse empty list of tokens")
-	}
-
-	s := new(stack)
-	var current List
-	for _, x := range list {
-		switch x {
-		case "'":
-			return nil, fmt.Errorf("can't handle quote")
-		case "(":
-			s.push(current)
-			current = make([]Exp, 0)
-		case ")":
-			x := s.pop()
-			x = append(x, current)
-			current = x
-		default:
-			current = append(current, x)
-		}
-	}
-	return current, nil
-
-}
