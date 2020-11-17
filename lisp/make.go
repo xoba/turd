@@ -88,9 +88,9 @@ func Tofunc(defun Exp) (string, []byte, error) {
 	if String(car(defun)) != "defun" {
 		return "", nil, fmt.Errorf("not a defun")
 	}
-	name := String(car(cdr(defun)))
-	args := car(cdr(cdr(defun))).([]Exp)
-	body := car(cdr(cdr(cdr(defun))))
+	name := String(cadr(defun))
+	args := caddr(defun).([]Exp)
+	body := cadddr(defun)
 	w := new(bytes.Buffer)
 
 	fmt.Fprintf(w, "func %[1]s(args ... Exp) Exp {\n", name)
@@ -229,9 +229,9 @@ func ToEnv(defun Exp) (string, []byte, error) {
 	if String(car(defun)) != "defun" {
 		return "", nil, fmt.Errorf("not a defun")
 	}
-	name := car(cdr(defun))
-	args := car(cdr(cdr(defun)))
-	body := car(cdr(cdr(cdr(defun))))
+	name := cadr(defun)
+	args := caddr(defun).([]Exp)
+	body := cadddr(defun)
 	q := func(s string) Exp {
 		return s
 	}
