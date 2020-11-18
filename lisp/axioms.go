@@ -222,29 +222,7 @@ func display(args ...Exp) Exp {
 }
 
 //
-// axiom #9
-//
-func printf(args ...Exp) Exp {
-	if err := checkargs(args); err != nil {
-		return err
-	}
-	if len(args) == 0 {
-		return fmt.Errorf("printf needs at least one arg")
-	}
-	format, ok := car(manifest(args[0])).(string)
-	if !ok {
-		return fmt.Errorf("format needs to be a string")
-	}
-	var list []interface{}
-	for _, a := range args[1:] {
-		list = append(list, String(a))
-	}
-	fmt.Printf(format, list...)
-	return Nil
-}
-
-//
-// axiom #10 (kind of a like "quote" for multiple args)
+// axiom #9 (kind of a like "quote" for multiple args)
 //
 func list(args ...Exp) Exp {
 	return args
