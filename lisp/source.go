@@ -181,24 +181,29 @@ func Run(cnfg.Config) error {
 
 `, "b")
 
-	test("y", `
+	{
 
-(((label Y
-	 (lambda (X)
-	   ((lambda (procedure)
-	      (X (lambda (arg) ((procedure procedure) arg))))
-	    (lambda (procedure)
-	      (X (lambda (arg) ((procedure procedure) arg)))))))
-  
-  (label F
-	 (lambda (func-arg)
-	   (lambda (n) (cond ((eq '0 n) '1)
-			     ('t (* n (func-arg (- n 1)))))))))
- 10)
+		const y = `
+(lambda (X)
+  ((lambda (procedure)
+     (X (lambda (arg) ((procedure procedure) arg))))
+   (lambda (procedure)
+     (X (lambda (arg) ((procedure procedure) arg))))))
 
-)
+`
 
-`, "3628800")
+		const f = `
+(lambda (func-arg) (lambda (n) (cond ((eq '0 n) 1)
+				     ('t (* n (func-arg (- n 1)))))))
+`
+
+		test(
+			"y",
+			fmt.Sprintf("((%s %s) '10)", y, f),
+			"3628800",
+		)
+
+	}
 
 	test("", "", "")
 	test("", "", "")
