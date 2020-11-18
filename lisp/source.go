@@ -181,7 +181,25 @@ func Run(cnfg.Config) error {
 
 `, "b")
 
-	test("", "", "")
+	test("y", `
+
+(((label Y
+	 (lambda (X)
+	   ((lambda (procedure)
+	      (X (lambda (arg) ((procedure procedure) arg))))
+	    (lambda (procedure)
+	      (X (lambda (arg) ((procedure procedure) arg)))))))
+  
+  (label F
+	 (lambda (func-arg)
+	   (lambda (n) (cond ((eq '0 n) '1)
+			     ('t (* n (func-arg (- n 1)))))))))
+ 10)
+
+)
+
+`, "3628800")
+
 	test("", "", "")
 	test("", "", "")
 	test("", "", "")
