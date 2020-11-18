@@ -2,7 +2,7 @@ package lisp
 
 import (
 	"fmt"
-	"strconv"
+	"math/big"
 	"strings"
 )
 
@@ -230,16 +230,30 @@ func list(args ...Exp) Exp {
 }
 
 func mult(args ...Exp) Exp {
-	return arith(func(i, j int64) int64 { return i * j }, args...)
-}
-func plus(args ...Exp) Exp {
-	return arith(func(i, j int64) int64 { return i + j }, args...)
-}
-func minus(args ...Exp) Exp {
-	return arith(func(i, j int64) int64 { return i - j }, args...)
+	return arith(args, func(i, j *big.Int) *big.Int {
+		var z big.Int
+		z.Mul(i, j)
+		return &z
+	})
 }
 
-func arith(f func(int64, int64) int64, args ...Exp) Exp {
+func plus(args ...Exp) Exp {
+	return arith(args, func(i, j *big.Int) *big.Int {
+		var z big.Int
+		z.Add(i, j)
+		return &z
+	})
+}
+
+func minus(args ...Exp) Exp {
+	return arith(args, func(i, j *big.Int) *big.Int {
+		var z big.Int
+		z.Sub(i, j)
+		return &z
+	})
+}
+
+func arith(args []Exp, f func(*big.Int, *big.Int) *big.Int) Exp {
 	if err := checklen(2, args); err != nil {
 		return err
 	}
@@ -252,13 +266,18 @@ func arith(f func(int64, int64) int64, args ...Exp) Exp {
 	if !ok {
 		return fmt.Errorf("y not string")
 	}
-	xv, err := strconv.ParseInt(xs, 10, 64)
-	if err != nil {
+	var xv, yv big.Int
+	set := func(i *big.Int, s string) error {
+		if _, ok := i.SetString(s, 10); !ok {
+			return fmt.Errorf("can't parse %q", s)
+		}
+		return nil
+	}
+	if err := set(&xv, xs); err != nil {
 		return err
 	}
-	yv, err := strconv.ParseInt(ys, 10, 64)
-	if err != nil {
+	if err := set(&yv, ys); err != nil {
 		return err
 	}
-	return fmt.Sprintf("%d", f(xv, yv))
+	return f(&xv, &yv).String()
 }

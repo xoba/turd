@@ -161,14 +161,20 @@ func Run(cnfg.Config) error {
 		test("printf", "(printf 'a)", "()")
 	}
 
-	test("arith", "(+ '1 '2)", "3")
-	test("arith", "(+ '1 '-2)", "-1")
-	test("arith", "(- '1 '2)", "-1")
-	test("arith", "(- '1 '-2)", "3")
-	test("arith", "(* '4 '5)", "20")
-	test("arith", "(* '4 '-2)", "-8")
-	test("arith", "(eq '0 (- '5 '5))", "t")
-	test("arith", "(eq '1 (- '5 '5))", "()")
+	test("arith", "(plus '1 '2)", "3")
+	test("arith", "(plus '1 '-2)", "-1")
+	test("arith", "(minus '1 '2)", "-1")
+	test("arith", "(minus '1 '-2)", "3")
+	test("arith", "(mult '4 '5)", "20")
+	test("arith", "(mult '4 '-2)", "-8")
+	test("arith", "(eq '0 (minus '5 '5))", "t")
+	test("arith", "(eq '1 (minus '5 '5))", "()")
+
+	test("factorial", "(factorial '0)", "1")
+	test("factorial", "(factorial '1)", "1")
+	test("factorial", "(factorial '3)", "6")
+	test("factorial", "(factorial '10)", "3628800")
+	test("factorial", "(factorial '100)", "93326215443944152681699238856266700490715968264381621468592963895217599993229915608941463976156518286253697920827223758251185210916864000000000000000000000000")
 
 	// leading up to y-combinator:
 	test("y", `((lambda (z) (car z)) '(a b))`, "a")
@@ -181,7 +187,7 @@ func Run(cnfg.Config) error {
 
 `, "b")
 
-	{
+	if false {
 
 		const y = `
 (lambda (X)
