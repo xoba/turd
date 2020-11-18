@@ -161,8 +161,6 @@ func Run(cnfg.Config) error {
 		test("printf", "(printf 'a)", "()")
 	}
 
-	//	test("+", "(+ '1 '2)", "3")
-
 	test("arith", "(+ '1 '2)", "3")
 	test("arith", "(+ '1 '-2)", "-1")
 	test("arith", "(- '1 '2)", "-1")
@@ -171,8 +169,18 @@ func Run(cnfg.Config) error {
 	test("arith", "(* '4 '-2)", "-8")
 	test("arith", "(eq '0 (- '5 '5))", "t")
 	test("arith", "(eq '1 (- '5 '5))", "()")
-	test("", "", "")
-	test("", "", "")
+
+	// leading up to y-combinator:
+	test("y", `((lambda (z) (car z)) '(a b))`, "a")
+	test("y", `
+
+((label y
+	(lambda (x)
+	  ((lambda (z) (cadr z)) x)))
+ '(a b c))
+
+`, "b")
+
 	test("", "", "")
 	test("", "", "")
 	test("", "", "")

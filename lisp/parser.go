@@ -32,27 +32,24 @@ func Parse(s string) (Exp, error) {
 	return x[0], nil
 }
 
-func parseTokens(list []string) (Exp, error) {
-	if len(list) == 0 {
-		return nil, fmt.Errorf("can't parse empty list of tokens")
-	}
-
-	s := new(stack)
-	var current []Exp
-	for _, x := range list {
-		switch x {
-		case "(":
-			s.push(current)
-			current = make([]Exp, 0)
-		case ")":
-			x := s.pop()
-			x = append(x, current)
-			current = x
-		default:
-			current = append(current, x)
+func uncomment(s string) (string, error) {
+	w := new(bytes.Buffer)
+	scanner := bufio.NewScanner(strings.NewReader(s))
+	for scanner.Scan() {
+		line := scanner.Text()
+		z := new(bytes.Buffer)
+		for _, r := range line {
+			if r == ';' {
+				break
+			}
+			z.WriteRune(r)
 		}
+		fmt.Fprintf(w, "%s\n", z.String())
 	}
-	return expandQuotes(current)
+	if err := scanner.Err(); err != nil {
+		return "", err
+	}
+	return w.String(), nil
 }
 
 func tokenize(s string) ([]string, error) {
@@ -128,6 +125,28 @@ func tokenize(s string) ([]string, error) {
 	return out, nil
 }
 
+func parseTokens(list []string) (Exp, error) {
+	if len(list) == 0 {
+		return nil, fmt.Errorf("can't parse empty list of tokens")
+	}
+	s := new(stack)
+	var current []Exp
+	for _, x := range list {
+		switch x {
+		case "(":
+			s.push(current)
+			current = make([]Exp, 0)
+		case ")":
+			x := s.pop()
+			x = append(x, current)
+			current = x
+		default:
+			current = append(current, x)
+		}
+	}
+	return expandQuotes(current)
+}
+
 func expandQuotes(e Exp) (Exp, error) {
 	switch t1 := e.(type) {
 	case string:
@@ -189,26 +208,6 @@ func (s *stack) pop() []Exp {
 	x := (*s)[n-1]
 	*s = (*s)[:n-1]
 	return x
-}
-
-func uncomment(s string) (string, error) {
-	w := new(bytes.Buffer)
-	scanner := bufio.NewScanner(strings.NewReader(s))
-	for scanner.Scan() {
-		line := scanner.Text()
-		z := new(bytes.Buffer)
-		for _, r := range line {
-			if r == ';' {
-				break
-			}
-			z.WriteRune(r)
-		}
-		fmt.Fprintf(w, "%s\n", z.String())
-	}
-	if err := scanner.Err(); err != nil {
-		return "", err
-	}
-	return w.String(), nil
 }
 
 // from the go spec
