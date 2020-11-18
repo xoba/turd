@@ -230,7 +230,7 @@ func list(args ...Exp) Exp {
 }
 
 func mult(args ...Exp) Exp {
-	return arith(args, func(i, j *big.Int) *big.Int {
+	return arith("mult", args, func(i, j *big.Int) *big.Int {
 		var z big.Int
 		z.Mul(i, j)
 		return &z
@@ -238,7 +238,7 @@ func mult(args ...Exp) Exp {
 }
 
 func plus(args ...Exp) Exp {
-	return arith(args, func(i, j *big.Int) *big.Int {
+	return arith("plus", args, func(i, j *big.Int) *big.Int {
 		var z big.Int
 		z.Add(i, j)
 		return &z
@@ -246,14 +246,14 @@ func plus(args ...Exp) Exp {
 }
 
 func minus(args ...Exp) Exp {
-	return arith(args, func(i, j *big.Int) *big.Int {
+	return arith("minus", args, func(i, j *big.Int) *big.Int {
 		var z big.Int
 		z.Sub(i, j)
 		return &z
 	})
 }
 
-func arith(args []Exp, f func(*big.Int, *big.Int) *big.Int) Exp {
+func arith(name string, args []Exp, f func(*big.Int, *big.Int) *big.Int) Exp {
 	if err := checklen(2, args); err != nil {
 		return err
 	}
@@ -266,6 +266,7 @@ func arith(args []Exp, f func(*big.Int, *big.Int) *big.Int) Exp {
 	if !ok {
 		return fmt.Errorf("y not string")
 	}
+	//fmt.Printf("%s(%s,%s)\n", name, xs, ys)
 	var xv, yv big.Int
 	set := func(i *big.Int, s string) error {
 		if _, ok := i.SetString(s, 10); !ok {
