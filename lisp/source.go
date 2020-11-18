@@ -161,9 +161,16 @@ func Run(cnfg.Config) error {
 		test("printf", "(printf 'a)", "()")
 	}
 
-	test("", "", "")
-	test("", "", "")
-	test("", "", "")
+	//	test("+", "(+ '1 '2)", "3")
+
+	test("arith", "(+ '1 '2)", "3")
+	test("arith", "(+ '1 '-2)", "-1")
+	test("arith", "(- '1 '2)", "-1")
+	test("arith", "(- '1 '-2)", "3")
+	test("arith", "(* '4 '5)", "20")
+	test("arith", "(* '4 '-2)", "-8")
+	test("arith", "(eq '0 (- '5 '5))", "t")
+	test("arith", "(eq '1 (- '5 '5))", "()")
 	test("", "", "")
 	test("", "", "")
 	test("", "", "")

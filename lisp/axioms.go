@@ -2,6 +2,7 @@ package lisp
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -226,4 +227,38 @@ func display(args ...Exp) Exp {
 //
 func list(args ...Exp) Exp {
 	return args
+}
+
+func mult(args ...Exp) Exp {
+	return arith(func(i, j int64) int64 { return i * j }, args...)
+}
+func plus(args ...Exp) Exp {
+	return arith(func(i, j int64) int64 { return i + j }, args...)
+}
+func minus(args ...Exp) Exp {
+	return arith(func(i, j int64) int64 { return i - j }, args...)
+}
+
+func arith(f func(int64, int64) int64, args ...Exp) Exp {
+	if err := checklen(2, args); err != nil {
+		return err
+	}
+	x, y := two(args...)
+	xs, ok := x.(string)
+	if !ok {
+		return fmt.Errorf("x not string")
+	}
+	ys, ok := y.(string)
+	if !ok {
+		return fmt.Errorf("y not string")
+	}
+	xv, err := strconv.ParseInt(xs, 10, 64)
+	if err != nil {
+		return err
+	}
+	yv, err := strconv.ParseInt(ys, 10, 64)
+	if err != nil {
+		return err
+	}
+	return fmt.Sprintf("%d", f(xv, yv))
 }

@@ -100,7 +100,7 @@ return err
 }
 `, len(args))
 	for i, a := range args {
-		if !IsAtom(a) {
+		if !isString(a) {
 			return name, nil, fmt.Errorf("not atom: %s", a)
 		}
 		fmt.Fprintf(w, "%s := args[%d];\n", String(a), i)
@@ -113,7 +113,7 @@ return err
 	return name, w.Bytes(), nil
 }
 
-func IsAtom(e Exp) bool {
+func isString(e Exp) bool {
 	switch e.(type) {
 	case string:
 		return true
@@ -149,7 +149,7 @@ return %s
 }
 
 func Compile(e Exp, indent bool) ([]byte, error) {
-	//	fmt.Printf("%d compile(%q)\n", len(e.List()), e)
+	//fmt.Printf("compile(%v)\n", e)
 	w := new(bytes.Buffer)
 	emit := func(msg string, list []string) {
 		if indent {
