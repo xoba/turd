@@ -180,6 +180,10 @@ func Compile(e Exp, indent bool) ([]byte, error) {
 				}
 				fmt.Fprintf(w, string(compiled))
 			}
+		case n > 1 && String(e[0]) == "lambda":
+			panic("compiling lambda")
+		case n > 1 && String(e[0]) == "label":
+			panic("compiling label")
 		case n > 1 && String(e[0]) == "cond":
 			var list []string
 			for i, a := range e {
