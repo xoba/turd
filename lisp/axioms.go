@@ -223,7 +223,7 @@ func display(args ...Exp) Exp {
 }
 
 //
-// axiom #9 (kind of a like "quote" for multiple args)
+// axiom #9 (kind of like a "quote" for multiple args)
 //
 func list(args ...Exp) Exp {
 	return args

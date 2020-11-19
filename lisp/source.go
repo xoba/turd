@@ -177,11 +177,12 @@ func Run(cnfg.Config) error {
 	test("factorial", "(factorial '100)", "93326215443944152681699238856266700490715968264381621468592963895217599993229915608941463976156518286253697920827223758251185210916864000000000000000000000000")
 
 	test("lexpr", " ((lambda (x) (cdr x)) '(a b c))", "(b c)")
-
 	test("lexpr", " ((lambda x (cdr x)) 'a 'b 'c)", "(b c)")
+	test("lexpr", "((lambda x x) 'a 'b 'c)", "(a b c)")
+	test("lexpr", "(list 'a 'b 'c)", "(a b c)")
 
-	test("", "", "")
-	test("", "", "")
+	test("list", "(xlist 'a 'b 'c)", "(a b c)")
+
 	test("", "", "")
 	test("", "", "")
 	test("", "", "")

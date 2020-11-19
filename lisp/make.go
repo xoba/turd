@@ -69,11 +69,11 @@ func CompileDef(cnfg.Config) error {
 
 	}
 
-	fmt.Fprintf(f, "\n\nfunc init() { env = list(")
+	fmt.Fprintf(f, "\n\nfunc init() { env = []Exp{")
 	for _, n := range names {
 		fmt.Fprintf(f, "env_%s,", n)
 	}
-	fmt.Fprintf(f, ")}\n\n")
+	fmt.Fprintf(f, "}}\n\n")
 
 	if err := f.Close(); err != nil {
 		return err
@@ -89,7 +89,12 @@ func Tofunc(defun Exp) (string, []byte, error) {
 		return "", nil, fmt.Errorf("not a defun")
 	}
 	name := String(cadr(defun))
-	args := caddr(defun).([]Exp)
+	var args []Exp
+	if x, ok := caddr(defun).([]Exp); ok {
+		args = x
+	} else {
+		args = []Exp{caddr(defun)}
+	}
 	body := cadddr(defun)
 	w := new(bytes.Buffer)
 
@@ -144,7 +149,7 @@ func CompileLazy(e Exp) ([]byte, error) {
 return %s
 })`, s)
 	}
-	fmt.Fprintf(w, "list(\n%s,\n%s,\n)", f(string(pb)), f(string(eb)))
+	fmt.Fprintf(w, "[]Exp{\n%s,\n%s,\n}", f(string(pb)), f(string(eb)))
 	return w.Bytes(), nil
 }
 
@@ -234,7 +239,7 @@ func ToEnv(defun Exp) (string, []byte, error) {
 		return "", nil, fmt.Errorf("not a defun")
 	}
 	name := cadr(defun)
-	args := caddr(defun).([]Exp)
+	args := caddr(defun)
 	body := cadddr(defun)
 	q := func(s string) Exp {
 		return s
@@ -273,7 +278,7 @@ func ToExpression(e Exp) ([]byte, error) {
 			}
 			parts = append(parts, string(buf))
 		}
-		fmt.Fprintf(w, "list(%s)", strings.Join(parts, ","))
+		fmt.Fprintf(w, "[]Exp{%s}", strings.Join(parts, ","))
 	default:
 		return nil, fmt.Errorf("ToExpression switch fallthrough: %T", t)
 	}
