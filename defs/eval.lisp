@@ -19,14 +19,10 @@
      ((eq (car e) 'cons)    (cons    (eval (cadr e) a)
 			             (eval (caddr e) a)))
      ((eq (car e) 'cond)    (evcon   (cdr e) a))
-     ((eq (car e) 'list)    (evlis   (cdr e) a)) ; this should be a macro perhaps
+     ((eq (car e) 'list)    (evlis   (cdr e) a))
      ('t (eval (cons (assoc (car e) a)
 		     (cdr e))
-	       a))))
-
-   ((eq (caar e) 'macro) ; starting to play with a "macro" idea
-    (cdr e))
-   
+	       a))))   
    ((eq (caar e) 'label)
     (eval (cons (caddar e) (cdr e))
 	  (cons (list (cadar e) (car e)) a)))

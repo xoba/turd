@@ -229,6 +229,9 @@ func list(args ...Exp) Exp {
 	return args
 }
 
+//
+// arithmetic axions:
+//
 func mult(args ...Exp) Exp {
 	return arith("mult", args, func(i, j *big.Int) *big.Int {
 		var z big.Int

@@ -176,41 +176,6 @@ func Run(cnfg.Config) error {
 	test("factorial", "(factorial '10)", "3628800")
 	test("factorial", "(factorial '100)", "93326215443944152681699238856266700490715968264381621468592963895217599993229915608941463976156518286253697920827223758251185210916864000000000000000000000000")
 
-	// leading up to y-combinator:
-	test("y", `((lambda (z) (car z)) '(a b))`, "a")
-	test("y", `
-
-((label y
-	(lambda (x)
-	  ((lambda (z) (cadr z)) x)))
- '(a b c))
-
-`, "b")
-
-	if false {
-
-		const y = `
-(lambda (X)
-  ((lambda (procedure)
-     (X (lambda (arg) ((procedure procedure) arg))))
-   (lambda (procedure)
-     (X (lambda (arg) ((procedure procedure) arg))))))
-
-`
-
-		const f = `
-(lambda (func-arg) (lambda (n) (cond ((eq '0 n) 1)
-				     ('t (* n (func-arg (- n 1)))))))
-`
-
-		test(
-			"y",
-			fmt.Sprintf("((%s %s) '10)", y, f),
-			"3628800",
-		)
-
-	}
-
 	test("", "", "")
 	test("", "", "")
 	test("", "", "")
