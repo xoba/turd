@@ -129,7 +129,7 @@ func CompileLazy(e Exp) ([]byte, error) {
 		return nil, fmt.Errorf("lazy not a list")
 	}
 	if len(list) != 2 {
-		return nil, fmt.Errorf("malformed cond: %s %s", e)
+		return nil, fmt.Errorf("malformed cond with %d parts: %s", len(list), e)
 	}
 	pb, err := Compile(list[0], false)
 	if err != nil {

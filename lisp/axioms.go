@@ -218,7 +218,7 @@ func display(args ...Exp) Exp {
 		return err
 	}
 	a := one(args...)
-	fmt.Printf("(display %s)\n", String(a))
+	fmt.Println(String(a))
 	return a
 }
 
