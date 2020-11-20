@@ -1,9 +1,13 @@
 package lisp
 
 import (
+	"encoding/base64"
 	"fmt"
 	"math/big"
 	"strings"
+
+	"github.com/xoba/turd/thash"
+	"github.com/xoba/turd/tnet"
 )
 
 // valid types: string, []Exp, Func, or error
@@ -54,6 +58,11 @@ func one(args ...Exp) Exp {
 func two(args ...Exp) (Exp, Exp) {
 	x, y := args[0], args[1]
 	return manifest(x), manifest(y)
+}
+
+func three(args ...Exp) (Exp, Exp, Exp) {
+	x, y, z := args[0], args[1], args[2]
+	return manifest(x), manifest(y), manifest(z)
 }
 
 // ----------------------------------------------------------------------
@@ -284,4 +293,124 @@ func arith(name string, args []Exp, f func(*big.Int, *big.Int) *big.Int) Exp {
 		return err
 	}
 	return f(&xv, &yv).String()
+}
+
+func marshal(buf []byte) Exp {
+	return base64.StdEncoding.EncodeToString(buf)
+}
+
+func unmarshal(e Exp) ([]byte, error) {
+	s, ok := e.(string)
+	if !ok {
+		return nil, fmt.Errorf("hash needs string")
+	}
+	return base64.StdEncoding.DecodeString(s)
+}
+
+// hashes content
+func hash(args ...Exp) Exp {
+	if err := checklen(1, args); err != nil {
+		return err
+	}
+	buf, err := unmarshal(one(args))
+	if err != nil {
+		return err
+	}
+	return marshal(thash.Hash(buf))
+}
+
+// creates a new private key
+func newkey(args ...Exp) Exp {
+	if err := checklen(0, args); err != nil {
+		return err
+	}
+	key, err := tnet.NewKey()
+	if err != nil {
+		return err
+	}
+	buf, err := key.MarshalBinary()
+	if err != nil {
+		return err
+	}
+	return marshal(buf)
+}
+
+// derives public from private key
+// (pub private) -> public
+func pub(args ...Exp) Exp {
+	if err := checklen(1, args); err != nil {
+		return err
+	}
+	buf, err := unmarshal(one(args))
+	if err != nil {
+		return err
+	}
+	var private tnet.PrivateKey
+	if err := private.UnmarshalBinary(buf); err != nil {
+		return err
+	}
+	public, err := private.Public().MarshalBinary()
+	if err != nil {
+		return err
+	}
+	return marshal(public)
+}
+
+// sign blob with private key
+// (sign private blob) -> signature
+func sign(args ...Exp) Exp {
+	if err := checklen(2, args); err != nil {
+		return err
+	}
+	x, y := two(args...)
+	var private tnet.PrivateKey
+	{
+		buf, err := unmarshal(x)
+		if err != nil {
+			return err
+		}
+		if err := private.UnmarshalBinary(buf); err != nil {
+			return err
+		}
+	}
+	blob, err := unmarshal(y)
+	if err != nil {
+		return err
+	}
+	sig, err := private.Sign(blob)
+	if err != nil {
+		return err
+	}
+	return marshal(sig)
+}
+
+// verify blob with public key and signature
+// (verify public blob signature) -> t or () [true or false]
+func verify(args ...Exp) Exp {
+	if err := checklen(3, args); err != nil {
+		return err
+	}
+	x, y, z := three(args...)
+	var public tnet.PublicKey
+	{
+		buf, err := unmarshal(x)
+		if err != nil {
+			return err
+		}
+		if err := public.UnmarshalBinary(buf); err != nil {
+			return err
+		}
+	}
+	blob, err := unmarshal(y)
+	if err != nil {
+		return err
+	}
+	sig, err := unmarshal(z)
+	if err != nil {
+		return err
+	}
+	if err := public.Verify(blob, sig); err != nil {
+		return Nil
+	}
+	return True
 }

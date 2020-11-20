@@ -27,6 +27,19 @@ type PrivateKey struct {
 	k *ecdsa.PrivateKey
 }
 
+// TODO: need to use ccnhorr instead; see
+// https://www.coindesk.com/what-bitcoins-white-paper-got-right-wrong-and-what-we-still-dont-know
+func (p PrivateKey) Sign(content []byte) ([]byte, error) {
+	return ecdsa.SignASN1(rand.Reader, p.k, thash.Hash(content))
+}
+
+func (p PublicKey) Verify(content, sig []byte) error {
+	if !ecdsa.VerifyASN1(p.k, thash.Hash(content), sig) {
+		return fmt.Errorf("can't verify signature")
+	}
+	return nil
+}
+
 type PublicKey struct {
 	k *ecdsa.PublicKey
 }
