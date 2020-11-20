@@ -74,6 +74,10 @@ func Run(cnfg.Config) error {
 			)
 		}
 		res := Eval(in)
+		if expect == "" {
+			fmt.Printf("got %s\n", String(res))
+			return
+		}
 		if got := String(res); got != expect {
 			log.Fatalf("expected %q, got %q\n", expect, got)
 		}
@@ -184,9 +188,18 @@ func Run(cnfg.Config) error {
 
 	test("list", "(xlist 'a 'b 'c)", "(a b c)")
 
-	test("", "", "")
-	test("", "", "")
-	test("", "", "")
+	test("crypto", "(newkey)", "")
+
+	test("crypto", "(hash 'MHcCAQEEIBTMVA5sze5UsF4PMb5xNKndc7YKVIg5AbyjoBWiPWnfoAoGCCqGSM49AwEHoUQDQgAECu2rhbYGyKK5wT5zjgFbVlCzMQZe6LeinrX0xvw+dt7qRRTJERKvKiCuTmLKt/O3SAZGVnozSGoBCGuKaSx/mw==)", "")
+	test("crypto", "(hash (newkey))", "")
+	test("crypto", `((lambda (private content)
+   (verify (pub private) (hash content) (sign private (hash content)))
+    ) (newkey) 'c2RmZgo=)
+`, "t")
+	test("crypto", `((lambda (private content)
+   (verify (pub private) (hash content) (sign private (hash 'MTIzCg==)))
+    ) (newkey) 'c2RmZgo=)
+`, "()")
 	test("", "", "")
 	test("", "", "")
 	test("", "", "")

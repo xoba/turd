@@ -302,7 +302,7 @@ func marshal(buf []byte) Exp {
 func unmarshal(e Exp) ([]byte, error) {
 	s, ok := e.(string)
 	if !ok {
-		return nil, fmt.Errorf("hash needs string")
+		return nil, fmt.Errorf("unmarshal needs string, got %s", String(e))
 	}
 	return base64.StdEncoding.DecodeString(s)
 }
@@ -312,7 +312,7 @@ func hash(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
 		return err
 	}
-	buf, err := unmarshal(one(args))
+	buf, err := unmarshal(one(args...))
 	if err != nil {
 		return err
 	}
@@ -341,7 +341,7 @@ func pub(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
 		return err
 	}
-	buf, err := unmarshal(one(args))
+	buf, err := unmarshal(one(args...))
 	if err != nil {
 		return err
 	}

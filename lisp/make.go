@@ -171,8 +171,6 @@ func Compile(e Exp, indent bool) ([]byte, error) {
 		switch {
 		case n == 0:
 			fmt.Fprintf(w, "Nil")
-		case n == 1:
-			return nil, fmt.Errorf("illegal list of length 1")
 		case n == 2 && String(e[0]) == "quote":
 			x := e[1]
 			switch t := x.(type) {
