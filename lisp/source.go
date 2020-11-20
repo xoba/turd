@@ -190,14 +190,21 @@ func Run(cnfg.Config) error {
 
 	test("crypto", "(newkey)", "")
 
-	test("crypto", "(hash 'MHcCAQEEIBTMVA5sze5UsF4PMb5xNKndc7YKVIg5AbyjoBWiPWnfoAoGCCqGSM49AwEHoUQDQgAECu2rhbYGyKK5wT5zjgFbVlCzMQZe6LeinrX0xvw+dt7qRRTJERKvKiCuTmLKt/O3SAZGVnozSGoBCGuKaSx/mw==)", "")
+	test("crypto", "(eq (hash 'RSrYRpagDHgCuQ==) 'ChUPiFeRkYRliIqlN8CB4Vfjce4/zHoEN9wBRKr2MKY=)", "t")
+	test("crypto", "(eq (hash 'RSrYRpagDHgCuQ==) '0000iFeRkYRliIqlN8CB4Vfjce4/zHoEN9wBRKr2MKY=)", "()")
 	test("crypto", "(hash (newkey))", "")
-	test("crypto", `((lambda (private content)
-   (verify (pub private) (hash content) (sign private (hash content)))
+	test("crypto", `((lambda (priv content)
+   (verify (pub priv) (hash content) (sign priv (hash content)))
     ) (newkey) 'c2RmZgo=)
 `, "t")
-	test("crypto", `((lambda (private content)
-   (verify (pub private) (hash content) (sign private (hash 'MTIzCg==)))
+	// content mismatch:
+	test("crypto", `((lambda (priv content)
+   (verify (pub priv) (hash content) (sign priv (hash 'MTIzCg==)))
+    ) (newkey) 'c2RmZgo=)
+`, "()")
+	// public key mismatch
+	test("crypto", `((lambda (priv content)
+   (verify (pub (newkey)) (hash content) (sign priv (hash content)))
     ) (newkey) 'c2RmZgo=)
 `, "()")
 	test("", "", "")
