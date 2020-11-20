@@ -2,7 +2,7 @@
 package lisp
 
 import (
-	"encoding/json"
+	"encoding/base64"
 	"fmt"
 	"log"
 
@@ -17,16 +17,7 @@ func Eval(e Exp) Exp {
 func TestParse(c cnfg.Config) error {
 	test0 := func(s string) error {
 		fmt.Printf("testing %s\n", s)
-		toks, err := tokenize(s)
-		if err != nil {
-			return err
-		}
-		if false {
-			buf, _ := json.Marshal(toks)
-			fmt.Printf("%s toks -> %s\n", s, string(buf))
-			return nil
-		}
-		exp, err := parseTokens(toks)
+		exp, err := Parse(s)
 		if err != nil {
 			return err
 		}
@@ -72,6 +63,16 @@ func Run(cnfg.Config) error {
 			log.Fatal(err)
 		}
 		fmt.Printf("%-10s %-20s -> %s\n", msg+":", String(in), expect)
+		buf, err := Marshal(in)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if len(buf) < len(input) { // is asn.1 more compact?
+			fmt.Printf("%d/%d asn1 bytes = %s\n",
+				len(buf), len(input),
+				base64.StdEncoding.EncodeToString(buf),
+			)
+		}
 		res := Eval(in)
 		if got := String(res); got != expect {
 			log.Fatalf("expected %q, got %q\n", expect, got)
