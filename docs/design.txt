@@ -53,3 +53,13 @@ signing transactions: just sign the whole blob, which can't contain the
 signature in a script. use the signature as a runtime parameter of script,
 not embed it literally. 
 
+important to have an oversight and strategy functionality, which also
+monitors and reports on objectionable content of different types, such
+as porn, violence, etc... this would not be censorship in any sense of
+the word (as censorship per se is not technically nor organizationally
+possible), but merely a community moderation service, of which there
+could be many.  for instance, comprised of a first-line "defense"
+using algorithms to detect such media, like text, photographs, or
+videos. then a second-line of human review, and finally a third-line of
+"appeal". such a service could publish lists of such content id's to
+be voluntarily followed by concerned users of the system.

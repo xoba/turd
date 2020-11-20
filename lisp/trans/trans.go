@@ -8,10 +8,137 @@ import (
 	"math/big"
 
 	"github.com/xoba/turd/cnfg"
+	"github.com/xoba/turd/lisp"
+	"github.com/xoba/turd/thash"
 	"github.com/xoba/turd/tnet"
 )
 
+type Transaction struct {
+	Type      string    `asn1:"optional,utf8" json:",omitempty"`
+	Inputs    []Input   `asn1:"omitempty" json:",omitempty"`
+	Outputs   []Output  `asn1:"omitempty" json:",omitempty"`
+	Content   []Content `asn1:"omitempty" json:",omitempty"`
+	Signature []byte    `asn1:"omitempty" json:",omitempty"`
+}
+
+type Content struct {
+	Key   []byte `asn1:"omitempty" json:",omitempty"`
+	Value []byte `asn1:"omitempty" json:",omitempty"`
+}
+
+// quantity and script hash must match a previous transaction's output
+type Input struct {
+	Quantity *big.Int
+	Script   string `asn1:"utf8"`
+}
+
+type Output struct {
+	Quantity *big.Int
+	Address  []byte
+}
+
+func marshal(buf []byte) string {
+	return base64.RawStdEncoding.EncodeToString(buf)
+}
+
+func unmarshal(s string) ([]byte, error) {
+	return base64.RawStdEncoding.DecodeString(s)
+}
+
 func Run(cnfg.Config) error {
+	key, err := tnet.NewKey()
+	if err != nil {
+		return err
+	}
+	pub, err := key.Public().MarshalBinary()
+	if err != nil {
+		return err
+	}
+	script := fmt.Sprintf(`(lambda (hash signature) (verify '%s hash signature))`,
+		marshal(pub))
+
+	outputs := make(map[string]Output)
+
+	in := func(t *Transaction, i int64, s string) {
+		t.Inputs = append(t.Inputs, Input{
+			Quantity: big.NewInt(i),
+			Script:   s,
+		})
+	}
+	out := func(t *Transaction, i int64, addr []byte) {
+		o := Output{
+			Quantity: big.NewInt(i),
+			Address:  addr,
+		}
+		t.Outputs = append(t.Outputs, o)
+		outputs[marshal(o.Address)] = o
+	}
+	address := thash.Hash([]byte(script))
+
+	var t1 Transaction
+	{
+		t1.Type = "coinbase"
+		if false {
+			in(&t1, 10, "")
+		}
+		out(&t1, 10, address)
+		if err := t1.Sign(key); err != nil {
+			return err
+		}
+		if err := t1.Validate(); err != nil {
+			return err
+		}
+		if err := t1.Verify(key.Public()); err != nil {
+			return err
+		}
+		fmt.Println(t1)
+	}
+
+	var t2 Transaction
+	{
+		in(&t2, 1, script)
+		if err := t2.Sign(key); err != nil {
+			return err
+		}
+		if err := t2.Validate(); err != nil {
+			return err
+		}
+		if err := t2.Verify(key.Public()); err != nil {
+			return err
+		}
+		fmt.Printf("script hash = %s\n", marshal(thash.Hash([]byte(t2.Inputs[0].Script))))
+		fmt.Println(t2)
+		for _, i := range t2.Inputs {
+			addr := marshal(thash.Hash([]byte(t2.Inputs[0].Script)))
+			o, ok := outputs[addr]
+			if !ok {
+				return fmt.Errorf("no such address: %s", addr)
+			}
+			fmt.Printf("processing %s -> %s\n", o, i)
+			hash, err := t2.Hash()
+			if err != nil {
+				return err
+			}
+			e, err := lisp.Parse(
+				fmt.Sprintf("(%s '%s '%s)",
+					i.Script,
+					marshal(hash),
+					marshal(t2.Signature),
+				),
+			)
+			if err != nil {
+				return err
+			}
+			fmt.Println(e)
+			res := lisp.Eval(e)
+			fmt.Printf("res = %v\n", res)
+		}
+	}
+
+	return nil
+}
+
+func test1() error {
 	fmt.Println("playing with transactions using lisp")
 	key, err := tnet.NewKey()
 	if err != nil {
@@ -44,17 +171,14 @@ func Run(cnfg.Config) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(base64.StdEncoding.EncodeToString(buf))
-
+	fmt.Println(marshal(buf))
 	t2, err := Unmarshal(buf)
 	if err != nil {
 		return err
 	}
-
 	if err := t2.Verify(key.Public()); err != nil {
 		return err
 	}
-
 	fmt.Printf("verified %s\n", t2)
 	return nil
 }
@@ -76,51 +200,92 @@ type Block struct {
 	Transactions []Transaction `asn1:"omitempty"`
 }
 
-type Transaction struct {
-	Type      string   `asn1:"optional,utf8"`
-	Inputs    []Input  `asn1:"omitempty"`
-	Outputs   []Output `asn1:"omitempty"`
-	Signature []byte
-}
-
-// quantity and script hash must match a previous transaction's output
-type Input struct {
-	Quantity *big.Int
-	Script   string `asn1:"utf8"`
-}
-
-type Output struct {
-	Quantity *big.Int
-	Address  []byte
-}
-
 func (t Transaction) String() string {
 	buf, _ := json.Marshal(t)
 	return string(buf)
 }
+func (t Input) String() string {
+	buf, _ := json.Marshal(t)
+	return string(buf)
+}
+func (t Output) String() string {
+	buf, _ := json.Marshal(t)
+	return string(buf)
+}
 
-func (t Transaction) Verify(key *tnet.PublicKey) error {
-	sig := t.Signature
+func (t *Transaction) Validate() error {
+	var coinbase bool
+	switch x := t.Type; x {
+	case "coinbase":
+		coinbase = true
+	case "":
+	default:
+		return fmt.Errorf("bad type: %q", x)
+	}
+	pos := func(i *big.Int) bool {
+		return i.Cmp(big.NewInt(0)) > 0
+	}
+	neg := func(i *big.Int) bool {
+		return i.Cmp(big.NewInt(0)) < 0
+	}
+	var i big.Int
+	for _, x := range t.Inputs {
+		if n := x.Quantity; !pos(n) {
+			return fmt.Errorf("negative amount: %s", n)
+		}
+		i.Add(&i, x.Quantity)
+	}
+	for _, x := range t.Outputs {
+		if n := x.Quantity; !pos(n) {
+			return fmt.Errorf("negative amount: %s", n)
+		}
+		i.Sub(&i, x.Quantity)
+	}
+	if !coinbase && neg(&i) {
+		return fmt.Errorf("negative transaction fee: %s", &i)
+	}
+	return nil
+}
+
+func (t *Transaction) Fee() *big.Int {
+	var i big.Int
+	for _, x := range t.Inputs {
+		i.Add(&i, x.Quantity)
+	}
+	for _, x := range t.Outputs {
+		i.Sub(&i, x.Quantity)
+	}
+	return &i
+}
+
+func (t Transaction) Hash() ([]byte, error) {
 	t.Signature = nil
 	m, err := t.Marshal()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return key.Verify(m, sig)
+	return thash.Hash(m), nil
 }
 
 func (t *Transaction) Sign(key *tnet.PrivateKey) error {
-	t.Signature = nil
-	m, err := t.Marshal()
+	h, err := t.Hash()
 	if err != nil {
 		return err
 	}
-	sig, err := key.Sign(m)
+	sig, err := key.Sign(h)
 	if err != nil {
 		return err
 	}
 	t.Signature = sig
 	return nil
+}
+
+func (t Transaction) Verify(key *tnet.PublicKey) error {
+	h, err := t.Hash()
+	if err != nil {
+		return err
+	}
+	return key.Verify(h, t.Signature)
 }
 
 func Unmarshal(buf []byte) (*Transaction, error) {

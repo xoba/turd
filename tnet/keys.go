@@ -27,14 +27,20 @@ type PrivateKey struct {
 	k *ecdsa.PrivateKey
 }
 
-// TODO: need to use ccnhorr instead; see
+// TODO: need to use schnorr instead; see
 // https://www.coindesk.com/what-bitcoins-white-paper-got-right-wrong-and-what-we-still-dont-know
-func (p PrivateKey) Sign(content []byte) ([]byte, error) {
-	return ecdsa.SignASN1(rand.Reader, p.k, thash.Hash(content))
+func (p PrivateKey) Sign(hash []byte) ([]byte, error) {
+	if len(hash) != 32 {
+		return nil, fmt.Errorf("can only sign a hash")
+	}
+	return ecdsa.SignASN1(rand.Reader, p.k, hash)
 }
 
-func (p PublicKey) Verify(content, sig []byte) error {
-	if !ecdsa.VerifyASN1(p.k, thash.Hash(content), sig) {
+func (p PublicKey) Verify(hash, sig []byte) error {
+	if len(hash) != 32 {
+		return fmt.Errorf("can only sign a hash")
+	}
+	if !ecdsa.VerifyASN1(p.k, hash, sig) {
 		return fmt.Errorf("can't verify signature")
 	}
 	return nil

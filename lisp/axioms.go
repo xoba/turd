@@ -296,7 +296,7 @@ func arith(name string, args []Exp, f func(*big.Int, *big.Int) *big.Int) Exp {
 }
 
 func marshal(buf []byte) Exp {
-	return base64.StdEncoding.EncodeToString(buf)
+	return base64.RawStdEncoding.EncodeToString(buf)
 }
 
 func unmarshal(e Exp) ([]byte, error) {
@@ -304,7 +304,7 @@ func unmarshal(e Exp) ([]byte, error) {
 	if !ok {
 		return nil, fmt.Errorf("unmarshal needs string, got %s", String(e))
 	}
-	return base64.StdEncoding.DecodeString(s)
+	return base64.RawStdEncoding.DecodeString(s)
 }
 
 // hashes content
@@ -377,7 +377,7 @@ func sign(args ...Exp) Exp {
 	if err != nil {
 		return err
 	}
-	sig, err := private.Sign(blob)
+	sig, err := private.Sign(thash.Hash(blob))
 	if err != nil {
 		return err
 	}
@@ -391,6 +391,7 @@ func verify(args ...Exp) Exp {
 		return err
 	}
 	x, y, z := three(args...)
+	fmt.Printf("verify %s %s %s\n", x, y, z)
 	var public tnet.PublicKey
 	{
 		buf, err := unmarshal(x)
@@ -409,7 +410,7 @@ func verify(args ...Exp) Exp {
 	if err != nil {
 		return err
 	}
-	if err := public.Verify(blob, sig); err != nil {
+	if err := public.Verify(thash.Hash(blob), sig); err != nil {
 		return Nil
 	}
 	return True

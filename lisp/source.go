@@ -190,22 +190,22 @@ func Run(cnfg.Config) error {
 
 	test("crypto", "(newkey)", "")
 
-	test("crypto", "(eq (hash 'RSrYRpagDHgCuQ==) 'ChUPiFeRkYRliIqlN8CB4Vfjce4/zHoEN9wBRKr2MKY=)", "t")
-	test("crypto", "(eq (hash 'RSrYRpagDHgCuQ==) '0000iFeRkYRliIqlN8CB4Vfjce4/zHoEN9wBRKr2MKY=)", "()")
+	test("crypto", "(eq (hash 'RSrYRpagDHgCuQ) 'ChUPiFeRkYRliIqlN8CB4Vfjce4/zHoEN9wBRKr2MKY)", "t")
+	test("crypto", "(eq (hash 'RSrYRpagDHgCuQ) '0000iFeRkYRliIqlN8CB4Vfjce4/zHoEN9wBRKr2MKY)", "()")
 	test("crypto", "(hash (newkey))", "")
 	test("crypto", `((lambda (priv content)
    (verify (pub priv) (hash content) (sign priv (hash content)))
-    ) (newkey) 'c2RmZgo=)
+    ) (newkey) 'c2RmZgo)
 `, "t")
 	// content mismatch:
 	test("crypto", `((lambda (priv content)
-   (verify (pub priv) (hash content) (sign priv (hash 'MTIzCg==)))
-    ) (newkey) 'c2RmZgo=)
+   (verify (pub priv) (hash content) (sign priv (hash 'MTIzCg)))
+    ) (newkey) 'c2RmZgo)
 `, "()")
 	// public key mismatch
 	test("crypto", `((lambda (priv content)
    (verify (pub (newkey)) (hash content) (sign priv (hash content)))
-    ) (newkey) 'c2RmZgo=)
+    ) (newkey) 'c2RmZgo)
 `, "()")
 	test("", "", "")
 	test("", "", "")
