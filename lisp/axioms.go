@@ -319,6 +319,26 @@ func hash(args ...Exp) Exp {
 	return marshal(thash.Hash(buf))
 }
 
+// concats two blobs
+func concat(args ...Exp) Exp {
+	if err := checklen(2, args); err != nil {
+		return err
+	}
+	x, y := two(args...)
+	xb, err := unmarshal(x)
+	if err != nil {
+		return err
+	}
+	yb, err := unmarshal(y)
+	if err != nil {
+		return err
+	}
+	var out []byte
+	out = append(out, xb...)
+	out = append(out, yb...)
+	return marshal(out)
+}
+
 // creates a new private key
 func newkey(args ...Exp) Exp {
 	if err := checklen(0, args); err != nil {

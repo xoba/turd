@@ -14,11 +14,12 @@ import (
 )
 
 type Transaction struct {
-	Type      string    `asn1:"optional,utf8" json:",omitempty"`
-	Inputs    []Input   `asn1:"omitempty" json:",omitempty"`
-	Outputs   []Output  `asn1:"omitempty" json:",omitempty"`
-	Content   []Content `asn1:"omitempty" json:",omitempty"`
-	Signature []byte    `asn1:"omitempty" json:",omitempty"`
+	Type    string    `asn1:"optional,utf8" json:",omitempty"`
+	Inputs  []Input   `asn1:"omitempty" json:",omitempty"`
+	Outputs []Output  `asn1:"omitempty" json:",omitempty"`
+	Content []Content `asn1:"omitempty" json:",omitempty"`
+	// TODO: need multiple signatures
+	Signature []byte `asn1:"omitempty" json:",omitempty"`
 }
 
 type Content struct {

@@ -207,7 +207,8 @@ func Run(cnfg.Config) error {
    (verify (pub (newkey)) (hash content) (sign priv (hash content)))
     ) (newkey) 'c2RmZgo)
 `, "()")
-	test("", "", "")
+
+	test("blobs", "(concat 'YWJj 'eHl6)", "YWJjeHl6")
 	test("", "", "")
 	test("", "", "")
 

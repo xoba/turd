@@ -14,9 +14,12 @@
      ((eq (car e) 'mult)    (mult    (eval (cadr  e) a)
 			             (eval (caddr e) a)))
      ((eq (car e) 'display) (display (eval (cadr  e) a)))
+
      
-     ((eq (car e) 'newkey)  (newkey))
+     ((eq (car e) 'concat)  (concat  (eval (cadr  e) a)
+				     (eval (caddr e) a)))
      ((eq (car e) 'hash)    (hash    (eval (cadr  e) a)))
+     ((eq (car e) 'newkey)  (newkey))
      ((eq (car e) 'pub)     (pub     (eval (cadr  e) a)))
      ((eq (car e) 'sign)    (sign    (eval (cadr  e) a)
 				     (eval (caddr e) a)))
