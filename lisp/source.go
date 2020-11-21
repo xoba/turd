@@ -4,7 +4,9 @@ package lisp
 import (
 	"encoding/base64"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"path/filepath"
 
 	"github.com/xoba/turd/cnfg"
 )
@@ -81,6 +83,13 @@ func Run(cnfg.Config) error {
 		if got := String(res); got != expect {
 			log.Fatalf("expected %q, got %q\n", expect, got)
 		}
+	}
+	file := func(msg, f, expect string) {
+		buf, err := ioutil.ReadFile(filepath.Join("tests", f))
+		if err != nil {
+			log.Fatal(err)
+		}
+		test(msg, string(buf), expect)
 	}
 
 	test("quote1", "(quote a)", "a")
@@ -209,8 +218,50 @@ func Run(cnfg.Config) error {
 `, "()")
 
 	test("blobs", "(concat 'YWJj 'eHl6)", "YWJjeHl6")
-	test("", "", "")
-	test("", "", "")
+
+	test("crypto", `(assoc 'hash '((hash ymWy8GC+4f6xaqTYlciUS0+FBq+zO7XRe46fYtMni5Y) (IgSk3rkEcxbx1f44G5diGvc53pwSi6WjlsZnbWpHgWk MEYCIQC1Fnd+LuN4AFJ7lYWBVjEcjO7SvrTAoUtcUct96za1OQIhAKIYsyE/rroV4GuNuNJNGFIcDMsL27VlZgXNcIZQk81Z)))`, "")
+
+	test("lambda", `
+((lambda (x y)
+   ((lambda (z) (plus z x)) y))
+ '3 '4)
+`, "7")
+
+	file("crypto", "crypto.lisp", "")
+	file("crypto", "crypto2.lisp", "")
+
+	return nil
+
+	test("crypto", `((lambda
+   (bhash thash args)
+   ((lambda (signature)
+      ((cond
+	((verify 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE6vtOl88Uy45eAPp6MB0oqNn5el/vyAZ4svWWmqvdxDtjinUAQvNDaUfuRRYSXbWmtZ74Mbr7X/BE80RACVxJdg thash signature)
+	 (hash bhash))
+	('t ()))))
+    (assoc 'eLbCHZcapPWl28qlc6UF7VdAfLyooLjgvADVrUcmxl8 args)))
+ 'VhOicZM
+ 'SepnCHr5gvkAZqRvPyUt9lkFn9jdPFNCI6sek2Otim0
+ '((eLbCHZcapPWl28qlc6UF7VdAfLyooLjgvADVrUcmxl8 MEYCIQCmBVgVo41QtNYpw4wc1OahTNx4leIBdoBBpmfkIoeNlwIhAK9Dc1/3G2SDSDhJQP+BVdKBdK/ol7MXJdxnKUatqLL+)))
+
+
+`, "")
+
+	test("", ``, ``)
+	test("", ``, ``)
+	test("", ``, ``)
+	test("", ``, ``)
+	test("", ``, ``)
+	test("", ``, ``)
+	test("", ``, ``)
+	test("", ``, ``)
+	test("", ``, ``)
+	test("", ``, ``)
+	test("", ``, ``)
+	test("", ``, ``)
+	test("", ``, ``)
+	test("", ``, ``)
+	test("", ``, ``)
 
 	return nil
 }

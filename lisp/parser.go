@@ -303,6 +303,8 @@ func translateAtoms(from, to string, e Exp) Exp {
 			out = append(out, translateAtoms(from, to, c))
 		}
 		return out
+	case error:
+		return t
 	default:
 		return fmt.Errorf("can't translate %T %v", t, t)
 	}

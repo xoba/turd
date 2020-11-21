@@ -69,6 +69,8 @@ func three(args ...Exp) (Exp, Exp, Exp) {
 // AXIOMS
 // ----------------------------------------------------------------------
 
+// TODO: maybe natively handle type []byte, rather than base64-encoded strings?
+
 //
 // axiom #1
 //

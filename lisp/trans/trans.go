@@ -1,12 +1,13 @@
 package trans
 
 import (
+	"crypto/rand"
 	"encoding/asn1"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"math/big"
-	"math/rand"
+	"time"
 
 	"github.com/xoba/turd/cnfg"
 	"github.com/xoba/turd/lisp"
@@ -14,23 +15,45 @@ import (
 	"github.com/xoba/turd/tnet"
 )
 
+// script output: either a blob or empty list.
+// empty list means the validation failed, blob should
+// be a mining hash, calculated in appropriate manner.
+
 // TODO: needs potentially multiple signatures
+// TODO: maybe signature block should be generic arguments to scripts,
+// to be accessed via "assoc". makes sense to use some sort of hash of key
+// for signature names.
 type Transaction struct {
 	Type      string    `asn1:"optional,utf8" json:",omitempty"`
 	Inputs    []Input   `asn1:"omitempty" json:",omitempty"`
 	Outputs   []Output  `asn1:"omitempty" json:",omitempty"`
 	Content   []Content `asn1:"omitempty" json:",omitempty"`
-	Signature Signature `asn1:"omitempty" json:",omitempty"`
+	Arguments string    `asn1:"omitempty" json:",omitempty"`
 }
 
-type Signature []byte
+type Block struct {
+	Height       *big.Int
+	Time         time.Time
+	Transactions []Transaction `asn1:"omitempty" json:",omitempty"`
+	State        Hash          // pointer to the state trie
+	Parents      []Hash        // first is intra-chain, others are inter-chain
+	Threshold    *big.Int      // max hash value for this block to be valid mining
+	Nonce        []byte
+	Hash         Hash // hash of this block
+}
 
+type Hash []byte
+
+// content, compatible with a trie's KeyValue
 type Content struct {
-	Key   []byte `asn1:"omitempty" json:",omitempty"`
-	Value []byte `asn1:"omitempty" json:",omitempty"`
+	Key    []byte   `asn1:"omitempty" json:",omitempty"`
+	Value  []byte   `asn1:"omitempty" json:",omitempty"`
+	Hash   []byte   `asn1:"omitempty" json:",omitempty"` // hash of key and value
+	Length *big.Int // length of the value
 }
 
 // quantity and script hash must match a previous transaction's output
+// script is called with hash and named arguments
 type Input struct {
 	Quantity *big.Int
 	Script   string `asn1:"utf8"`
@@ -49,7 +72,16 @@ func unmarshal(s string) ([]byte, error) {
 	return base64.RawStdEncoding.DecodeString(s)
 }
 
+func formatScript(s string) (string, error) {
+	exp, err := lisp.Parse(s)
+	if err != nil {
+		return "", err
+	}
+	return lisp.String(exp), nil
+}
+
 func Run(cnfg.Config) error {
+
 	key, err := tnet.NewKey()
 	if err != nil {
 		return err
@@ -58,13 +90,26 @@ func Run(cnfg.Config) error {
 	if err != nil {
 		return err
 	}
-	script := fmt.Sprintf(
-		// outputs hash of nonce and verification:
+	pubname, err := KeyName(key.Public())
+	if err != nil {
+		return err
+	}
+	script, err := formatScript(fmt.Sprintf(
 		`
-(lambda (hash signatures nonce) 
-    (list (hash nonce) (verify '%s hash (car signatures))))`,
-		marshal(pub),
-	)
+(lambda
+  (nonce thash args) ; block hash, transaction hash, other arguments
+  ((lambda (sig)
+     (cond
+      ((verify '%s thash sig) ; if signature verified
+       (hash nonce))          ; hash the nonce
+      ('t ())))               ; else return "false"
+  (assoc '%s args)))
+`,
+		marshal(pub), pubname,
+	))
+	if err != nil {
+		return err
+	}
 
 	outputs := make(map[string]Output)
 
@@ -97,9 +142,6 @@ func Run(cnfg.Config) error {
 		if err := t1.Validate(); err != nil {
 			return err
 		}
-		if err := t1.Verify(key.Public()); err != nil {
-			return err
-		}
 		fmt.Println(t1)
 	}
 
@@ -112,11 +154,13 @@ func Run(cnfg.Config) error {
 		if err := t2.Validate(); err != nil {
 			return err
 		}
-		if err := t2.Verify(key.Public()); err != nil {
+		hash, err := t2.Hash()
+		if err != nil {
 			return err
 		}
-		fmt.Printf("script hash = %s\n", marshal(thash.Hash([]byte(t2.Inputs[0].Script))))
 		fmt.Println(t2)
+		nonce := make([]byte, 5)
+		rand.Read(nonce)
 		for _, i := range t2.Inputs {
 			addr := marshal(thash.Hash([]byte(t2.Inputs[0].Script)))
 			o, ok := outputs[addr]
@@ -124,16 +168,12 @@ func Run(cnfg.Config) error {
 				return fmt.Errorf("no such address: %s", addr)
 			}
 			fmt.Printf("processing %s -> %s\n", o, i)
-			hash, err := t2.Hash()
-			if err != nil {
-				return err
-			}
 			e, err := lisp.Parse(
-				fmt.Sprintf("(%s '%s '(%s) '%s)",
+				fmt.Sprintf("(%s '%s '%s '%s)",
 					i.Script,
+					marshal(nonce),
 					marshal(hash),
-					marshal(t2.Signature),
-					marshal([]byte(fmt.Sprintf("test %d", rand.Intn(3)))),
+					t2.Arguments,
 				),
 			)
 			if err != nil {
@@ -141,73 +181,19 @@ func Run(cnfg.Config) error {
 			}
 			fmt.Println(lisp.String(e))
 			res := lisp.Eval(e)
-			fmt.Printf("res = %v\n", res)
+			fmt.Printf("res = %s\n", lisp.String(res))
 		}
 	}
 
 	return nil
 }
 
-func test1() error {
-	fmt.Println("playing with transactions using lisp")
-	key, err := tnet.NewKey()
+func KeyName(key *tnet.PublicKey) (string, error) {
+	buf, err := key.MarshalBinary()
 	if err != nil {
-		return err
+		return "", err
 	}
-	var t Transaction
-	in := func(i int64, s string) {
-		t.Inputs = append(t.Inputs, Input{
-			Quantity: big.NewInt(i),
-			Script:   s,
-		})
-	}
-	out := func(i int64, addr []byte) {
-		t.Outputs = append(t.Outputs, Output{
-			Quantity: big.NewInt(i),
-			Address:  addr,
-		})
-	}
-	for i := 0; i < 5; i++ {
-		in(5, fmt.Sprintf("testing %d", i))
-	}
-	for i := 0; i < 3; i++ {
-		out(10, []byte(fmt.Sprintf("xyz %d", i)))
-	}
-
-	if err := t.Sign(key); err != nil {
-		return err
-	}
-	buf, err := t.Marshal()
-	if err != nil {
-		return err
-	}
-	fmt.Println(marshal(buf))
-	t2, err := Unmarshal(buf)
-	if err != nil {
-		return err
-	}
-	if err := t2.Verify(key.Public()); err != nil {
-		return err
-	}
-	fmt.Printf("verified %s\n", t2)
-	return nil
-}
-
-func Coinbase(key *tnet.PrivateKey, address []byte, reward *big.Int) (*Transaction, error) {
-	var t Transaction
-	t.Type = "coinbase"
-	t.Outputs = append(t.Outputs, Output{
-		Quantity: reward,
-		Address:  address,
-	})
-	if err := t.Sign(key); err != nil {
-		return nil, err
-	}
-	return &t, nil
-}
-
-type Block struct {
-	Transactions []Transaction `asn1:"omitempty"`
+	return marshal(thash.Hash(buf)), nil
 }
 
 func (t Transaction) String() string {
@@ -268,8 +254,8 @@ func (t *Transaction) Fee() *big.Int {
 	return &i
 }
 
-func (t Transaction) Hash() ([]byte, error) {
-	t.Signature = nil
+func (t Transaction) Hash() (Hash, error) {
+	t.Arguments = ""
 	m, err := t.Marshal()
 	if err != nil {
 		return nil, err
@@ -277,25 +263,28 @@ func (t Transaction) Hash() ([]byte, error) {
 	return thash.Hash(m), nil
 }
 
-func (t *Transaction) Sign(key *tnet.PrivateKey) error {
+func (t *Transaction) Sign(keys ...*tnet.PrivateKey) error {
 	h, err := t.Hash()
 	if err != nil {
 		return err
 	}
-	sig, err := key.Sign(h)
-	if err != nil {
-		return err
+	var signature []lisp.Exp
+	pair := func(a string, b []byte) {
+		signature = append(signature, []lisp.Exp{a, marshal(b)})
 	}
-	t.Signature = sig
+	for _, key := range keys {
+		sig, err := key.Sign(h)
+		if err != nil {
+			return err
+		}
+		name, err := KeyName(key.Public())
+		if err != nil {
+			return err
+		}
+		pair(name, sig)
+	}
+	t.Arguments = lisp.String(signature)
 	return nil
-}
-
-func (t Transaction) Verify(key *tnet.PublicKey) error {
-	h, err := t.Hash()
-	if err != nil {
-		return err
-	}
-	return key.Verify(h, t.Signature)
 }
 
 func Unmarshal(buf []byte) (*Transaction, error) {
