@@ -1,12 +1,14 @@
 package trans
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/asn1"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"text/template"
 	"time"
 
 	"github.com/xoba/turd/cnfg"
@@ -40,6 +42,7 @@ type Block struct {
 	Threshold    *big.Int      // max hash value for this block to be valid mining
 	Nonce        []byte
 	Hash         Hash // hash of this block
+	Output       Hash // hash output of transactions
 }
 
 type Hash []byte
@@ -80,6 +83,18 @@ func formatScript(s string) (string, error) {
 	return lisp.String(exp), nil
 }
 
+func replace(s string, m map[string]string) (string, error) {
+	t := template.New("script")
+	if _, err := t.Parse(s); err != nil {
+		return "", err
+	}
+	w := new(bytes.Buffer)
+	if err := t.Execute(w, m); err != nil {
+		return "", err
+	}
+	return formatScript(w.String())
+}
+
 func Run(cnfg.Config) error {
 
 	key, err := tnet.NewKey()
@@ -94,23 +109,26 @@ func Run(cnfg.Config) error {
 	if err != nil {
 		return err
 	}
-	script, err := formatScript(fmt.Sprintf(
-		`
+	nonce := make([]byte, 10)
+	rand.Read(nonce)
+
+	script, err := replace(`
 (lambda
-  (nonce thash args) ; block hash, transaction hash, other arguments
+  (input thash args) ; input, transaction hash, other arguments
   ((lambda (sig)
      (cond
-      ((verify '%s thash sig) ; if signature verified
-       (hash nonce))          ; hash the nonce
-      ('t ())))               ; else return "false"
-  (assoc '%s args)))
-`,
-		marshal(pub), pubname,
-	))
+      ((verify '{{.pub}} thash sig)        ; if signature verified:
+       (hash (concat '{{.nonce}} input)))  ; hash the input with nonce
+      ('t ())))                            ; else: return "false"
+  (assoc '{{.pubname}} args)))
+`, map[string]string{
+		"pub":     marshal(pub),
+		"nonce":   marshal(nonce),
+		"pubname": pubname,
+	})
 	if err != nil {
 		return err
 	}
-
 	outputs := make(map[string]Output)
 
 	in := func(t *Transaction, i int64, s string) {
