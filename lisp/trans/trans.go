@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"math/rand"
 
 	"github.com/xoba/turd/cnfg"
 	"github.com/xoba/turd/lisp"
@@ -13,14 +14,16 @@ import (
 	"github.com/xoba/turd/tnet"
 )
 
+// TODO: needs potentially multiple signatures
 type Transaction struct {
-	Type    string    `asn1:"optional,utf8" json:",omitempty"`
-	Inputs  []Input   `asn1:"omitempty" json:",omitempty"`
-	Outputs []Output  `asn1:"omitempty" json:",omitempty"`
-	Content []Content `asn1:"omitempty" json:",omitempty"`
-	// TODO: need multiple signatures
-	Signature []byte `asn1:"omitempty" json:",omitempty"`
+	Type      string    `asn1:"optional,utf8" json:",omitempty"`
+	Inputs    []Input   `asn1:"omitempty" json:",omitempty"`
+	Outputs   []Output  `asn1:"omitempty" json:",omitempty"`
+	Content   []Content `asn1:"omitempty" json:",omitempty"`
+	Signature Signature `asn1:"omitempty" json:",omitempty"`
 }
+
+type Signature []byte
 
 type Content struct {
 	Key   []byte `asn1:"omitempty" json:",omitempty"`
@@ -55,8 +58,13 @@ func Run(cnfg.Config) error {
 	if err != nil {
 		return err
 	}
-	script := fmt.Sprintf(`(lambda (hash signature) (verify '%s hash signature))`,
-		marshal(pub))
+	script := fmt.Sprintf(
+		// outputs hash of nonce and verification:
+		`
+(lambda (hash signatures nonce) 
+    (list (hash nonce) (verify '%s hash (car signatures))))`,
+		marshal(pub),
+	)
 
 	outputs := make(map[string]Output)
 
@@ -121,16 +129,17 @@ func Run(cnfg.Config) error {
 				return err
 			}
 			e, err := lisp.Parse(
-				fmt.Sprintf("(%s '%s '%s)",
+				fmt.Sprintf("(%s '%s '(%s) '%s)",
 					i.Script,
 					marshal(hash),
 					marshal(t2.Signature),
+					marshal([]byte(fmt.Sprintf("test %d", rand.Intn(3)))),
 				),
 			)
 			if err != nil {
 				return err
 			}
-			fmt.Println(e)
+			fmt.Println(lisp.String(e))
 			res := lisp.Eval(e)
 			fmt.Printf("res = %v\n", res)
 		}
