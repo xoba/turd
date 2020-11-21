@@ -212,7 +212,7 @@ func Run(cnfg.Config) error {
 		if err := t.NewInput(4, key3.Public(), []byte{0}); err != nil {
 			return err
 		}
-		if err := t.NewOutput(2, key2.Public(), []byte{1}); err != nil {
+		if err := t.NewOutput(7, key2.Public(), []byte{1}); err != nil {
 			return err
 		}
 		if err := t.Sign(key1, key3); err != nil {
@@ -221,7 +221,30 @@ func Run(cnfg.Config) error {
 		addt(t)
 	}
 
-	outputs := make(map[string][]Output)
+	outputs := make(map[string]*big.Int)
+
+	inc := func(addr []byte, o *big.Int) {
+		key := marshal(addr)[:4]
+		i, ok := outputs[key]
+		if !ok {
+			i = big.NewInt(0)
+			outputs[key] = i
+		}
+		i.Add(i, o)
+	}
+	dec := func(addr []byte, o *big.Int) {
+		var x big.Int
+		x.Neg(o)
+		inc(addr, &x)
+	}
+	balance := func(addr []byte) *big.Int {
+		key := marshal(addr)[:4]
+		i, ok := outputs[key]
+		if !ok {
+			return big.NewInt(0)
+		}
+		return i
+	}
 
 	// block hash to be chained through all inputs of all transactions
 	bhash := make([]byte, 10)
@@ -239,10 +262,8 @@ func Run(cnfg.Config) error {
 		}
 
 		for j, input := range t.Inputs {
-			addr := marshal(thash.Hash([]byte(input.Script)))
-			_, ok := outputs[addr]
-			if !ok {
-				return fmt.Errorf("no such address: %s", addr)
+			if b := balance(input.Address()); b.Cmp(input.Quantity) < 0 {
+				return fmt.Errorf("input %s from %s", input.Quantity, b)
 			}
 			e, err := lisp.Parse(
 				fmt.Sprintf("(%s '%s '%s '%s)",
@@ -267,14 +288,18 @@ func Run(cnfg.Config) error {
 			default:
 				return fmt.Errorf("bad result: %s\n", lisp.String(res))
 			}
+			dec(input.Address(), input.Quantity)
+			fmt.Printf("balances: %s\n", outputs)
 		}
 
-		for _, o := range t.Outputs {
-			key := marshal(o.Address)
-			outputs[key] = append(outputs[key], o)
+		for j, o := range t.Outputs {
+			fmt.Printf("%d.%d. output %s\n", i, j, o)
+			inc(o.Address, o.Quantity)
+			fmt.Printf("balances: %s\n", outputs)
 		}
 	}
 
+	fmt.Printf("final hash = %s\n", marshal(bhash))
 	return nil
 }
 
