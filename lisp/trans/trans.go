@@ -215,7 +215,7 @@ func Run(cnfg.Config) error {
 		if err := t.NewOutput(2, key2.Public(), []byte{1}); err != nil {
 			return err
 		}
-		if err := t.Sign(key1, key2); err != nil {
+		if err := t.Sign(key1, key3); err != nil {
 			return err
 		}
 		addt(t)
