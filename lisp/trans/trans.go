@@ -34,16 +34,33 @@ type Transaction struct {
 }
 
 type Block struct {
-	Height       *big.Int
-	Time         time.Time
-	Transactions []Transaction `asn1:"omitempty" json:",omitempty"`
-	State        Hash          // pointer to the state trie
-	Parents      []Hash        // first is intra-chain, others are inter-chain
-	Threshold    *big.Int      // max hash value for this block to be valid mining
-	Nonce        []byte
-	Hash         Hash // hash of this block
-	Output       Hash // hash output of transactions
+	Height        *big.Int
+	Time          time.Time
+	Transactions  []Transaction `asn1:"omitempty" json:",omitempty"`
+	State         Hash          // pointer to the state trie
+	ParentOutputs []Hash        // first is intra-chain, others are inter-chain
+	Threshold     *big.Int      // max hash value for this block to be valid mining
+	// a randomly chosen nonce for mining purposes:
+	Nonce []byte
+	// hash of this block, including all above fields,
+	// but not including Output field below:
+	Hash   Hash
+	Output Hash // output of transactions, a kind of "ID" for this block
 }
+
+/*
+
+for processing transactions:
+
+pass in block hash to first transaction script, then for each subsequent one:
+
+if previous transaction output is false ("()"), that transaction is invalid.
+otherwise, pass in that output as the input to next transaction.
+
+last transaction's output is the block's output. if it satisfies the mining
+requirement, then block is valid. otherwise, repeat this procedure.
+
+*/
 
 type Hash []byte
 
