@@ -413,7 +413,6 @@ func verify(args ...Exp) Exp {
 		return err
 	}
 	x, y, z := three(args...)
-	fmt.Printf("verify %s %s %s\n", x, y, z)
 	var public tnet.PublicKey
 	{
 		buf, err := unmarshal(x)

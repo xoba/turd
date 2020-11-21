@@ -33,6 +33,59 @@ type Transaction struct {
 	Arguments string    `asn1:"omitempty" json:",omitempty"`
 }
 
+func (t *Transaction) NewOutput(n int64, key *tnet.PublicKey, nonce []byte) error {
+	script, err := NewScript(key, nonce)
+	if err != nil {
+		return err
+	}
+	t.Outputs = append(t.Outputs, Output{
+		Quantity: big.NewInt(n),
+		Address:  thash.Hash([]byte(script)),
+	})
+	return nil
+}
+
+func NewScript(key *tnet.PublicKey, nonce []byte) (string, error) {
+	pubname, err := KeyName(key)
+	if err != nil {
+		return "", err
+	}
+	pub, err := key.MarshalBinary()
+	if err != nil {
+		return "", err
+	}
+	return replace(`
+(lambda
+  (input thash args) ; input, transaction hash, other arguments
+  ((lambda (sig)
+     (cond
+      ((verify '{{.pub}} thash sig)        ; if signature verified:
+       (hash (concat '{{.nonce}} input)))  ; hash the input with nonce
+      ('t ())))                            ; else: return "false"
+  (assoc '{{.pubname}} args)))
+`, map[string]string{
+		"pub":     marshal(pub),
+		"nonce":   marshal(nonce),
+		"pubname": pubname,
+	})
+}
+
+func (t *Transaction) NewInput(n int64, key *tnet.PublicKey, nonce []byte) error {
+	script, err := NewScript(key, nonce)
+	if err != nil {
+		return err
+	}
+	t.Inputs = append(t.Inputs, Input{
+		Quantity: big.NewInt(n),
+		Script:   script,
+	})
+	return nil
+}
+
+func (i Input) Address() []byte {
+	return thash.Hash([]byte(i.Script))
+}
+
 type Block struct {
 	Height        *big.Int
 	Time          time.Time
@@ -114,109 +167,111 @@ func replace(s string, m map[string]string) (string, error) {
 
 func Run(cnfg.Config) error {
 
-	key, err := tnet.NewKey()
+	key1, err := tnet.NewKey()
 	if err != nil {
 		return err
 	}
-	pub, err := key.Public().MarshalBinary()
+	key2, err := tnet.NewKey()
 	if err != nil {
 		return err
 	}
-	pubname, err := KeyName(key.Public())
+	key3, err := tnet.NewKey()
 	if err != nil {
 		return err
 	}
-	nonce := make([]byte, 10)
-	rand.Read(nonce)
 
-	script, err := replace(`
-(lambda
-  (input thash args) ; input, transaction hash, other arguments
-  ((lambda (sig)
-     (cond
-      ((verify '{{.pub}} thash sig)        ; if signature verified:
-       (hash (concat '{{.nonce}} input)))  ; hash the input with nonce
-      ('t ())))                            ; else: return "false"
-  (assoc '{{.pubname}} args)))
-`, map[string]string{
-		"pub":     marshal(pub),
-		"nonce":   marshal(nonce),
-		"pubname": pubname,
-	})
-	if err != nil {
-		return err
+	var trans []Transaction
+	addt := func(t Transaction) {
+		trans = append(trans, t)
 	}
-	outputs := make(map[string]Output)
 
-	in := func(t *Transaction, i int64, s string) {
-		t.Inputs = append(t.Inputs, Input{
-			Quantity: big.NewInt(i),
-			Script:   s,
-		})
-	}
-	out := func(t *Transaction, i int64, addr []byte) {
-		o := Output{
-			Quantity: big.NewInt(i),
-			Address:  addr,
-		}
-		t.Outputs = append(t.Outputs, o)
-		outputs[marshal(o.Address)] = o
-	}
-	address := thash.Hash([]byte(script))
-
-	var t1 Transaction
 	{
-		t1.Type = "coinbase"
-		if false {
-			in(&t1, 10, "")
-		}
-		out(&t1, 10, address)
-		if err := t1.Sign(key); err != nil {
+		var t Transaction
+		t.Type = "mining"
+		if err := t.NewOutput(10, key1.Public(), []byte{0}); err != nil {
 			return err
 		}
-		if err := t1.Validate(); err != nil {
+		// no need to sign mining transaction
+		addt(t)
+	}
+	{
+		var t Transaction
+		t.Type = "mining"
+		if err := t.NewOutput(10, key3.Public(), []byte{0}); err != nil {
 			return err
 		}
-		fmt.Println(t1)
+		// no need to sign mining transaction
+		addt(t)
 	}
 
-	var t2 Transaction
 	{
-		in(&t2, 1, script)
-		if err := t2.Sign(key); err != nil {
+		var t Transaction
+		if err := t.NewInput(3, key1.Public(), []byte{0}); err != nil {
 			return err
 		}
-		if err := t2.Validate(); err != nil {
+		if err := t.NewInput(4, key3.Public(), []byte{0}); err != nil {
 			return err
 		}
-		hash, err := t2.Hash()
+		if err := t.NewOutput(2, key2.Public(), []byte{1}); err != nil {
+			return err
+		}
+		if err := t.Sign(key1, key2); err != nil {
+			return err
+		}
+		addt(t)
+	}
+
+	outputs := make(map[string][]Output)
+
+	// block hash to be chained through all inputs of all transactions
+	bhash := make([]byte, 10)
+	rand.Read(bhash)
+
+	for i, t := range trans {
+		fmt.Printf("%d. %s\n", i, t)
+		if err := t.Validate(); err != nil {
+			return err
+		}
+
+		hash, err := t.Hash()
 		if err != nil {
 			return err
 		}
-		fmt.Println(t2)
-		nonce := make([]byte, 5)
-		rand.Read(nonce)
-		for _, i := range t2.Inputs {
-			addr := marshal(thash.Hash([]byte(t2.Inputs[0].Script)))
-			o, ok := outputs[addr]
+
+		for j, input := range t.Inputs {
+			addr := marshal(thash.Hash([]byte(input.Script)))
+			_, ok := outputs[addr]
 			if !ok {
 				return fmt.Errorf("no such address: %s", addr)
 			}
-			fmt.Printf("processing %s -> %s\n", o, i)
 			e, err := lisp.Parse(
 				fmt.Sprintf("(%s '%s '%s '%s)",
-					i.Script,
-					marshal(nonce),
+					input.Script,
+					marshal(bhash),
 					marshal(hash),
-					t2.Arguments,
+					t.Arguments,
 				),
 			)
 			if err != nil {
 				return err
 			}
-			fmt.Println(lisp.String(e))
 			res := lisp.Eval(e)
-			fmt.Printf("res = %s\n", lisp.String(res))
+			switch t := res.(type) {
+			case string:
+				buf, err := base64.RawStdEncoding.DecodeString(t)
+				if err != nil {
+					return err
+				}
+				fmt.Printf("%d.%d. %s\n", i, j, marshal(buf))
+				bhash = buf
+			default:
+				return fmt.Errorf("bad result: %s\n", lisp.String(res))
+			}
+		}
+
+		for _, o := range t.Outputs {
+			key := marshal(o.Address)
+			outputs[key] = append(outputs[key], o)
 		}
 	}
 
@@ -235,20 +290,22 @@ func (t Transaction) String() string {
 	buf, _ := json.Marshal(t)
 	return string(buf)
 }
+
 func (t Input) String() string {
 	buf, _ := json.Marshal(t)
 	return string(buf)
 }
+
 func (t Output) String() string {
 	buf, _ := json.Marshal(t)
 	return string(buf)
 }
 
 func (t *Transaction) Validate() error {
-	var coinbase bool
+	var mining bool
 	switch x := t.Type; x {
-	case "coinbase":
-		coinbase = true
+	case "mining":
+		mining = true
 	case "":
 	default:
 		return fmt.Errorf("bad type: %q", x)
@@ -272,7 +329,7 @@ func (t *Transaction) Validate() error {
 		}
 		i.Sub(&i, x.Quantity)
 	}
-	if !coinbase && neg(&i) {
+	if !mining && neg(&i) {
 		return fmt.Errorf("negative transaction fee: %s", &i)
 	}
 	return nil
