@@ -377,7 +377,7 @@ func sign(args ...Exp) Exp {
 	if err != nil {
 		return err
 	}
-	sig, err := private.Sign(thash.Hash(blob))
+	sig, err := private.Sign(blob)
 	if err != nil {
 		return err
 	}
@@ -410,7 +410,7 @@ func verify(args ...Exp) Exp {
 	if err != nil {
 		return err
 	}
-	if err := public.Verify(thash.Hash(blob), sig); err != nil {
+	if err := public.Verify(blob, sig); err != nil {
 		return Nil
 	}
 	return True
