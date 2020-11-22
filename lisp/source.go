@@ -230,25 +230,10 @@ func Run(cnfg.Config) error {
 	file("crypto", "crypto.lisp", "")
 	file("crypto", "crypto2.lisp", "")
 
-	return nil
+	test("time", `(after '2020-11-20T10:00:00.000Z '2020-11-21T10:00:00.000Z)`, `()`)
+	test("time", `(after '2020-11-21T10:00:00.000Z '2020-11-21T10:00:00.000Z)`, `()`)
+	test("time", `(after '2020-11-22T10:00:00.000Z '2020-11-21T10:00:00.000Z)`, `t`)
 
-	test("crypto", `((lambda
-   (bhash thash args)
-   ((lambda (signature)
-      ((cond
-	((verify 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE6vtOl88Uy45eAPp6MB0oqNn5el/vyAZ4svWWmqvdxDtjinUAQvNDaUfuRRYSXbWmtZ74Mbr7X/BE80RACVxJdg thash signature)
-	 (hash bhash))
-	('t ()))))
-    (assoc 'eLbCHZcapPWl28qlc6UF7VdAfLyooLjgvADVrUcmxl8 args)))
- 'VhOicZM
- 'SepnCHr5gvkAZqRvPyUt9lkFn9jdPFNCI6sek2Otim0
- '((eLbCHZcapPWl28qlc6UF7VdAfLyooLjgvADVrUcmxl8 MEYCIQCmBVgVo41QtNYpw4wc1OahTNx4leIBdoBBpmfkIoeNlwIhAK9Dc1/3G2SDSDhJQP+BVdKBdK/ol7MXJdxnKUatqLL+)))
-
-
-`, "")
-
-	test("", ``, ``)
-	test("", ``, ``)
 	test("", ``, ``)
 	test("", ``, ``)
 	test("", ``, ``)

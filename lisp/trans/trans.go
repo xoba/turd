@@ -33,8 +33,8 @@ type Transaction struct {
 	Arguments string    `asn1:"omitempty" json:",omitempty"`
 }
 
-func (t *Transaction) NewOutput(n int64, key *tnet.PublicKey, nonce []byte) error {
-	script, err := NewScript(key, nonce)
+func (t *Transaction) NewOutput(n int64, key *tnet.PublicKey, nonce []byte, after time.Time) error {
+	script, err := NewScript(key, nonce, after)
 	if err != nil {
 		return err
 	}
@@ -45,7 +45,8 @@ func (t *Transaction) NewOutput(n int64, key *tnet.PublicKey, nonce []byte) erro
 	return nil
 }
 
-func NewScript(key *tnet.PublicKey, nonce []byte) (string, error) {
+// TODO: pass the block height and time in too!
+func NewScript(key *tnet.PublicKey, nonce []byte, after time.Time) (string, error) {
 	pubname, err := KeyName(key)
 	if err != nil {
 		return "", err
@@ -56,22 +57,25 @@ func NewScript(key *tnet.PublicKey, nonce []byte) (string, error) {
 	}
 	return replace(`
 (lambda
-  (input thash args) ; input, transaction hash, other arguments
+  (input thash height time args)
   ((lambda (sig)
      (cond
-      ((verify '{{.pub}} thash sig)        ; if signature verified:
+      ((and
+	(after time '{{.after}})
+	(verify '{{.pub}} thash sig))      ; if signature verified:
        (hash (concat '{{.nonce}} input)))  ; hash the input with nonce
       ('t ())))                            ; else: return "false"
-  (assoc '{{.pubname}} args)))
+   (assoc '{{.pubname}} args)))
 `, map[string]string{
+		"after":   after.Format(lisp.TimeFormat),
 		"pub":     marshal(pub),
 		"nonce":   marshal(nonce),
 		"pubname": pubname,
 	})
 }
 
-func (t *Transaction) NewInput(n int64, key *tnet.PublicKey, nonce []byte) error {
-	script, err := NewScript(key, nonce)
+func (t *Transaction) NewInput(n int64, key *tnet.PublicKey, nonce []byte, after time.Time) error {
+	script, err := NewScript(key, nonce, after)
 	if err != nil {
 		return err
 	}
@@ -185,10 +189,12 @@ func Run(cnfg.Config) error {
 		trans = append(trans, t)
 	}
 
+	now := time.Now().UTC()
+	after := now.Add(-time.Millisecond)
 	{
 		var t Transaction
 		t.Type = "mining"
-		if err := t.NewOutput(10, key1.Public(), []byte{0}); err != nil {
+		if err := t.NewOutput(10, key1.Public(), []byte{0}, after); err != nil {
 			return err
 		}
 		// no need to sign mining transaction
@@ -197,7 +203,7 @@ func Run(cnfg.Config) error {
 	{
 		var t Transaction
 		t.Type = "mining"
-		if err := t.NewOutput(10, key3.Public(), []byte{0}); err != nil {
+		if err := t.NewOutput(10, key3.Public(), []byte{0}, after); err != nil {
 			return err
 		}
 		// no need to sign mining transaction
@@ -206,13 +212,13 @@ func Run(cnfg.Config) error {
 
 	{
 		var t Transaction
-		if err := t.NewInput(3, key1.Public(), []byte{0}); err != nil {
+		if err := t.NewInput(3, key1.Public(), []byte{0}, after); err != nil {
 			return err
 		}
-		if err := t.NewInput(4, key3.Public(), []byte{0}); err != nil {
+		if err := t.NewInput(4, key3.Public(), []byte{0}, after); err != nil {
 			return err
 		}
-		if err := t.NewOutput(7, key2.Public(), []byte{1}); err != nil {
+		if err := t.NewOutput(7, key2.Public(), []byte{1}, after); err != nil {
 			return err
 		}
 		if err := t.Sign(key1, key3); err != nil {
@@ -221,35 +227,28 @@ func Run(cnfg.Config) error {
 		addt(t)
 	}
 
-	outputs := make(map[string]*big.Int)
+	balances := make(map[string]*big.Int)
 
-	inc := func(addr []byte, o *big.Int) {
-		key := marshal(addr)[:4]
-		i, ok := outputs[key]
+	balance := func(addr []byte) *big.Int {
+		key := marshal(addr)[:6]
+		i, ok := balances[key]
 		if !ok {
 			i = big.NewInt(0)
-			outputs[key] = i
+			balances[key] = i
 		}
+		return i
+	}
+	inc := func(addr []byte, o *big.Int) {
+		i := balance(addr)
 		i.Add(i, o)
 	}
 	dec := func(addr []byte, o *big.Int) {
-		var x big.Int
-		x.Neg(o)
-		inc(addr, &x)
-	}
-	balance := func(addr []byte) *big.Int {
-		key := marshal(addr)[:4]
-		i, ok := outputs[key]
-		if !ok {
-			return big.NewInt(0)
-		}
-		return i
+		inc(addr, big.NewInt(0).Neg(o))
 	}
 
 	// block hash to be chained through all inputs of all transactions
 	bhash := make([]byte, 10)
 	rand.Read(bhash)
-
 	for i, t := range trans {
 		fmt.Printf("%d. %s\n", i, t)
 		if err := t.Validate(); err != nil {
@@ -266,16 +265,19 @@ func Run(cnfg.Config) error {
 				return fmt.Errorf("input %s from %s", input.Quantity, b)
 			}
 			e, err := lisp.Parse(
-				fmt.Sprintf("(%s '%s '%s '%s)",
+				fmt.Sprintf("(%s '%s '%s '%s '%s '%s)",
 					input.Script,
 					marshal(bhash),
 					marshal(hash),
+					big.NewInt(1000000000),
+					now.Format(lisp.TimeFormat),
 					t.Arguments,
 				),
 			)
 			if err != nil {
 				return err
 			}
+			fmt.Printf("EVAL(%s)\n", lisp.String(e))
 			res := lisp.Eval(e)
 			switch t := res.(type) {
 			case string:
@@ -289,13 +291,13 @@ func Run(cnfg.Config) error {
 				return fmt.Errorf("bad result: %s\n", lisp.String(res))
 			}
 			dec(input.Address(), input.Quantity)
-			fmt.Printf("balances: %s\n", outputs)
+			fmt.Printf("balances: %s\n", balances)
 		}
 
 		for j, o := range t.Outputs {
 			fmt.Printf("%d.%d. output %s\n", i, j, o)
 			inc(o.Address, o.Quantity)
-			fmt.Printf("balances: %s\n", outputs)
+			fmt.Printf("balances: %s\n", balances)
 		}
 	}
 

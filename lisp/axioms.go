@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 	"strings"
+	"time"
 
 	"github.com/xoba/turd/thash"
 	"github.com/xoba/turd/tnet"
@@ -229,7 +230,7 @@ func display(args ...Exp) Exp {
 		return err
 	}
 	a := one(args...)
-	fmt.Println(String(a))
+	fmt.Printf("(display %s)\n", String(a))
 	return a
 }
 
@@ -432,7 +433,39 @@ func verify(args ...Exp) Exp {
 		return err
 	}
 	if err := public.Verify(blob, sig); err != nil {
-		return Nil
+		return False
 	}
 	return True
+}
+
+const TimeFormat = "2006-01-02T15:04:05.000Z"
+
+func after(args ...Exp) Exp {
+	if err := checklen(2, args); err != nil {
+		return err
+	}
+	x, y := two(args...)
+	parse := func(e Exp) (*time.Time, error) {
+		s, ok := e.(string)
+		if !ok {
+			return nil, fmt.Errorf("time not a string")
+		}
+		tx, err := time.Parse(TimeFormat, s)
+		if err != nil {
+			return nil, err
+		}
+		return &tx, nil
+	}
+	tx, err := parse(x)
+	if err != nil {
+		return err
+	}
+	ty, err := parse(y)
+	if err != nil {
+		return err
+	}
+	if tx.After(*ty) {
+		return True
+	}
+	return False
 }

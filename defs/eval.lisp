@@ -13,9 +13,11 @@
 			             (eval (caddr e) a)))
      ((eq (car e) 'mult)    (mult    (eval (cadr  e) a)
 			             (eval (caddr e) a)))
+     ((eq (car e) 'after)   (after   (eval (cadr  e) a)
+				     (eval (caddr e) a)))
+     
      ((eq (car e) 'display) (display (eval (cadr  e) a)))
 
-     
      ((eq (car e) 'concat)  (concat  (eval (cadr  e) a)
 				     (eval (caddr e) a)))
      ((eq (car e) 'hash)    (hash    (eval (cadr  e) a)))
