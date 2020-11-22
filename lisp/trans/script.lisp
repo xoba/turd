@@ -6,7 +6,7 @@
        ((and
 	 (after time t0)
 	 (verify pub thash sig))
-	(hash (concat 'AA input)))
+	(hash (concat '{{.nonce}} input)))
        ('t ())))
     '{{.pub}} ; pub
     '{{.t0}} ; t0

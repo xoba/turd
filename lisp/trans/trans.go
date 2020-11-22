@@ -171,7 +171,7 @@ type Lisper interface {
 	Lisp() lisp.Exp
 }
 
-func (t *Transaction) NewOutput(n int64, key *tnet.PublicKey, nonce []byte, after time.Time) error {
+func (t *Transaction) NewOutput(n int64, key *tnet.PublicKey, nonce string, after time.Time) error {
 	script, err := NewScript(key, nonce, after)
 	if err != nil {
 		return err
@@ -184,7 +184,7 @@ func (t *Transaction) NewOutput(n int64, key *tnet.PublicKey, nonce []byte, afte
 }
 
 // TODO: pass the block height and time in too!
-func NewScript(key *tnet.PublicKey, nonce []byte, after time.Time) (string, error) {
+func NewScript(key *tnet.PublicKey, nonce string, after time.Time) (string, error) {
 	pubname, err := KeyName(key)
 	if err != nil {
 		return "", err
@@ -200,12 +200,12 @@ func NewScript(key *tnet.PublicKey, nonce []byte, after time.Time) (string, erro
 	return replace(string(buf), map[string]string{
 		"t0":      after.Format(lisp.TimeFormat),
 		"pub":     marshal(pub),
-		"nonce":   marshal(nonce),
+		"nonce":   marshal([]byte(nonce)),
 		"pubname": pubname,
 	})
 }
 
-func (t *Transaction) NewInput(n int64, key *tnet.PublicKey, nonce []byte, after time.Time) error {
+func (t *Transaction) NewInput(n int64, key *tnet.PublicKey, nonce string, after time.Time) error {
 	script, err := NewScript(key, nonce, after)
 	if err != nil {
 		return err
@@ -338,7 +338,7 @@ func Run(cnfg.Config) error {
 	{
 		var t Transaction
 		t.Type = "turd"
-		if err := t.NewOutput(10, key1.Public(), []byte{0}, after); err != nil {
+		if err := t.NewOutput(10, key1.Public(), "key1", after); err != nil {
 			return err
 		}
 		// no need to sign mining transaction
@@ -347,7 +347,7 @@ func Run(cnfg.Config) error {
 	{
 		var t Transaction
 		t.Type = "turd"
-		if err := t.NewOutput(10, key3.Public(), []byte{0}, after); err != nil {
+		if err := t.NewOutput(10, key3.Public(), "key3", after); err != nil {
 			return err
 		}
 		// no need to sign mining transaction
@@ -357,13 +357,13 @@ func Run(cnfg.Config) error {
 	{
 		var t Transaction
 		t.Type = "normal"
-		if err := t.NewInput(3, key1.Public(), []byte{0}, after); err != nil {
+		if err := t.NewInput(3, key1.Public(), "key1", after); err != nil {
 			return err
 		}
-		if err := t.NewInput(4, key3.Public(), []byte{0}, after); err != nil {
+		if err := t.NewInput(4, key3.Public(), "key3", after); err != nil {
 			return err
 		}
-		if err := t.NewOutput(7, key2.Public(), []byte{1}, after); err != nil {
+		if err := t.NewOutput(7, key2.Public(), "key2", after); err != nil {
 			return err
 		}
 		if err := t.Sign(key1, key3); err != nil {
