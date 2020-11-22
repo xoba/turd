@@ -105,6 +105,8 @@ func Run(cnfg.Config) error {
 		},
 	}
 
+	delete(evals, "interpreted")
+
 	test := func(msg, input, expect string) {
 		for k, f := range evals {
 			test0(msg, input, expect, f, k)
