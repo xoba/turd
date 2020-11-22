@@ -243,7 +243,11 @@ func Run(cnfg.Config) error {
 	file("trans.lisp", "")
 	file("block2.lisp", "rwSvYFupU7ZH1xqBj/YFOzaHZsyeSye0TGErmVV3mAI")
 
-	test("", ``, ``)
+	test("len", `(length 'x)`, `0`)
+	test("len", `(length '())`, `0`)
+	test("len", `(length '(a))`, `1`)
+	test("len", `(length '(a b c))`, `3`)
+
 	test("", ``, ``)
 	test("", ``, ``)
 	test("", ``, ``)

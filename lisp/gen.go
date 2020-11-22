@@ -956,6 +956,34 @@ func factorial(args ...Exp) Exp {
 	)
 }
 
+var env_length = []Exp{quote("length"), []Exp{quote("label"), quote("length"), []Exp{quote("lambda"), []Exp{quote("x")}, []Exp{quote("cond"), []Exp{[]Exp{quote("atom"), quote("x")}, []Exp{quote("quote"), quote("0")}}, []Exp{[]Exp{quote("quote"), quote("t")}, []Exp{quote("plus"), []Exp{quote("quote"), quote("1")}, []Exp{quote("length"), []Exp{quote("cdr"), quote("x")}}}}}}}}
+
+func length(args ...Exp) Exp {
+	if err := checklen(1, args); err != nil {
+		return err
+	}
+	x := args[0]
+	return apply(
+		cond,
+		[]Exp{
+			Func(func(...Exp) Exp {
+				return apply(atom, x)
+			}),
+			Func(func(...Exp) Exp {
+				return "0"
+			}),
+		},
+		[]Exp{
+			Func(func(...Exp) Exp {
+				return "t"
+			}),
+			Func(func(...Exp) Exp {
+				return apply(plus, "1", apply(length, apply(cdr, x)))
+			}),
+		},
+	)
+}
+
 var env_xlist = []Exp{quote("xlist"), []Exp{quote("label"), quote("xlist"), []Exp{quote("lambda"), quote("x"), quote("x")}}}
 
 func xlist(args ...Exp) Exp {
@@ -1098,5 +1126,5 @@ func testing(args ...Exp) Exp {
 }
 
 func init() {
-	env = []Exp{env_and, env_go_sanitized_append, env_assoc, env_caaaar, env_caaadr, env_caaar, env_caadar, env_caaddr, env_caadr, env_caar, env_cadaar, env_cadadr, env_cadar, env_caddar, env_cadddr, env_caddr, env_cadr, env_cdaaar, env_cdaadr, env_cdaar, env_cdadar, env_cdaddr, env_cdadr, env_cdar, env_cddaar, env_cddadr, env_cddar, env_cdddar, env_cddddr, env_cdddr, env_cddr, env_eval, env_evcon, env_evlis, env_factorial, env_xlist, env_not, env_null, env_pair, env_subst, env_testing}
+	env = []Exp{env_and, env_go_sanitized_append, env_assoc, env_caaaar, env_caaadr, env_caaar, env_caadar, env_caaddr, env_caadr, env_caar, env_cadaar, env_cadadr, env_cadar, env_caddar, env_cadddr, env_caddr, env_cadr, env_cdaaar, env_cdaadr, env_cdaar, env_cdadar, env_cdaddr, env_cdadr, env_cdar, env_cddaar, env_cddadr, env_cddar, env_cdddar, env_cddddr, env_cdddr, env_cddr, env_eval, env_evcon, env_evlis, env_factorial, env_length, env_xlist, env_not, env_null, env_pair, env_subst, env_testing}
 }
