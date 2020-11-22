@@ -50,7 +50,7 @@ func CompileDef(cnfg.Config) error {
 		if err != nil {
 			return err
 		}
-		e = SanitizeGo(e)
+		//e = SanitizeGo(e)
 		{
 			name, env, err := ToEnv(e)
 			if err != nil {

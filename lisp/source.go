@@ -57,7 +57,10 @@ func TestParse(c cnfg.Config) error {
 
 func Run(cnfg.Config) error {
 	var last string
-	test := func(msg, input, expect string) {
+
+	type evalFunc func(e Exp) Exp
+
+	test0 := func(msg, input, expect string, f evalFunc, name string) {
 		if msg == "" {
 			return
 		}
@@ -69,18 +72,20 @@ func Run(cnfg.Config) error {
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Printf("%-10s %-20s -> %s\n", msg+":", String(in), expect)
-		buf, err := Marshal(in)
-		if err != nil {
-			log.Fatal(err)
+		fmt.Printf("%-11s %-10s %-20s -> %s\n", name, msg+":", String(in), expect)
+		{
+			buf, err := Marshal(in)
+			if err != nil {
+				log.Fatal(err)
+			}
+			if len(buf) < len(input) { // is asn.1 more compact?
+				fmt.Printf("%d/%d asn1 bytes = %s\n",
+					len(buf), len(input),
+					base64.StdEncoding.EncodeToString(buf),
+				)
+			}
 		}
-		if len(buf) < len(input) { // is asn.1 more compact?
-			fmt.Printf("%d/%d asn1 bytes = %s\n",
-				len(buf), len(input),
-				base64.StdEncoding.EncodeToString(buf),
-			)
-		}
-		res := Eval(in)
+		res := f(in)
 		if expect == "" {
 			fmt.Printf("got %s\n", String(res))
 			return
@@ -89,6 +94,23 @@ func Run(cnfg.Config) error {
 			log.Fatalf("expected %q, got %q\n", expect, got)
 		}
 	}
+
+	evals := map[string]evalFunc{
+		"compiled": Eval,
+		"interpreted": func(e Exp) Exp {
+			quote := func(e Exp) Exp {
+				return []Exp{"quote", e}
+			}
+			return Eval([]Exp{assoc("eval", env), quote(e), quote(env)})
+		},
+	}
+
+	test := func(msg, input, expect string) {
+		for k, f := range evals {
+			test0(msg, input, expect, f, k)
+		}
+	}
+
 	file := func(f, expect string) {
 		buf, err := ioutil.ReadFile(filepath.Join("lisp", "tests", f))
 		if err != nil {
@@ -154,8 +176,8 @@ func Run(cnfg.Config) error {
 	test("not", "(not (eq 'a 'a))", "()")
 	test("not", "(not (eq 'a 'b))", "t")
 
-	test("append", "(append '(a b) '(c d))", "(a b c d)")
-	test("append", "(append '() '(c d))", "(c d)")
+	test("append", "(xappend '(a b) '(c d))", "(a b c d)")
+	test("append", "(xappend '() '(c d))", "(c d)")
 
 	test("pair", "(pair '(x y z) '(a b c))", "((x a) (y b) (z c))")
 

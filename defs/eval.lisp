@@ -49,5 +49,5 @@
 		  a)))
      ('t ; traditional lambda
       (eval (caddar e)
-	    (append (pair (cadar e) (evlis (cdr e) a))
+	    (xappend (pair (cadar e) (evlis (cdr e) a))
 		    a)))))))
