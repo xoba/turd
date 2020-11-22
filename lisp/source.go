@@ -239,7 +239,9 @@ func Run(cnfg.Config) error {
 	file("crypto.lisp", "YxxZaKeUU5dgl5KQ/emPanGk8OsM/r9XfIjwpGv1MBc")
 	file("crypto2.lisp", "/Bmm7Jh2vHGd56htMfK1looDkZfay3hJgLrY+QZRQvM")
 	file("block.lisp", "1000")
+	file("block1.lisp", "2020-11-22T11:16:18.838Z")
 	file("trans.lisp", "")
+	file("block2.lisp", "rwSvYFupU7ZH1xqBj/YFOzaHZsyeSye0TGErmVV3mAI")
 
 	test("", ``, ``)
 	test("", ``, ``)

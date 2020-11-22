@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"math/big"
 	"text/template"
 	"time"
@@ -192,19 +193,12 @@ func NewScript(key *tnet.PublicKey, nonce []byte, after time.Time) (string, erro
 	if err != nil {
 		return "", err
 	}
-	return replace(`
-(lambda
-  (input thash height time args block trans)
-  ((lambda (sig)
-     (cond
-      ((and
-	(after time '{{.after}})
-	(verify '{{.pub}} thash sig))      ; if signature verified:
-       (hash (concat '{{.nonce}} input)))  ; hash the input with nonce
-      ('t ())))                            ; else: return "false"
-   (assoc '{{.pubname}} args)))
-`, map[string]string{
-		"after":   after.Format(lisp.TimeFormat),
+	buf, err := ioutil.ReadFile("lisp/trans/script.lisp")
+	if err != nil {
+		return "", err
+	}
+	return replace(string(buf), map[string]string{
+		"t0":      after.Format(lisp.TimeFormat),
 		"pub":     marshal(pub),
 		"nonce":   marshal(nonce),
 		"pubname": pubname,
@@ -279,7 +273,8 @@ type Content struct {
 }
 
 // quantity and script hash must match a previous transaction's output
-// script is called with hash and named arguments
+// script is called with input, block, and transaction arguments,
+// and has output. if output is false (nil or '()), transaction failed.
 type Input struct {
 	Quantity *big.Int
 	Script   string `asn1:"utf8"`
@@ -415,23 +410,14 @@ func Run(cnfg.Config) error {
 			return err
 		}
 
-		hash, err := t.Hash()
-		if err != nil {
-			return err
-		}
-
 		for j, input := range t.Inputs {
 			if b := balance(input.Address()); b.Cmp(input.Quantity) < 0 {
 				return fmt.Errorf("input %s from %s", input.Quantity, b)
 			}
 			e, err := lisp.Parse(
-				fmt.Sprintf("(%s '%s '%s '%s '%s '%s '%s '%s)",
+				fmt.Sprintf("(%s '%s '%s '%s)",
 					input.Script,
 					marshal(bhash),
-					marshal(hash),
-					big.NewInt(1000000000),
-					now.Format(lisp.TimeFormat),
-					t.Arguments,
 					lisp.String(block.Lisp()),
 					lisp.String(t.Lisp()),
 				),
