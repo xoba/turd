@@ -31,11 +31,16 @@ func TestParse(c cnfg.Config) error {
 			log.Fatal(err)
 		}
 	}
+	test2 := func(s string) {
+		if err := test0(s); err == nil {
+			log.Fatalf("expected error for %q", s)
+		}
+	}
 	if c.Lisp != "" {
 		return test0(c.Lisp)
 	}
 
-	test("a b")
+	test2("a b")
 	test("(a b)")
 	test("(a b c)")
 	test("(a (x y) b c)")
@@ -84,12 +89,12 @@ func Run(cnfg.Config) error {
 			log.Fatalf("expected %q, got %q\n", expect, got)
 		}
 	}
-	file := func(msg, f, expect string) {
-		buf, err := ioutil.ReadFile(filepath.Join("tests", f))
+	file := func(f, expect string) {
+		buf, err := ioutil.ReadFile(filepath.Join("lisp", "tests", f))
 		if err != nil {
 			log.Fatal(err)
 		}
-		test(msg, string(buf), expect)
+		test(f, string(buf), expect)
 	}
 
 	test("quote1", "(quote a)", "a")
@@ -227,12 +232,14 @@ func Run(cnfg.Config) error {
  '3 '4)
 `, "7")
 
-	file("crypto", "crypto.lisp", "")
-	file("crypto", "crypto2.lisp", "")
-
 	test("time", `(after '2020-11-20T10:00:00.000Z '2020-11-21T10:00:00.000Z)`, `()`)
 	test("time", `(after '2020-11-21T10:00:00.000Z '2020-11-21T10:00:00.000Z)`, `()`)
 	test("time", `(after '2020-11-22T10:00:00.000Z '2020-11-21T10:00:00.000Z)`, `t`)
+
+	file("crypto.lisp", "YxxZaKeUU5dgl5KQ/emPanGk8OsM/r9XfIjwpGv1MBc")
+	file("crypto2.lisp", "/Bmm7Jh2vHGd56htMfK1looDkZfay3hJgLrY+QZRQvM")
+	file("block.lisp", "1000")
+	file("trans.lisp", "")
 
 	test("", ``, ``)
 	test("", ``, ``)

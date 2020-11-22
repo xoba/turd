@@ -62,4 +62,7 @@ could be many.  for instance, comprised of a first-line "defense"
 using algorithms to detect such media, like text, photographs, or
 videos. then a second-line of human review, and finally a third-line of
 "appeal". such a service could publish lists of such content id's to
-be voluntarily followed by concerned users of the system.
+be voluntarily followed by concerned users of the system. the oversight
+groups should also publish ways they can be contacted, and be receptive
+to unsolicited reports that thus come in to their attention.
+

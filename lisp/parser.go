@@ -65,8 +65,8 @@ func Parse(s string) (Exp, error) {
 	if !ok {
 		return nil, fmt.Errorf("expression not a list")
 	}
-	if len(x) != 1 {
-		return nil, fmt.Errorf("need just one element")
+	if n := len(x); n != 1 {
+		return nil, fmt.Errorf("need just one element, got %d", n)
 	}
 	return x[0], nil
 }
@@ -165,10 +165,7 @@ func tokenize(s string) ([]string, error) {
 }
 
 func parseTokens(list []string) (Exp, error) {
-	if len(list) == 0 {
-		return nil, fmt.Errorf("can't parse empty list of tokens")
-	}
-	s := new(stack)
+	var s stack
 	var current []Exp
 	for _, x := range list {
 		switch x {

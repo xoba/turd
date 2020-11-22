@@ -33,6 +33,143 @@ type Transaction struct {
 	Arguments string    `asn1:"omitempty" json:",omitempty"`
 }
 
+func (t Transaction) Lisp() lisp.Exp {
+	var self LispList
+	add := func(list *LispList, name string, e Lisper) {
+		*list = append(*list, []lisp.Exp{
+			name,
+			e.Lisp(),
+		})
+	}
+	add(&self, "type", LispAtom(t.Type))
+	h, err := t.Hash()
+	if err != nil {
+		return err
+	}
+	add(&self, "hash", LispBlob(h))
+	{
+		var list LispList
+		for i, x := range t.Inputs {
+			add(&list, fmt.Sprintf("%d", i), x)
+		}
+		add(&self, "inputs", list)
+	}
+	{
+		var list LispList
+		for i, x := range t.Outputs {
+			add(&list, fmt.Sprintf("%d", i), x)
+		}
+		add(&self, "outputs", list)
+	}
+	{
+		var list LispList
+		for i, x := range t.Content {
+			add(&list, fmt.Sprintf("%d", i), x)
+		}
+		add(&self, "content", list)
+	}
+	add(&self, "arguments", LispString(t.Arguments))
+	return self.Lisp()
+}
+
+func (i Input) Lisp() lisp.Exp {
+	var self LispList
+	add := func(name string, e Lisper) {
+		self = append(self, []lisp.Exp{
+			name,
+			e.Lisp(),
+		})
+	}
+	add("quantity", LispInt(*i.Quantity))
+	add("script", LispString(i.Script))
+	return self.Lisp()
+}
+
+func (i Output) Lisp() lisp.Exp {
+	var self LispList
+	add := func(name string, e Lisper) {
+		self = append(self, []lisp.Exp{
+			name,
+			e.Lisp(),
+		})
+	}
+	add("quantity", LispInt(*i.Quantity))
+	add("address", LispBlob(i.Address))
+	return self.Lisp()
+}
+
+type LispTime time.Time
+
+func (x LispTime) Lisp() lisp.Exp {
+	return time.Time(x).Format(lisp.TimeFormat)
+}
+
+type LispBlob []byte
+
+func (x LispBlob) Lisp() lisp.Exp {
+	return marshal(x)
+}
+
+type LispInt big.Int
+
+func (x LispInt) Lisp() lisp.Exp {
+	i := big.Int(x)
+	z := &i
+	return z.String()
+}
+
+type LispList []lisp.Exp
+
+func (x LispList) Lisp() lisp.Exp {
+	return []lisp.Exp(x)
+}
+
+type LispExpr struct {
+	lisp.Exp
+}
+
+func (x LispExpr) Lisp() lisp.Exp {
+	return x.Exp
+}
+
+type LispAtom string
+
+func (x LispAtom) Lisp() lisp.Exp {
+	return string(x)
+}
+
+type LispString string
+
+func (x LispString) Lisp() lisp.Exp {
+	if x == "" {
+		return []lisp.Exp{}
+	}
+	e, err := lisp.Parse(string(x))
+	if err != nil {
+		return err
+	}
+	return e
+}
+
+func (i Content) Lisp() lisp.Exp {
+	var self LispList
+	add := func(name string, e Lisper) {
+		self = append(self, []lisp.Exp{
+			name,
+			e.Lisp(),
+		})
+	}
+	add("key", LispBlob(i.Key))
+	add("hash", LispBlob(i.Hash))
+	add("value", LispBlob(i.Value))
+	add("length", LispInt(*i.Length))
+	return self.Lisp()
+}
+
+type Lisper interface {
+	Lisp() lisp.Exp
+}
+
 func (t *Transaction) NewOutput(n int64, key *tnet.PublicKey, nonce []byte, after time.Time) error {
 	script, err := NewScript(key, nonce, after)
 	if err != nil {
@@ -57,7 +194,7 @@ func NewScript(key *tnet.PublicKey, nonce []byte, after time.Time) (string, erro
 	}
 	return replace(`
 (lambda
-  (input thash height time args)
+  (input thash height time args block trans)
   ((lambda (sig)
      (cond
       ((and
@@ -90,19 +227,31 @@ func (i Input) Address() []byte {
 	return thash.Hash([]byte(i.Script))
 }
 
+func (b Block) Lisp() lisp.Exp {
+	var self LispList
+	add := func(list *LispList, name string, e Lisper) {
+		*list = append(*list, []lisp.Exp{
+			name,
+			e.Lisp(),
+		})
+	}
+	add(&self, "height", LispInt(*b.Height))
+	add(&self, "time", LispTime(b.Time))
+	//add(&self, "hash", LispBlob(b.Hash))
+	return self.Lisp()
+}
+
 type Block struct {
 	Height        *big.Int
 	Time          time.Time
+	Hash          Hash          // hash of entire block except ID field
+	ID            Hash          // final output of all chained transaction scripts, a kind of "ID" for this block
 	Transactions  []Transaction `asn1:"omitempty" json:",omitempty"`
 	State         Hash          // pointer to the state trie
 	ParentOutputs []Hash        // first is intra-chain, others are inter-chain
 	Threshold     *big.Int      // max hash value for this block to be valid mining
 	// a randomly chosen nonce for mining purposes:
 	Nonce []byte
-	// hash of this block, including all above fields,
-	// but not including Output field below:
-	Hash   Hash
-	Output Hash // output of transactions, a kind of "ID" for this block
 }
 
 /*
@@ -124,8 +273,8 @@ type Hash []byte
 // content, compatible with a trie's KeyValue
 type Content struct {
 	Key    []byte   `asn1:"omitempty" json:",omitempty"`
-	Value  []byte   `asn1:"omitempty" json:",omitempty"`
 	Hash   []byte   `asn1:"omitempty" json:",omitempty"` // hash of key and value
+	Value  []byte   `asn1:"omitempty" json:",omitempty"`
 	Length *big.Int // length of the value
 }
 
@@ -193,7 +342,7 @@ func Run(cnfg.Config) error {
 	after := now.Add(-time.Millisecond)
 	{
 		var t Transaction
-		t.Type = "mining"
+		t.Type = "turd"
 		if err := t.NewOutput(10, key1.Public(), []byte{0}, after); err != nil {
 			return err
 		}
@@ -202,7 +351,7 @@ func Run(cnfg.Config) error {
 	}
 	{
 		var t Transaction
-		t.Type = "mining"
+		t.Type = "turd"
 		if err := t.NewOutput(10, key3.Public(), []byte{0}, after); err != nil {
 			return err
 		}
@@ -212,6 +361,7 @@ func Run(cnfg.Config) error {
 
 	{
 		var t Transaction
+		t.Type = "normal"
 		if err := t.NewInput(3, key1.Public(), []byte{0}, after); err != nil {
 			return err
 		}
@@ -246,11 +396,21 @@ func Run(cnfg.Config) error {
 		inc(addr, big.NewInt(0).Neg(o))
 	}
 
+	block := Block{
+		Height: big.NewInt(1000),
+		Time:   time.Now().UTC(),
+	}
+
+	fmt.Printf("block = %s\n", lisp.String(block.Lisp()))
+
 	// block hash to be chained through all inputs of all transactions
 	bhash := make([]byte, 10)
 	rand.Read(bhash)
 	for i, t := range trans {
 		fmt.Printf("%d. %s\n", i, t)
+
+		fmt.Printf("EXPR = %s\n", lisp.String(t.Lisp()))
+
 		if err := t.Validate(); err != nil {
 			return err
 		}
@@ -265,13 +425,15 @@ func Run(cnfg.Config) error {
 				return fmt.Errorf("input %s from %s", input.Quantity, b)
 			}
 			e, err := lisp.Parse(
-				fmt.Sprintf("(%s '%s '%s '%s '%s '%s)",
+				fmt.Sprintf("(%s '%s '%s '%s '%s '%s '%s '%s)",
 					input.Script,
 					marshal(bhash),
 					marshal(hash),
 					big.NewInt(1000000000),
 					now.Format(lisp.TimeFormat),
 					t.Arguments,
+					lisp.String(block.Lisp()),
+					lisp.String(t.Lisp()),
 				),
 			)
 			if err != nil {
@@ -331,9 +493,9 @@ func (t Output) String() string {
 func (t *Transaction) Validate() error {
 	var mining bool
 	switch x := t.Type; x {
-	case "mining":
+	case "turd":
 		mining = true
-	case "":
+	case "normal":
 	default:
 		return fmt.Errorf("bad type: %q", x)
 	}
