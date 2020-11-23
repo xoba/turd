@@ -72,9 +72,6 @@ func three(args ...Exp) (Exp, Exp, Exp) {
 
 // TODO: maybe natively handle type []byte, rather than base64-encoded strings?
 
-//
-// axiom #1
-//
 func quote(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
 		return err
@@ -82,9 +79,6 @@ func quote(args ...Exp) Exp {
 	return args[0]
 }
 
-//
-// axiom #2
-//
 func atom(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
 		return err
@@ -99,9 +93,6 @@ func atom(args ...Exp) Exp {
 	}
 }
 
-//
-// axiom #3
-//
 func eq(args ...Exp) Exp {
 	if err := checklen(2, args); err != nil {
 		return err
@@ -131,9 +122,6 @@ func eq(args ...Exp) Exp {
 	}
 }
 
-//
-// axiom #4
-//
 func car(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
 		return err
@@ -151,9 +139,6 @@ func car(args ...Exp) Exp {
 	}
 }
 
-//
-// axiom #5
-//
 func cdr(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
 		return err
@@ -171,9 +156,6 @@ func cdr(args ...Exp) Exp {
 	}
 }
 
-//
-// axiom #6
-//
 func cons(args ...Exp) Exp {
 	if err := checklen(2, args); err != nil {
 		return err
@@ -191,12 +173,17 @@ func cons(args ...Exp) Exp {
 	}
 }
 
-//
-// axiom #7
-//
 func cond(args ...Exp) Exp {
 	if err := checkargs(args); err != nil {
 		return err
+	}
+	get := func(i interface{}) Exp {
+		switch v := i.(type) {
+		case Func:
+			return v()
+		default:
+			return v
+		}
 	}
 	for _, a := range args {
 		switch t := a.(type) {
@@ -204,27 +191,17 @@ func cond(args ...Exp) Exp {
 			if err := checklen(2, t); err != nil {
 				return err
 			}
-			p, ok := t[0].(Func)
-			if !ok {
-				return fmt.Errorf("cond predicate not lazy")
-			}
-			if expToBool(p()) {
-				e, ok := t[1].(Func)
-				if !ok {
-					return fmt.Errorf("cond exp not lazy")
-				}
-				return e()
+			p, e := t[0], t[1]
+			if expToBool(get(p)) {
+				return get(e)
 			}
 		default:
-			return fmt.Errorf("illegal cond arg type %T", t)
+			return fmt.Errorf("illegal cond arg type %T: %v", t, t)
 		}
 	}
 	return fmt.Errorf("cond fallthrough")
 }
 
-//
-// axiom #8
-//
 func display(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
 		return err
@@ -234,16 +211,10 @@ func display(args ...Exp) Exp {
 	return a
 }
 
-//
-// axiom #9 (kind of like a "quote" for multiple args)
-//
 func list(args ...Exp) Exp {
 	return args
 }
 
-//
-// arithmetic axions:
-//
 func mult(args ...Exp) Exp {
 	return arith("mult", args, func(i, j *big.Int) *big.Int {
 		var z big.Int

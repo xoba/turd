@@ -15,7 +15,7 @@ import (
 
 const pkg = "lisp"
 
-func CompileDef(cnfg.Config) error {
+func CompileDefuns(cnfg.Config) error {
 	if err := os.MkdirAll(pkg, os.ModePerm); err != nil {
 		return err
 	}
@@ -52,13 +52,13 @@ func CompileDef(cnfg.Config) error {
 		}
 		e = SanitizeGo(e)
 		{
-			name, env, err := ToEnv(e)
+			name, env, err := LabelCode(e)
 			if err != nil {
 				return err
 			}
 			fmt.Fprintf(f, "var %s_label = %s\n", name, string(env))
 		}
-		name, code, err := Tofunc(e)
+		name, code, err := DefunCode(e)
 		if err != nil {
 			return err
 		}
@@ -81,7 +81,7 @@ func CompileDef(cnfg.Config) error {
 	return nil
 }
 
-func Tofunc(defun Exp) (string, []byte, error) {
+func DefunCode(defun Exp) (string, []byte, error) {
 	if String(car(defun)) != "defun" {
 		return "", nil, fmt.Errorf("not a defun")
 	}
@@ -103,7 +103,7 @@ return err
 `, len(args))
 	for i, a := range args {
 		if !isString(a) {
-			return name, nil, fmt.Errorf("not atom: %s", a)
+			return name, nil, fmt.Errorf("not a string: %s", a)
 		}
 		fmt.Fprintf(w, "%s := args[%d];\n", String(a), i)
 	}
@@ -133,25 +133,34 @@ func CompileLazy(e Exp) ([]byte, error) {
 	if len(list) != 2 {
 		return nil, fmt.Errorf("malformed cond with %d parts: %s", len(list), e)
 	}
-	pb, err := Compile(list[0], false)
-	if err != nil {
-		return nil, err
-	}
-	eb, err := Compile(list[1], false)
-	if err != nil {
-		return nil, err
-	}
 	f := func(s string) string {
 		return fmt.Sprintf(`Func(func(...Exp) Exp {
 return %s
 })`, s)
 	}
-	fmt.Fprintf(w, "[]Exp{\n%s,\n%s,\n}", f(string(pb)), f(string(eb)))
+	fc := func(e Exp) (string, error) {
+		pb, err := Compile(e, false)
+		if err != nil {
+			return "", err
+		}
+		return f(string(pb)), nil
+	}
+	pf, err := fc(list[0])
+	if err != nil {
+		return nil, err
+	}
+	ef, err := fc(list[1])
+	if err != nil {
+		return nil, err
+	}
+	fmt.Fprintf(w, `[]Exp{
+%s,
+%s,
+}`, pf, ef)
 	return w.Bytes(), nil
 }
 
 func Compile(e Exp, indent bool) ([]byte, error) {
-	//fmt.Printf("compile(%v)\n", e)
 	w := new(bytes.Buffer)
 	emit := func(msg string, list []string) {
 		if indent {
@@ -217,19 +226,7 @@ func Compile(e Exp, indent bool) ([]byte, error) {
 	return w.Bytes(), nil
 }
 
-func Gofmt(file string) error {
-	w := new(bytes.Buffer)
-	cmd := exec.Command("gofmt", "-w", file)
-	cmd.Stdout = w
-	cmd.Stderr = w
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("%w: %q", err, w)
-	}
-	return nil
-}
-
-// TODO: instead, express this as a string (not as code) that can be parsed like lisp.Read()
-func ToEnv(defun Exp) (string, []byte, error) {
+func LabelCode(defun Exp) (string, []byte, error) {
 	if String(car(defun)) != "defun" {
 		return "", nil, fmt.Errorf("not a defun")
 	}
@@ -251,11 +248,11 @@ func ToEnv(defun Exp) (string, []byte, error) {
 			body,
 		),
 	)
-	exp, err := ToExpression(e)
+	exp, err := ExpressionCode(e)
 	return String(name), exp, err
 }
 
-func ToExpression(e Exp) ([]byte, error) {
+func ExpressionCode(e Exp) ([]byte, error) {
 	w := new(bytes.Buffer)
 	switch t := e.(type) {
 	case string:
@@ -264,7 +261,7 @@ func ToExpression(e Exp) ([]byte, error) {
 		list := t
 		var parts []string
 		for _, x := range list {
-			buf, err := ToExpression(x)
+			buf, err := ExpressionCode(x)
 			if err != nil {
 				return nil, err
 			}
@@ -275,4 +272,15 @@ func ToExpression(e Exp) ([]byte, error) {
 		return nil, fmt.Errorf("ToExpression switch fallthrough: %T", t)
 	}
 	return w.Bytes(), nil
+}
+
+func Gofmt(file string) error {
+	w := new(bytes.Buffer)
+	cmd := exec.Command("gofmt", "-w", file)
+	cmd.Stdout = w
+	cmd.Stderr = w
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("%w: %q", err, w)
+	}
+	return nil
 }

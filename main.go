@@ -55,7 +55,7 @@ func Run(c cnfg.Config) error {
 		"inflation":   infl.Run,
 		"keys":        tnet.SharedKey,
 		"launch":      LaunchNode,
-		"lispcompile": lisp.CompileDef,
+		"lispcompile": lisp.CompileDefuns,
 		"lispparse":   lisp.TestParse,
 		"lisptest":    lisp.Run,
 		"listen":      Listen,
