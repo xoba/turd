@@ -11,20 +11,22 @@ import (
 	"github.com/xoba/turd/cnfg"
 )
 
+type EvalFunc func(e Exp) Exp
+
 func Eval(e Exp) Exp {
+	return CompiledEval(e)
+}
+
+func CompiledEval(e Exp) Exp {
 	e = SanitizeGo(e)
 	return UnsanitizeGo(eval([]Exp{e, env}...))
 }
 
-func CompiledEval(e Exp) Exp {
-	return Eval(e)
-}
-
-func InterpretedEval(e Exp) Exp {
+func InterpretedEval(e Exp, f EvalFunc) Exp {
 	quote := func(e Exp) Exp {
 		return []Exp{"quote", e}
 	}
-	return Eval([]Exp{eval_label, quote(e), quote(env)})
+	return f([]Exp{eval_label, quote(e), quote(env)})
 }
 
 func TestParse(c cnfg.Config) error {
@@ -69,9 +71,7 @@ func TestParse(c cnfg.Config) error {
 func Run(c cnfg.Config) error {
 	var last string
 
-	type evalFunc func(e Exp) Exp
-
-	test0 := func(msg, input, expect string, f evalFunc, name string) {
+	test0 := func(msg, input, expect string, f EvalFunc, name string) {
 		if msg == "" {
 			return
 		}
@@ -83,7 +83,7 @@ func Run(c cnfg.Config) error {
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Printf("%-11s %-10s %-20s -> %s\n", name, msg+":", String(in), expect)
+		log.Printf("%-13s %-10s %-20s -> %s", name, msg+":", String(in), expect)
 		{
 			buf, err := Marshal(in)
 			if err != nil {
@@ -106,12 +106,20 @@ func Run(c cnfg.Config) error {
 		}
 	}
 
-	evals := map[string]evalFunc{
-		"compiled":    CompiledEval,
-		"interpreted": InterpretedEval,
+	evals := map[string]EvalFunc{
+		"compiled": CompiledEval,
+		"interpreted": func(e Exp) Exp {
+			return InterpretedEval(e, CompiledEval)
+		},
+		"interpreted2": func(e Exp) Exp {
+			return InterpretedEval(e, func(e Exp) Exp {
+				return InterpretedEval(e, CompiledEval)
+			})
+		},
 	}
 
 	if !c.Debug {
+		delete(evals, "interpreted2")
 		delete(evals, "interpreted")
 	}
 
