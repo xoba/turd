@@ -30,6 +30,7 @@
      ;;
      ((eq (car e) 'plus)    (plus    (eval (cadr  e) a)
 			             (eval (caddr e) a)))
+     ((eq (car e) 'inc)     (plus    (eval (cadr  e) a) '1))
      ((eq (car e) 'minus)   (minus   (eval (cadr  e) a)
 			             (eval (caddr e) a)))
      ((eq (car e) 'mult)    (mult    (eval (cadr  e) a)

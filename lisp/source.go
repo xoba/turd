@@ -74,6 +74,8 @@ func TestParse(c cnfg.Config) error {
 func Run(c cnfg.Config) error {
 	var last string
 
+	tests := make(map[string]int)
+
 	test0 := func(msg, input, expect string, f EvalFunc, name string) {
 		if msg == "" {
 			return
@@ -86,7 +88,8 @@ func Run(c cnfg.Config) error {
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Printf("%-13s %-10s %-20s -> %s", name, msg+":", String(in), expect)
+		tests[String(in)]++
+		log.Printf("%3d. %-13s %-10s %-20s -> %s", len(tests), name, msg+":", String(in), expect)
 		{
 			buf, err := Marshal(in)
 			if err != nil {
@@ -244,10 +247,15 @@ func Run(c cnfg.Config) error {
 
 	test("arith", "(plus '1 '2)", "3")
 	test("arith", "(plus '1 '-2)", "-1")
+	test("arith", "(inc '4)", "5")
+	test("arith", "(inc '5)", "6")
 	test("arith", "(minus '1 '2)", "-1")
 	test("arith", "(minus '1 '-2)", "3")
 	test("arith", "(mult '4 '5)", "20")
 	test("arith", "(mult '4 '-2)", "-8")
+	test("arith", "(mult '234862342873462784637846 '104380123947329857341285)",
+		"24514960459692328665578339488420194423149272110",
+	)
 	test("arith", "(eq '0 (minus '5 '5))", "t")
 	test("arith", "(eq '1 (minus '5 '5))", "()")
 
@@ -309,6 +317,7 @@ func Run(c cnfg.Config) error {
 	test("len", `(length '())`, `0`)
 	test("len", `(length '(a))`, `1`)
 	test("len", `(length '(a b c))`, `3`)
+	test("len", `(length '(a (1 2 3) c))`, `3`)
 
 	// first-order functions
 	test("fof", `((lambda (f) (f '(a))) 'car)`, `a`)
@@ -342,6 +351,16 @@ func Run(c cnfg.Config) error {
 
 	test("errors", `(err 'abc)`, "error: abc")
 	test("errors", `(err (list 'a 'b 'c))`, "error: (a b c)")
+
+	test("try", "(try '(10 0) 'x '((x a) (y b)))", "a")
+	test("try", "(try '(10 0) '(car '(a b)) '())", "a")
+	test("try", "(try '(10 0) '(cdr '(a b)) '())", "(b)")
+	test("try", fmt.Sprintf("(try '(10 0) '(cdr '(a b)) '%s)", String(env)), "(b)")
+	test("try", "(try '(10 0) '(blah '(a b)) '())", "error: (max 10)")
+
+	return nil
+	test("", ``, ``)
+	test("", ``, ``)
 
 	return nil
 
