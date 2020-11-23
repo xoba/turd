@@ -139,6 +139,17 @@ return %s
 })`, s)
 	}
 	fc := func(e Exp) (string, error) {
+		switch t := e.(type) {
+		case string:
+			return t, nil
+		case []Exp:
+			switch {
+			case len(t) == 0:
+				return "Nil", nil
+			case len(t) == 2 && String(t[0]) == "quote":
+				return compileQuote(t[1])
+			}
+		}
 		pb, err := Compile(e, false)
 		if err != nil {
 			return "", err
@@ -160,6 +171,19 @@ return %s
 	return w.Bytes(), nil
 }
 
+func compileQuote(x Exp) (string, error) {
+	switch t := x.(type) {
+	case string:
+		return fmt.Sprintf("%q", t), nil
+	default:
+		compiled, err := Compile(t, false)
+		if err != nil {
+			return "", err
+		}
+		return fmt.Sprintf(string(compiled)), nil
+	}
+}
+
 func Compile(e Exp, indent bool) ([]byte, error) {
 	w := new(bytes.Buffer)
 	emit := func(msg string, list []string) {
@@ -178,17 +202,11 @@ func Compile(e Exp, indent bool) ([]byte, error) {
 		case n == 0:
 			fmt.Fprintf(w, "Nil")
 		case n == 2 && String(e[0]) == "quote":
-			x := e[1]
-			switch t := x.(type) {
-			case string:
-				fmt.Fprintf(w, "%q", t)
-			default:
-				compiled, err := Compile(x, false)
-				if err != nil {
-					return nil, err
-				}
-				fmt.Fprintf(w, string(compiled))
+			q, err := compileQuote(e[1])
+			if err != nil {
+				return nil, err
 			}
+			fmt.Fprint(w, q)
 		case n > 1 && String(e[0]) == "lambda":
 			panic("compiling lambda")
 		case n > 1 && String(e[0]) == "label":

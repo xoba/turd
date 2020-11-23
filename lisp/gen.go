@@ -13,34 +13,20 @@ func and(args ...Exp) Exp {
 	return apply(
 		cond,
 		[]Exp{
-			Func(func(...Exp) Exp {
-				return x
-			}),
+			x,
 			Func(func(...Exp) Exp {
 				return apply(cond, []Exp{
-					Func(func(...Exp) Exp {
-						return y
-					}),
-					Func(func(...Exp) Exp {
-						return "t"
-					}),
+					y,
+					"t",
 				}, []Exp{
-					Func(func(...Exp) Exp {
-						return "t"
-					}),
-					Func(func(...Exp) Exp {
-						return Nil
-					}),
+					"t",
+					Nil,
 				})
 			}),
 		},
 		[]Exp{
-			Func(func(...Exp) Exp {
-				return "t"
-			}),
-			Func(func(...Exp) Exp {
-				return Nil
-			}),
+			"t",
+			Nil,
 		},
 	)
 }
@@ -59,14 +45,10 @@ func append_go_sanitized(args ...Exp) Exp {
 			Func(func(...Exp) Exp {
 				return apply(null, x)
 			}),
-			Func(func(...Exp) Exp {
-				return y
-			}),
+			y,
 		},
 		[]Exp{
-			Func(func(...Exp) Exp {
-				return "t"
-			}),
+			"t",
 			Func(func(...Exp) Exp {
 				return apply(cons, apply(car, x), apply(append_go_sanitized, apply(cdr, x), y))
 			}),
@@ -93,9 +75,7 @@ func assoc(args ...Exp) Exp {
 			}),
 		},
 		[]Exp{
-			Func(func(...Exp) Exp {
-				return "t"
-			}),
+			"t",
 			Func(func(...Exp) Exp {
 				return apply(assoc, x, apply(cdr, y))
 			}),
@@ -828,9 +808,7 @@ func eval(args ...Exp) Exp {
 						return apply(evlis, apply(cdr, e), a)
 					}),
 				}, []Exp{
-					Func(func(...Exp) Exp {
-						return "t"
-					}),
+					"t",
 					Func(func(...Exp) Exp {
 						return apply(eval, apply(cons, apply(assoc, apply(car, e), a), apply(cdr, e)), a)
 					}),
@@ -858,9 +836,7 @@ func eval(args ...Exp) Exp {
 						return apply(eval, apply(caddar, e), apply(cons, apply(list, apply(cadar, e), apply(evlis, apply(cdr, e), a)), a))
 					}),
 				}, []Exp{
-					Func(func(...Exp) Exp {
-						return "t"
-					}),
+					"t",
 					Func(func(...Exp) Exp {
 						return apply(eval, apply(caddar, e), apply(append_go_sanitized, apply(pair, apply(cadar, e), apply(evlis, apply(cdr, e), a)), a))
 					}),
@@ -889,9 +865,7 @@ func evcon(args ...Exp) Exp {
 			}),
 		},
 		[]Exp{
-			Func(func(...Exp) Exp {
-				return "t"
-			}),
+			"t",
 			Func(func(...Exp) Exp {
 				return apply(evcon, apply(cdr, c), a)
 			}),
@@ -913,14 +887,10 @@ func evlis(args ...Exp) Exp {
 			Func(func(...Exp) Exp {
 				return apply(null, m)
 			}),
-			Func(func(...Exp) Exp {
-				return Nil
-			}),
+			Nil,
 		},
 		[]Exp{
-			Func(func(...Exp) Exp {
-				return "t"
-			}),
+			"t",
 			Func(func(...Exp) Exp {
 				return apply(cons, apply(eval, apply(car, m), a), apply(evlis, apply(cdr, m), a))
 			}),
@@ -941,14 +911,10 @@ func factorial(args ...Exp) Exp {
 			Func(func(...Exp) Exp {
 				return apply(eq, "0", n)
 			}),
-			Func(func(...Exp) Exp {
-				return "1"
-			}),
+			"1",
 		},
 		[]Exp{
-			Func(func(...Exp) Exp {
-				return "t"
-			}),
+			"t",
 			Func(func(...Exp) Exp {
 				return apply(mult, n, apply(factorial, apply(minus, n, "1")))
 			}),
@@ -969,14 +935,10 @@ func length(args ...Exp) Exp {
 			Func(func(...Exp) Exp {
 				return apply(atom, x)
 			}),
-			Func(func(...Exp) Exp {
-				return "0"
-			}),
+			"0",
 		},
 		[]Exp{
-			Func(func(...Exp) Exp {
-				return "t"
-			}),
+			"t",
 			Func(func(...Exp) Exp {
 				return apply(plus, "1", apply(length, apply(cdr, x)))
 			}),
@@ -994,20 +956,12 @@ func not(args ...Exp) Exp {
 	return apply(
 		cond,
 		[]Exp{
-			Func(func(...Exp) Exp {
-				return x
-			}),
-			Func(func(...Exp) Exp {
-				return Nil
-			}),
+			x,
+			Nil,
 		},
 		[]Exp{
-			Func(func(...Exp) Exp {
-				return "t"
-			}),
-			Func(func(...Exp) Exp {
-				return "t"
-			}),
+			"t",
+			"t",
 		},
 	)
 }
@@ -1040,9 +994,7 @@ func pair(args ...Exp) Exp {
 			Func(func(...Exp) Exp {
 				return apply(and, apply(null, x), apply(null, y))
 			}),
-			Func(func(...Exp) Exp {
-				return Nil
-			}),
+			Nil,
 		},
 		[]Exp{
 			Func(func(...Exp) Exp {
@@ -1075,23 +1027,15 @@ func subst(args ...Exp) Exp {
 					Func(func(...Exp) Exp {
 						return apply(eq, z, y)
 					}),
-					Func(func(...Exp) Exp {
-						return x
-					}),
+					x,
 				}, []Exp{
-					Func(func(...Exp) Exp {
-						return "t"
-					}),
-					Func(func(...Exp) Exp {
-						return z
-					}),
+					"t",
+					z,
 				})
 			}),
 		},
 		[]Exp{
-			Func(func(...Exp) Exp {
-				return "t"
-			}),
+			"t",
 			Func(func(...Exp) Exp {
 				return apply(cons, apply(subst, x, y, apply(car, z)), apply(subst, x, y, apply(cdr, z)))
 			}),
