@@ -193,6 +193,9 @@ func Run(c cnfg.Config) error {
 
 	test("list", "(cons 'a (cons 'b (cons 'c '())))", "(a b c)")
 	test("list", "(list 'a 'b 'c)", "(a b c)")
+	test("list", "(car (list 'a 'b 'c))", "a")
+	test("list", "(car (cons 'a '(b c)))", "a")
+	test("list", "(cdr (cons 'a '(b c)))", "(b c)")
 
 	test("null", "(null 'a)", "()")
 	test("null", "(null '())", "t")
@@ -300,8 +303,9 @@ func Run(c cnfg.Config) error {
 	// first-order functions
 	test("fof", `((lambda (f) (f '(a))) 'car)`, `a`)
 
-	test("iscxr", `(iscxr 'car)`, `t`)
-	test("iscxr", `(iscxr 'cdr)`, `t`)
+	test("iscxr", `(iscxr 'car)`, `()`) // car is axiom
+	test("iscxr", `(iscxr 'cdr)`, `()`) // cdr is axiom
+
 	test("iscxr", `(iscxr 'caar)`, `t`)
 	test("iscxr", `(iscxr 'cadr)`, `t`)
 	test("iscxr", `(iscxr 'cdar)`, `t`)
@@ -315,6 +319,13 @@ func Run(c cnfg.Config) error {
 	test("iscxr", `(iscxr 'cxdr)`, `()`)
 	test("iscxr", `(iscxr 'cdxr)`, `()`)
 	test("iscxr", `(iscxr 'caxaar)`, `()`)
+	test("iscxr", `(iscxr 'a)`, `()`)
+	test("iscxr", `(iscxr 'd)`, `()`)
+	test("iscxr", `(iscxr 'c)`, `()`)
+	test("iscxr", `(iscxr 'r)`, `()`)
+	test("iscxr", `(iscxr 'ar)`, `()`)
+	test("iscxr", `(iscxr 'dr)`, `()`)
+	test("iscxr", `(iscxr 'cr)`, `()`)
 
 	test("", ``, ``)
 	test("", ``, ``)

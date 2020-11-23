@@ -83,7 +83,7 @@ func iscxr(args ...Exp) Exp {
 		return fmt.Errorf("not a string")
 	}
 	runes := []rune(op)
-	if len(runes) < 3 {
+	if len(runes) < 4 {
 		return False
 	}
 	if runes[0] != 'c' {
@@ -103,6 +103,12 @@ func iscxr(args ...Exp) Exp {
 }
 
 func cxr(args ...Exp) Exp {
+	r := _cxr(args...)
+	//fmt.Printf("cxr%s = %s\n", String(args), String(r))
+	return r
+}
+
+func _cxr(args ...Exp) Exp {
 	if err := checklen(2, args); err != nil {
 		return err
 	}
