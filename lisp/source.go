@@ -24,7 +24,7 @@ func InterpretedEval(e Exp) Exp {
 	quote := func(e Exp) Exp {
 		return []Exp{"quote", e}
 	}
-	return Eval([]Exp{assoc("eval", env), quote(e), quote(env)})
+	return Eval([]Exp{eval_exp, quote(e), quote(env)})
 }
 
 func TestParse(c cnfg.Config) error {
