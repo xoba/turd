@@ -2,7 +2,9 @@
 
 package lisp
 
-var and_label = []Exp{quote("label"), quote("and"), []Exp{quote("lambda"), []Exp{quote("x"), quote("y")}, []Exp{quote("cond"), []Exp{quote("x"), []Exp{quote("cond"), []Exp{quote("y"), []Exp{quote("quote"), quote("t")}}, []Exp{[]Exp{quote("quote"), quote("t")}, []Exp{}}}}, []Exp{[]Exp{quote("quote"), quote("t")}, []Exp{quote("quote"), []Exp{}}}}}}
+var L = list
+
+var and_label = L("label", "and", L("lambda", L("x", "y"), L("cond", L("x", L("cond", L("y", L("quote", "t")), L(L("quote", "t"), L()))), L(L("quote", "t"), L("quote", L())))))
 
 func and(args ...Exp) Exp {
 	if err := checklen(2, args); err != nil {
@@ -31,7 +33,7 @@ func and(args ...Exp) Exp {
 	)
 }
 
-var append_go_sanitized_label = []Exp{quote("label"), quote("append_go_sanitized"), []Exp{quote("lambda"), []Exp{quote("x"), quote("y")}, []Exp{quote("cond"), []Exp{[]Exp{quote("null"), quote("x")}, quote("y")}, []Exp{[]Exp{quote("quote"), quote("t")}, []Exp{quote("cons"), []Exp{quote("car"), quote("x")}, []Exp{quote("append_go_sanitized"), []Exp{quote("cdr"), quote("x")}, quote("y")}}}}}}
+var append_go_sanitized_label = L("label", "append_go_sanitized", L("lambda", L("x", "y"), L("cond", L(L("null", "x"), "y"), L(L("quote", "t"), L("cons", L("car", "x"), L("append_go_sanitized", L("cdr", "x"), "y"))))))
 
 func append_go_sanitized(args ...Exp) Exp {
 	if err := checklen(2, args); err != nil {
@@ -56,7 +58,7 @@ func append_go_sanitized(args ...Exp) Exp {
 	)
 }
 
-var assoc_label = []Exp{quote("label"), quote("assoc"), []Exp{quote("lambda"), []Exp{quote("x"), quote("y")}, []Exp{quote("cond"), []Exp{[]Exp{quote("eq"), []Exp{quote("caar"), quote("y")}, quote("x")}, []Exp{quote("cadar"), quote("y")}}, []Exp{[]Exp{quote("quote"), quote("t")}, []Exp{quote("assoc"), quote("x"), []Exp{quote("cdr"), quote("y")}}}}}}
+var assoc_label = L("label", "assoc", L("lambda", L("x", "y"), L("cond", L(L("eq", L("caar", "y"), "x"), L("cadar", "y")), L(L("quote", "t"), L("assoc", "x", L("cdr", "y"))))))
 
 func assoc(args ...Exp) Exp {
 	if err := checklen(2, args); err != nil {
@@ -83,7 +85,7 @@ func assoc(args ...Exp) Exp {
 	)
 }
 
-var caaaar_label = []Exp{quote("label"), quote("caaaar"), []Exp{quote("lambda"), []Exp{quote("x")}, []Exp{quote("car"), []Exp{quote("car"), []Exp{quote("car"), []Exp{quote("car"), quote("x")}}}}}}
+var caaaar_label = L("label", "caaaar", L("lambda", L("x"), L("car", L("car", L("car", L("car", "x"))))))
 
 func caaaar(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
@@ -105,7 +107,7 @@ func caaaar(args ...Exp) Exp {
 	)
 }
 
-var caaadr_label = []Exp{quote("label"), quote("caaadr"), []Exp{quote("lambda"), []Exp{quote("x")}, []Exp{quote("car"), []Exp{quote("car"), []Exp{quote("car"), []Exp{quote("cdr"), quote("x")}}}}}}
+var caaadr_label = L("label", "caaadr", L("lambda", L("x"), L("car", L("car", L("car", L("cdr", "x"))))))
 
 func caaadr(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
@@ -127,7 +129,7 @@ func caaadr(args ...Exp) Exp {
 	)
 }
 
-var caaar_label = []Exp{quote("label"), quote("caaar"), []Exp{quote("lambda"), []Exp{quote("x")}, []Exp{quote("car"), []Exp{quote("car"), []Exp{quote("car"), quote("x")}}}}}
+var caaar_label = L("label", "caaar", L("lambda", L("x"), L("car", L("car", L("car", "x")))))
 
 func caaar(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
@@ -146,7 +148,7 @@ func caaar(args ...Exp) Exp {
 	)
 }
 
-var caadar_label = []Exp{quote("label"), quote("caadar"), []Exp{quote("lambda"), []Exp{quote("x")}, []Exp{quote("car"), []Exp{quote("car"), []Exp{quote("cdr"), []Exp{quote("car"), quote("x")}}}}}}
+var caadar_label = L("label", "caadar", L("lambda", L("x"), L("car", L("car", L("cdr", L("car", "x"))))))
 
 func caadar(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
@@ -168,7 +170,7 @@ func caadar(args ...Exp) Exp {
 	)
 }
 
-var caaddr_label = []Exp{quote("label"), quote("caaddr"), []Exp{quote("lambda"), []Exp{quote("x")}, []Exp{quote("car"), []Exp{quote("car"), []Exp{quote("cdr"), []Exp{quote("cdr"), quote("x")}}}}}}
+var caaddr_label = L("label", "caaddr", L("lambda", L("x"), L("car", L("car", L("cdr", L("cdr", "x"))))))
 
 func caaddr(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
@@ -190,7 +192,7 @@ func caaddr(args ...Exp) Exp {
 	)
 }
 
-var caadr_label = []Exp{quote("label"), quote("caadr"), []Exp{quote("lambda"), []Exp{quote("x")}, []Exp{quote("car"), []Exp{quote("car"), []Exp{quote("cdr"), quote("x")}}}}}
+var caadr_label = L("label", "caadr", L("lambda", L("x"), L("car", L("car", L("cdr", "x")))))
 
 func caadr(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
@@ -209,7 +211,7 @@ func caadr(args ...Exp) Exp {
 	)
 }
 
-var caar_label = []Exp{quote("label"), quote("caar"), []Exp{quote("lambda"), []Exp{quote("x")}, []Exp{quote("car"), []Exp{quote("car"), quote("x")}}}}
+var caar_label = L("label", "caar", L("lambda", L("x"), L("car", L("car", "x"))))
 
 func caar(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
@@ -225,7 +227,7 @@ func caar(args ...Exp) Exp {
 	)
 }
 
-var cadaar_label = []Exp{quote("label"), quote("cadaar"), []Exp{quote("lambda"), []Exp{quote("x")}, []Exp{quote("car"), []Exp{quote("cdr"), []Exp{quote("car"), []Exp{quote("car"), quote("x")}}}}}}
+var cadaar_label = L("label", "cadaar", L("lambda", L("x"), L("car", L("cdr", L("car", L("car", "x"))))))
 
 func cadaar(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
@@ -247,7 +249,7 @@ func cadaar(args ...Exp) Exp {
 	)
 }
 
-var cadadr_label = []Exp{quote("label"), quote("cadadr"), []Exp{quote("lambda"), []Exp{quote("x")}, []Exp{quote("car"), []Exp{quote("cdr"), []Exp{quote("car"), []Exp{quote("cdr"), quote("x")}}}}}}
+var cadadr_label = L("label", "cadadr", L("lambda", L("x"), L("car", L("cdr", L("car", L("cdr", "x"))))))
 
 func cadadr(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
@@ -269,7 +271,7 @@ func cadadr(args ...Exp) Exp {
 	)
 }
 
-var cadar_label = []Exp{quote("label"), quote("cadar"), []Exp{quote("lambda"), []Exp{quote("x")}, []Exp{quote("car"), []Exp{quote("cdr"), []Exp{quote("car"), quote("x")}}}}}
+var cadar_label = L("label", "cadar", L("lambda", L("x"), L("car", L("cdr", L("car", "x")))))
 
 func cadar(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
@@ -288,7 +290,7 @@ func cadar(args ...Exp) Exp {
 	)
 }
 
-var caddar_label = []Exp{quote("label"), quote("caddar"), []Exp{quote("lambda"), []Exp{quote("x")}, []Exp{quote("car"), []Exp{quote("cdr"), []Exp{quote("cdr"), []Exp{quote("car"), quote("x")}}}}}}
+var caddar_label = L("label", "caddar", L("lambda", L("x"), L("car", L("cdr", L("cdr", L("car", "x"))))))
 
 func caddar(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
@@ -310,7 +312,7 @@ func caddar(args ...Exp) Exp {
 	)
 }
 
-var cadddr_label = []Exp{quote("label"), quote("cadddr"), []Exp{quote("lambda"), []Exp{quote("x")}, []Exp{quote("car"), []Exp{quote("cdr"), []Exp{quote("cdr"), []Exp{quote("cdr"), quote("x")}}}}}}
+var cadddr_label = L("label", "cadddr", L("lambda", L("x"), L("car", L("cdr", L("cdr", L("cdr", "x"))))))
 
 func cadddr(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
@@ -332,7 +334,7 @@ func cadddr(args ...Exp) Exp {
 	)
 }
 
-var caddr_label = []Exp{quote("label"), quote("caddr"), []Exp{quote("lambda"), []Exp{quote("x")}, []Exp{quote("car"), []Exp{quote("cdr"), []Exp{quote("cdr"), quote("x")}}}}}
+var caddr_label = L("label", "caddr", L("lambda", L("x"), L("car", L("cdr", L("cdr", "x")))))
 
 func caddr(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
@@ -351,7 +353,7 @@ func caddr(args ...Exp) Exp {
 	)
 }
 
-var cadr_label = []Exp{quote("label"), quote("cadr"), []Exp{quote("lambda"), []Exp{quote("x")}, []Exp{quote("car"), []Exp{quote("cdr"), quote("x")}}}}
+var cadr_label = L("label", "cadr", L("lambda", L("x"), L("car", L("cdr", "x"))))
 
 func cadr(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
@@ -367,7 +369,7 @@ func cadr(args ...Exp) Exp {
 	)
 }
 
-var cdaaar_label = []Exp{quote("label"), quote("cdaaar"), []Exp{quote("lambda"), []Exp{quote("x")}, []Exp{quote("cdr"), []Exp{quote("car"), []Exp{quote("car"), []Exp{quote("car"), quote("x")}}}}}}
+var cdaaar_label = L("label", "cdaaar", L("lambda", L("x"), L("cdr", L("car", L("car", L("car", "x"))))))
 
 func cdaaar(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
@@ -389,7 +391,7 @@ func cdaaar(args ...Exp) Exp {
 	)
 }
 
-var cdaadr_label = []Exp{quote("label"), quote("cdaadr"), []Exp{quote("lambda"), []Exp{quote("x")}, []Exp{quote("cdr"), []Exp{quote("car"), []Exp{quote("car"), []Exp{quote("cdr"), quote("x")}}}}}}
+var cdaadr_label = L("label", "cdaadr", L("lambda", L("x"), L("cdr", L("car", L("car", L("cdr", "x"))))))
 
 func cdaadr(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
@@ -411,7 +413,7 @@ func cdaadr(args ...Exp) Exp {
 	)
 }
 
-var cdaar_label = []Exp{quote("label"), quote("cdaar"), []Exp{quote("lambda"), []Exp{quote("x")}, []Exp{quote("cdr"), []Exp{quote("car"), []Exp{quote("car"), quote("x")}}}}}
+var cdaar_label = L("label", "cdaar", L("lambda", L("x"), L("cdr", L("car", L("car", "x")))))
 
 func cdaar(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
@@ -430,7 +432,7 @@ func cdaar(args ...Exp) Exp {
 	)
 }
 
-var cdadar_label = []Exp{quote("label"), quote("cdadar"), []Exp{quote("lambda"), []Exp{quote("x")}, []Exp{quote("cdr"), []Exp{quote("car"), []Exp{quote("cdr"), []Exp{quote("car"), quote("x")}}}}}}
+var cdadar_label = L("label", "cdadar", L("lambda", L("x"), L("cdr", L("car", L("cdr", L("car", "x"))))))
 
 func cdadar(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
@@ -452,7 +454,7 @@ func cdadar(args ...Exp) Exp {
 	)
 }
 
-var cdaddr_label = []Exp{quote("label"), quote("cdaddr"), []Exp{quote("lambda"), []Exp{quote("x")}, []Exp{quote("cdr"), []Exp{quote("car"), []Exp{quote("cdr"), []Exp{quote("cdr"), quote("x")}}}}}}
+var cdaddr_label = L("label", "cdaddr", L("lambda", L("x"), L("cdr", L("car", L("cdr", L("cdr", "x"))))))
 
 func cdaddr(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
@@ -474,7 +476,7 @@ func cdaddr(args ...Exp) Exp {
 	)
 }
 
-var cdadr_label = []Exp{quote("label"), quote("cdadr"), []Exp{quote("lambda"), []Exp{quote("x")}, []Exp{quote("cdr"), []Exp{quote("car"), []Exp{quote("cdr"), quote("x")}}}}}
+var cdadr_label = L("label", "cdadr", L("lambda", L("x"), L("cdr", L("car", L("cdr", "x")))))
 
 func cdadr(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
@@ -493,7 +495,7 @@ func cdadr(args ...Exp) Exp {
 	)
 }
 
-var cdar_label = []Exp{quote("label"), quote("cdar"), []Exp{quote("lambda"), []Exp{quote("x")}, []Exp{quote("cdr"), []Exp{quote("car"), quote("x")}}}}
+var cdar_label = L("label", "cdar", L("lambda", L("x"), L("cdr", L("car", "x"))))
 
 func cdar(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
@@ -509,7 +511,7 @@ func cdar(args ...Exp) Exp {
 	)
 }
 
-var cddaar_label = []Exp{quote("label"), quote("cddaar"), []Exp{quote("lambda"), []Exp{quote("x")}, []Exp{quote("cdr"), []Exp{quote("cdr"), []Exp{quote("car"), []Exp{quote("car"), quote("x")}}}}}}
+var cddaar_label = L("label", "cddaar", L("lambda", L("x"), L("cdr", L("cdr", L("car", L("car", "x"))))))
 
 func cddaar(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
@@ -531,7 +533,7 @@ func cddaar(args ...Exp) Exp {
 	)
 }
 
-var cddadr_label = []Exp{quote("label"), quote("cddadr"), []Exp{quote("lambda"), []Exp{quote("x")}, []Exp{quote("cdr"), []Exp{quote("cdr"), []Exp{quote("car"), []Exp{quote("cdr"), quote("x")}}}}}}
+var cddadr_label = L("label", "cddadr", L("lambda", L("x"), L("cdr", L("cdr", L("car", L("cdr", "x"))))))
 
 func cddadr(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
@@ -553,7 +555,7 @@ func cddadr(args ...Exp) Exp {
 	)
 }
 
-var cddar_label = []Exp{quote("label"), quote("cddar"), []Exp{quote("lambda"), []Exp{quote("x")}, []Exp{quote("cdr"), []Exp{quote("cdr"), []Exp{quote("car"), quote("x")}}}}}
+var cddar_label = L("label", "cddar", L("lambda", L("x"), L("cdr", L("cdr", L("car", "x")))))
 
 func cddar(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
@@ -572,7 +574,7 @@ func cddar(args ...Exp) Exp {
 	)
 }
 
-var cdddar_label = []Exp{quote("label"), quote("cdddar"), []Exp{quote("lambda"), []Exp{quote("x")}, []Exp{quote("cdr"), []Exp{quote("cdr"), []Exp{quote("cdr"), []Exp{quote("car"), quote("x")}}}}}}
+var cdddar_label = L("label", "cdddar", L("lambda", L("x"), L("cdr", L("cdr", L("cdr", L("car", "x"))))))
 
 func cdddar(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
@@ -594,7 +596,7 @@ func cdddar(args ...Exp) Exp {
 	)
 }
 
-var cddddr_label = []Exp{quote("label"), quote("cddddr"), []Exp{quote("lambda"), []Exp{quote("x")}, []Exp{quote("cdr"), []Exp{quote("cdr"), []Exp{quote("cdr"), []Exp{quote("cdr"), quote("x")}}}}}}
+var cddddr_label = L("label", "cddddr", L("lambda", L("x"), L("cdr", L("cdr", L("cdr", L("cdr", "x"))))))
 
 func cddddr(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
@@ -616,7 +618,7 @@ func cddddr(args ...Exp) Exp {
 	)
 }
 
-var cdddr_label = []Exp{quote("label"), quote("cdddr"), []Exp{quote("lambda"), []Exp{quote("x")}, []Exp{quote("cdr"), []Exp{quote("cdr"), []Exp{quote("cdr"), quote("x")}}}}}
+var cdddr_label = L("label", "cdddr", L("lambda", L("x"), L("cdr", L("cdr", L("cdr", "x")))))
 
 func cdddr(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
@@ -635,7 +637,7 @@ func cdddr(args ...Exp) Exp {
 	)
 }
 
-var cddr_label = []Exp{quote("label"), quote("cddr"), []Exp{quote("lambda"), []Exp{quote("x")}, []Exp{quote("cdr"), []Exp{quote("cdr"), quote("x")}}}}
+var cddr_label = L("label", "cddr", L("lambda", L("x"), L("cdr", L("cdr", "x"))))
 
 func cddr(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
@@ -651,7 +653,7 @@ func cddr(args ...Exp) Exp {
 	)
 }
 
-var eval_label = []Exp{quote("label"), quote("eval"), []Exp{quote("lambda"), []Exp{quote("e"), quote("a")}, []Exp{quote("cond"), []Exp{[]Exp{quote("atom"), quote("e")}, []Exp{quote("assoc"), quote("e"), quote("a")}}, []Exp{[]Exp{quote("atom"), []Exp{quote("car"), quote("e")}}, []Exp{quote("cond"), []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("quote")}}, []Exp{quote("cadr"), quote("e")}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("atom")}}, []Exp{quote("atom"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("eq")}}, []Exp{quote("eq"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}, []Exp{quote("eval"), []Exp{quote("caddr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("plus")}}, []Exp{quote("plus"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}, []Exp{quote("eval"), []Exp{quote("caddr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("minus")}}, []Exp{quote("minus"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}, []Exp{quote("eval"), []Exp{quote("caddr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("mult")}}, []Exp{quote("mult"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}, []Exp{quote("eval"), []Exp{quote("caddr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("after")}}, []Exp{quote("after"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}, []Exp{quote("eval"), []Exp{quote("caddr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("display")}}, []Exp{quote("display"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("concat")}}, []Exp{quote("concat"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}, []Exp{quote("eval"), []Exp{quote("caddr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("hash")}}, []Exp{quote("hash"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("newkey")}}, []Exp{quote("newkey")}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("pub")}}, []Exp{quote("pub"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("sign")}}, []Exp{quote("sign"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}, []Exp{quote("eval"), []Exp{quote("caddr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("verify")}}, []Exp{quote("verify"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}, []Exp{quote("eval"), []Exp{quote("caddr"), quote("e")}, quote("a")}, []Exp{quote("eval"), []Exp{quote("cadddr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("car")}}, []Exp{quote("car"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("cdr")}}, []Exp{quote("cdr"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("cons")}}, []Exp{quote("cons"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}, []Exp{quote("eval"), []Exp{quote("caddr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("cond")}}, []Exp{quote("evcon"), []Exp{quote("cdr"), quote("e")}, quote("a")}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("list")}}, []Exp{quote("evlis"), []Exp{quote("cdr"), quote("e")}, quote("a")}}, []Exp{[]Exp{quote("quote"), quote("t")}, []Exp{quote("eval"), []Exp{quote("cons"), []Exp{quote("assoc"), []Exp{quote("car"), quote("e")}, quote("a")}, []Exp{quote("cdr"), quote("e")}}, quote("a")}}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("caar"), quote("e")}, []Exp{quote("quote"), quote("label")}}, []Exp{quote("eval"), []Exp{quote("cons"), []Exp{quote("caddar"), quote("e")}, []Exp{quote("cdr"), quote("e")}}, []Exp{quote("cons"), []Exp{quote("list"), []Exp{quote("cadar"), quote("e")}, []Exp{quote("car"), quote("e")}}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("caar"), quote("e")}, []Exp{quote("quote"), quote("lambda")}}, []Exp{quote("cond"), []Exp{[]Exp{quote("atom"), []Exp{quote("cadar"), quote("e")}}, []Exp{quote("eval"), []Exp{quote("caddar"), quote("e")}, []Exp{quote("cons"), []Exp{quote("list"), []Exp{quote("cadar"), quote("e")}, []Exp{quote("evlis"), []Exp{quote("cdr"), quote("e")}, quote("a")}}, quote("a")}}}, []Exp{[]Exp{quote("quote"), quote("t")}, []Exp{quote("eval"), []Exp{quote("caddar"), quote("e")}, []Exp{quote("append_go_sanitized"), []Exp{quote("pair"), []Exp{quote("cadar"), quote("e")}, []Exp{quote("evlis"), []Exp{quote("cdr"), quote("e")}, quote("a")}}, quote("a")}}}}}}}}
+var eval_label = L("label", "eval", L("lambda", L("e", "a"), L("cond", L(L("atom", "e"), L("assoc", "e", "a")), L(L("atom", L("car", "e")), L("cond", L(L("eq", L("car", "e"), L("quote", "quote")), L("cadr", "e")), L(L("eq", L("car", "e"), L("quote", "atom")), L("atom", L("eval", L("cadr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "eq")), L("eq", L("eval", L("cadr", "e"), "a"), L("eval", L("caddr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "plus")), L("plus", L("eval", L("cadr", "e"), "a"), L("eval", L("caddr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "minus")), L("minus", L("eval", L("cadr", "e"), "a"), L("eval", L("caddr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "mult")), L("mult", L("eval", L("cadr", "e"), "a"), L("eval", L("caddr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "after")), L("after", L("eval", L("cadr", "e"), "a"), L("eval", L("caddr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "display")), L("display", L("eval", L("cadr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "concat")), L("concat", L("eval", L("cadr", "e"), "a"), L("eval", L("caddr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "hash")), L("hash", L("eval", L("cadr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "newkey")), L("newkey")), L(L("eq", L("car", "e"), L("quote", "pub")), L("pub", L("eval", L("cadr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "sign")), L("sign", L("eval", L("cadr", "e"), "a"), L("eval", L("caddr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "verify")), L("verify", L("eval", L("cadr", "e"), "a"), L("eval", L("caddr", "e"), "a"), L("eval", L("cadddr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "car")), L("car", L("eval", L("cadr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "cdr")), L("cdr", L("eval", L("cadr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "cons")), L("cons", L("eval", L("cadr", "e"), "a"), L("eval", L("caddr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "cond")), L("evcon", L("cdr", "e"), "a")), L(L("eq", L("car", "e"), L("quote", "list")), L("evlis", L("cdr", "e"), "a")), L(L("quote", "t"), L("eval", L("cons", L("assoc", L("car", "e"), "a"), L("cdr", "e")), "a")))), L(L("eq", L("caar", "e"), L("quote", "label")), L("eval", L("cons", L("caddar", "e"), L("cdr", "e")), L("cons", L("list", L("cadar", "e"), L("car", "e")), "a"))), L(L("eq", L("caar", "e"), L("quote", "lambda")), L("cond", L(L("atom", L("cadar", "e")), L("eval", L("caddar", "e"), L("cons", L("list", L("cadar", "e"), L("evlis", L("cdr", "e"), "a")), "a"))), L(L("quote", "t"), L("eval", L("caddar", "e"), L("append_go_sanitized", L("pair", L("cadar", "e"), L("evlis", L("cdr", "e"), "a")), "a"))))))))
 
 func eval(args ...Exp) Exp {
 	if err := checklen(2, args); err != nil {
@@ -846,7 +848,7 @@ func eval(args ...Exp) Exp {
 	)
 }
 
-var evcon_label = []Exp{quote("label"), quote("evcon"), []Exp{quote("lambda"), []Exp{quote("c"), quote("a")}, []Exp{quote("cond"), []Exp{[]Exp{quote("eval"), []Exp{quote("caar"), quote("c")}, quote("a")}, []Exp{quote("eval"), []Exp{quote("cadar"), quote("c")}, quote("a")}}, []Exp{[]Exp{quote("quote"), quote("t")}, []Exp{quote("evcon"), []Exp{quote("cdr"), quote("c")}, quote("a")}}}}}
+var evcon_label = L("label", "evcon", L("lambda", L("c", "a"), L("cond", L(L("eval", L("caar", "c"), "a"), L("eval", L("cadar", "c"), "a")), L(L("quote", "t"), L("evcon", L("cdr", "c"), "a")))))
 
 func evcon(args ...Exp) Exp {
 	if err := checklen(2, args); err != nil {
@@ -873,7 +875,7 @@ func evcon(args ...Exp) Exp {
 	)
 }
 
-var evlis_label = []Exp{quote("label"), quote("evlis"), []Exp{quote("lambda"), []Exp{quote("m"), quote("a")}, []Exp{quote("cond"), []Exp{[]Exp{quote("null"), quote("m")}, []Exp{quote("quote"), []Exp{}}}, []Exp{[]Exp{quote("quote"), quote("t")}, []Exp{quote("cons"), []Exp{quote("eval"), []Exp{quote("car"), quote("m")}, quote("a")}, []Exp{quote("evlis"), []Exp{quote("cdr"), quote("m")}, quote("a")}}}}}}
+var evlis_label = L("label", "evlis", L("lambda", L("m", "a"), L("cond", L(L("null", "m"), L("quote", L())), L(L("quote", "t"), L("cons", L("eval", L("car", "m"), "a"), L("evlis", L("cdr", "m"), "a"))))))
 
 func evlis(args ...Exp) Exp {
 	if err := checklen(2, args); err != nil {
@@ -898,7 +900,7 @@ func evlis(args ...Exp) Exp {
 	)
 }
 
-var factorial_label = []Exp{quote("label"), quote("factorial"), []Exp{quote("lambda"), []Exp{quote("n")}, []Exp{quote("cond"), []Exp{[]Exp{quote("eq"), []Exp{quote("quote"), quote("0")}, quote("n")}, []Exp{quote("quote"), quote("1")}}, []Exp{[]Exp{quote("quote"), quote("t")}, []Exp{quote("mult"), quote("n"), []Exp{quote("factorial"), []Exp{quote("minus"), quote("n"), []Exp{quote("quote"), quote("1")}}}}}}}}
+var factorial_label = L("label", "factorial", L("lambda", L("n"), L("cond", L(L("eq", L("quote", "0"), "n"), L("quote", "1")), L(L("quote", "t"), L("mult", "n", L("factorial", L("minus", "n", L("quote", "1"))))))))
 
 func factorial(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
@@ -922,7 +924,7 @@ func factorial(args ...Exp) Exp {
 	)
 }
 
-var length_label = []Exp{quote("label"), quote("length"), []Exp{quote("lambda"), []Exp{quote("x")}, []Exp{quote("cond"), []Exp{[]Exp{quote("atom"), quote("x")}, []Exp{quote("quote"), quote("0")}}, []Exp{[]Exp{quote("quote"), quote("t")}, []Exp{quote("plus"), []Exp{quote("quote"), quote("1")}, []Exp{quote("length"), []Exp{quote("cdr"), quote("x")}}}}}}}
+var length_label = L("label", "length", L("lambda", L("x"), L("cond", L(L("atom", "x"), L("quote", "0")), L(L("quote", "t"), L("plus", L("quote", "1"), L("length", L("cdr", "x")))))))
 
 func length(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
@@ -946,7 +948,7 @@ func length(args ...Exp) Exp {
 	)
 }
 
-var not_label = []Exp{quote("label"), quote("not"), []Exp{quote("lambda"), []Exp{quote("x")}, []Exp{quote("cond"), []Exp{quote("x"), []Exp{quote("quote"), []Exp{}}}, []Exp{[]Exp{quote("quote"), quote("t")}, []Exp{quote("quote"), quote("t")}}}}}
+var not_label = L("label", "not", L("lambda", L("x"), L("cond", L("x", L("quote", L())), L(L("quote", "t"), L("quote", "t")))))
 
 func not(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
@@ -966,7 +968,7 @@ func not(args ...Exp) Exp {
 	)
 }
 
-var null_label = []Exp{quote("label"), quote("null"), []Exp{quote("lambda"), []Exp{quote("x")}, []Exp{quote("eq"), quote("x"), []Exp{quote("quote"), []Exp{}}}}}
+var null_label = L("label", "null", L("lambda", L("x"), L("eq", "x", L("quote", L()))))
 
 func null(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
@@ -980,7 +982,7 @@ func null(args ...Exp) Exp {
 	)
 }
 
-var pair_label = []Exp{quote("label"), quote("pair"), []Exp{quote("lambda"), []Exp{quote("x"), quote("y")}, []Exp{quote("cond"), []Exp{[]Exp{quote("and"), []Exp{quote("null"), quote("x")}, []Exp{quote("null"), quote("y")}}, []Exp{quote("quote"), []Exp{}}}, []Exp{[]Exp{quote("and"), []Exp{quote("not"), []Exp{quote("atom"), quote("x")}}, []Exp{quote("not"), []Exp{quote("atom"), quote("y")}}}, []Exp{quote("cons"), []Exp{quote("list"), []Exp{quote("car"), quote("x")}, []Exp{quote("car"), quote("y")}}, []Exp{quote("pair"), []Exp{quote("cdr"), quote("x")}, []Exp{quote("cdr"), quote("y")}}}}}}}
+var pair_label = L("label", "pair", L("lambda", L("x", "y"), L("cond", L(L("and", L("null", "x"), L("null", "y")), L("quote", L())), L(L("and", L("not", L("atom", "x")), L("not", L("atom", "y"))), L("cons", L("list", L("car", "x"), L("car", "y")), L("pair", L("cdr", "x"), L("cdr", "y")))))))
 
 func pair(args ...Exp) Exp {
 	if err := checklen(2, args); err != nil {
@@ -1007,7 +1009,7 @@ func pair(args ...Exp) Exp {
 	)
 }
 
-var subst_label = []Exp{quote("label"), quote("subst"), []Exp{quote("lambda"), []Exp{quote("x"), quote("y"), quote("z")}, []Exp{quote("cond"), []Exp{[]Exp{quote("atom"), quote("z")}, []Exp{quote("cond"), []Exp{[]Exp{quote("eq"), quote("z"), quote("y")}, quote("x")}, []Exp{[]Exp{quote("quote"), quote("t")}, quote("z")}}}, []Exp{[]Exp{quote("quote"), quote("t")}, []Exp{quote("cons"), []Exp{quote("subst"), quote("x"), quote("y"), []Exp{quote("car"), quote("z")}}, []Exp{quote("subst"), quote("x"), quote("y"), []Exp{quote("cdr"), quote("z")}}}}}}}
+var subst_label = L("label", "subst", L("lambda", L("x", "y", "z"), L("cond", L(L("atom", "z"), L("cond", L(L("eq", "z", "y"), "x"), L(L("quote", "t"), "z"))), L(L("quote", "t"), L("cons", L("subst", "x", "y", L("car", "z")), L("subst", "x", "y", L("cdr", "z")))))))
 
 func subst(args ...Exp) Exp {
 	if err := checklen(3, args); err != nil {
@@ -1043,7 +1045,7 @@ func subst(args ...Exp) Exp {
 	)
 }
 
-var xlist_label = []Exp{quote("label"), quote("xlist"), []Exp{quote("lambda"), quote("x"), quote("x")}}
+var xlist_label = L("label", "xlist", L("lambda", "x", "x"))
 
 func xlist(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
@@ -1054,47 +1056,47 @@ func xlist(args ...Exp) Exp {
 }
 
 func init() {
-	env = []Exp{
-		[]Exp{"and", and_label},
-		[]Exp{"append_go_sanitized", append_go_sanitized_label},
-		[]Exp{"assoc", assoc_label},
-		[]Exp{"caaaar", caaaar_label},
-		[]Exp{"caaadr", caaadr_label},
-		[]Exp{"caaar", caaar_label},
-		[]Exp{"caadar", caadar_label},
-		[]Exp{"caaddr", caaddr_label},
-		[]Exp{"caadr", caadr_label},
-		[]Exp{"caar", caar_label},
-		[]Exp{"cadaar", cadaar_label},
-		[]Exp{"cadadr", cadadr_label},
-		[]Exp{"cadar", cadar_label},
-		[]Exp{"caddar", caddar_label},
-		[]Exp{"cadddr", cadddr_label},
-		[]Exp{"caddr", caddr_label},
-		[]Exp{"cadr", cadr_label},
-		[]Exp{"cdaaar", cdaaar_label},
-		[]Exp{"cdaadr", cdaadr_label},
-		[]Exp{"cdaar", cdaar_label},
-		[]Exp{"cdadar", cdadar_label},
-		[]Exp{"cdaddr", cdaddr_label},
-		[]Exp{"cdadr", cdadr_label},
-		[]Exp{"cdar", cdar_label},
-		[]Exp{"cddaar", cddaar_label},
-		[]Exp{"cddadr", cddadr_label},
-		[]Exp{"cddar", cddar_label},
-		[]Exp{"cdddar", cdddar_label},
-		[]Exp{"cddddr", cddddr_label},
-		[]Exp{"cdddr", cdddr_label},
-		[]Exp{"cddr", cddr_label},
-		[]Exp{"eval", eval_label},
-		[]Exp{"evcon", evcon_label},
-		[]Exp{"evlis", evlis_label},
-		[]Exp{"factorial", factorial_label},
-		[]Exp{"length", length_label},
-		[]Exp{"not", not_label},
-		[]Exp{"null", null_label},
-		[]Exp{"pair", pair_label},
-		[]Exp{"subst", subst_label},
-		[]Exp{"xlist", xlist_label},
-	}
+	env = L(
+		L("and", and_label),
+		L("append_go_sanitized", append_go_sanitized_label),
+		L("assoc", assoc_label),
+		L("caaaar", caaaar_label),
+		L("caaadr", caaadr_label),
+		L("caaar", caaar_label),
+		L("caadar", caadar_label),
+		L("caaddr", caaddr_label),
+		L("caadr", caadr_label),
+		L("caar", caar_label),
+		L("cadaar", cadaar_label),
+		L("cadadr", cadadr_label),
+		L("cadar", cadar_label),
+		L("caddar", caddar_label),
+		L("cadddr", cadddr_label),
+		L("caddr", caddr_label),
+		L("cadr", cadr_label),
+		L("cdaaar", cdaaar_label),
+		L("cdaadr", cdaadr_label),
+		L("cdaar", cdaar_label),
+		L("cdadar", cdadar_label),
+		L("cdaddr", cdaddr_label),
+		L("cdadr", cdadr_label),
+		L("cdar", cdar_label),
+		L("cddaar", cddaar_label),
+		L("cddadr", cddadr_label),
+		L("cddar", cddar_label),
+		L("cdddar", cdddar_label),
+		L("cddddr", cddddr_label),
+		L("cdddr", cdddr_label),
+		L("cddr", cddr_label),
+		L("eval", eval_label),
+		L("evcon", evcon_label),
+		L("evlis", evlis_label),
+		L("factorial", factorial_label),
+		L("length", length_label),
+		L("not", not_label),
+		L("null", null_label),
+		L("pair", pair_label),
+		L("subst", subst_label),
+		L("xlist", xlist_label),
+	)
 }

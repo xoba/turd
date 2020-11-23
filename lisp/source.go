@@ -14,19 +14,22 @@ import (
 type EvalFunc func(e Exp) Exp
 
 func Eval(e Exp) Exp {
-	return CompiledEval(e)
+	if true {
+		return CompiledEval(e)
+	} else {
+		return InterpretedEval(e, CompiledEval)
+	}
 }
 
 func CompiledEval(e Exp) Exp {
-	e = SanitizeGo(e)
-	return UnsanitizeGo(eval([]Exp{e, env}...))
+	return UnsanitizeGo(eval([]Exp{SanitizeGo(e), env}...))
 }
 
-func InterpretedEval(e Exp, f EvalFunc) Exp {
+func InterpretedEval(e Exp, eval EvalFunc) Exp {
 	q := func(e Exp) Exp {
 		return []Exp{"quote", e}
 	}
-	return f([]Exp{eval_label, q(e), q(env)})
+	return eval([]Exp{eval_label, q(e), q(env)})
 }
 
 func TestParse(c cnfg.Config) error {
@@ -117,6 +120,9 @@ func Run(c cnfg.Config) error {
 			})
 		},
 	}
+
+	// interpreted2 is way too slow! never actually saw it finish:
+	delete(evals, "interpreted2")
 
 	if !c.Debug {
 		delete(evals, "interpreted2")
