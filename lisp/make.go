@@ -66,7 +66,7 @@ func CompileDef(cnfg.Config) error {
 		names = append(names, name)
 	}
 
-	fmt.Fprintf(f, "\n\nfunc init() { env = []Exp{")
+	fmt.Fprintf(f, "\n\nfunc init() { env = []Exp{\n")
 	for _, n := range names {
 		fmt.Fprintf(f, "[]Exp{%q,%s_label},\n", n, n)
 	}

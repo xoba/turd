@@ -45,9 +45,9 @@ func and(args ...Exp) Exp {
 	)
 }
 
-var go_sanitized_append_label = []Exp{quote("label"), quote("go_sanitized_append"), []Exp{quote("lambda"), []Exp{quote("x"), quote("y")}, []Exp{quote("cond"), []Exp{[]Exp{quote("null"), quote("x")}, quote("y")}, []Exp{[]Exp{quote("quote"), quote("t")}, []Exp{quote("cons"), []Exp{quote("car"), quote("x")}, []Exp{quote("go_sanitized_append"), []Exp{quote("cdr"), quote("x")}, quote("y")}}}}}}
+var append_go_sanitized_label = []Exp{quote("label"), quote("append_go_sanitized"), []Exp{quote("lambda"), []Exp{quote("x"), quote("y")}, []Exp{quote("cond"), []Exp{[]Exp{quote("null"), quote("x")}, quote("y")}, []Exp{[]Exp{quote("quote"), quote("t")}, []Exp{quote("cons"), []Exp{quote("car"), quote("x")}, []Exp{quote("append_go_sanitized"), []Exp{quote("cdr"), quote("x")}, quote("y")}}}}}}
 
-func go_sanitized_append(args ...Exp) Exp {
+func append_go_sanitized(args ...Exp) Exp {
 	if err := checklen(2, args); err != nil {
 		return err
 	}
@@ -68,7 +68,7 @@ func go_sanitized_append(args ...Exp) Exp {
 				return "t"
 			}),
 			Func(func(...Exp) Exp {
-				return apply(cons, apply(car, x), apply(go_sanitized_append, apply(cdr, x), y))
+				return apply(cons, apply(car, x), apply(append_go_sanitized, apply(cdr, x), y))
 			}),
 		},
 	)
@@ -671,7 +671,7 @@ func cddr(args ...Exp) Exp {
 	)
 }
 
-var eval_label = []Exp{quote("label"), quote("eval"), []Exp{quote("lambda"), []Exp{quote("e"), quote("a")}, []Exp{quote("cond"), []Exp{[]Exp{quote("atom"), quote("e")}, []Exp{quote("assoc"), quote("e"), quote("a")}}, []Exp{[]Exp{quote("atom"), []Exp{quote("car"), quote("e")}}, []Exp{quote("cond"), []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("quote")}}, []Exp{quote("cadr"), quote("e")}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("atom")}}, []Exp{quote("atom"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("eq")}}, []Exp{quote("eq"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}, []Exp{quote("eval"), []Exp{quote("caddr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("plus")}}, []Exp{quote("plus"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}, []Exp{quote("eval"), []Exp{quote("caddr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("minus")}}, []Exp{quote("minus"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}, []Exp{quote("eval"), []Exp{quote("caddr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("mult")}}, []Exp{quote("mult"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}, []Exp{quote("eval"), []Exp{quote("caddr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("after")}}, []Exp{quote("after"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}, []Exp{quote("eval"), []Exp{quote("caddr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("display")}}, []Exp{quote("display"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("concat")}}, []Exp{quote("concat"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}, []Exp{quote("eval"), []Exp{quote("caddr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("hash")}}, []Exp{quote("hash"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("newkey")}}, []Exp{quote("newkey")}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("pub")}}, []Exp{quote("pub"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("sign")}}, []Exp{quote("sign"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}, []Exp{quote("eval"), []Exp{quote("caddr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("verify")}}, []Exp{quote("verify"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}, []Exp{quote("eval"), []Exp{quote("caddr"), quote("e")}, quote("a")}, []Exp{quote("eval"), []Exp{quote("cadddr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("car")}}, []Exp{quote("car"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("cdr")}}, []Exp{quote("cdr"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("cons")}}, []Exp{quote("cons"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}, []Exp{quote("eval"), []Exp{quote("caddr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("cond")}}, []Exp{quote("evcon"), []Exp{quote("cdr"), quote("e")}, quote("a")}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("list")}}, []Exp{quote("evlis"), []Exp{quote("cdr"), quote("e")}, quote("a")}}, []Exp{[]Exp{quote("quote"), quote("t")}, []Exp{quote("eval"), []Exp{quote("cons"), []Exp{quote("assoc"), []Exp{quote("car"), quote("e")}, quote("a")}, []Exp{quote("cdr"), quote("e")}}, quote("a")}}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("caar"), quote("e")}, []Exp{quote("quote"), quote("label")}}, []Exp{quote("eval"), []Exp{quote("cons"), []Exp{quote("caddar"), quote("e")}, []Exp{quote("cdr"), quote("e")}}, []Exp{quote("cons"), []Exp{quote("list"), []Exp{quote("cadar"), quote("e")}, []Exp{quote("car"), quote("e")}}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("caar"), quote("e")}, []Exp{quote("quote"), quote("lambda")}}, []Exp{quote("cond"), []Exp{[]Exp{quote("atom"), []Exp{quote("cadar"), quote("e")}}, []Exp{quote("eval"), []Exp{quote("caddar"), quote("e")}, []Exp{quote("cons"), []Exp{quote("list"), []Exp{quote("cadar"), quote("e")}, []Exp{quote("evlis"), []Exp{quote("cdr"), quote("e")}, quote("a")}}, quote("a")}}}, []Exp{[]Exp{quote("quote"), quote("t")}, []Exp{quote("eval"), []Exp{quote("caddar"), quote("e")}, []Exp{quote("go_sanitized_append"), []Exp{quote("pair"), []Exp{quote("cadar"), quote("e")}, []Exp{quote("evlis"), []Exp{quote("cdr"), quote("e")}, quote("a")}}, quote("a")}}}}}}}}
+var eval_label = []Exp{quote("label"), quote("eval"), []Exp{quote("lambda"), []Exp{quote("e"), quote("a")}, []Exp{quote("cond"), []Exp{[]Exp{quote("atom"), quote("e")}, []Exp{quote("assoc"), quote("e"), quote("a")}}, []Exp{[]Exp{quote("atom"), []Exp{quote("car"), quote("e")}}, []Exp{quote("cond"), []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("quote")}}, []Exp{quote("cadr"), quote("e")}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("atom")}}, []Exp{quote("atom"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("eq")}}, []Exp{quote("eq"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}, []Exp{quote("eval"), []Exp{quote("caddr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("plus")}}, []Exp{quote("plus"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}, []Exp{quote("eval"), []Exp{quote("caddr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("minus")}}, []Exp{quote("minus"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}, []Exp{quote("eval"), []Exp{quote("caddr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("mult")}}, []Exp{quote("mult"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}, []Exp{quote("eval"), []Exp{quote("caddr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("after")}}, []Exp{quote("after"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}, []Exp{quote("eval"), []Exp{quote("caddr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("display")}}, []Exp{quote("display"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("concat")}}, []Exp{quote("concat"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}, []Exp{quote("eval"), []Exp{quote("caddr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("hash")}}, []Exp{quote("hash"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("newkey")}}, []Exp{quote("newkey")}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("pub")}}, []Exp{quote("pub"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("sign")}}, []Exp{quote("sign"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}, []Exp{quote("eval"), []Exp{quote("caddr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("verify")}}, []Exp{quote("verify"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}, []Exp{quote("eval"), []Exp{quote("caddr"), quote("e")}, quote("a")}, []Exp{quote("eval"), []Exp{quote("cadddr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("car")}}, []Exp{quote("car"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("cdr")}}, []Exp{quote("cdr"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("cons")}}, []Exp{quote("cons"), []Exp{quote("eval"), []Exp{quote("cadr"), quote("e")}, quote("a")}, []Exp{quote("eval"), []Exp{quote("caddr"), quote("e")}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("cond")}}, []Exp{quote("evcon"), []Exp{quote("cdr"), quote("e")}, quote("a")}}, []Exp{[]Exp{quote("eq"), []Exp{quote("car"), quote("e")}, []Exp{quote("quote"), quote("list")}}, []Exp{quote("evlis"), []Exp{quote("cdr"), quote("e")}, quote("a")}}, []Exp{[]Exp{quote("quote"), quote("t")}, []Exp{quote("eval"), []Exp{quote("cons"), []Exp{quote("assoc"), []Exp{quote("car"), quote("e")}, quote("a")}, []Exp{quote("cdr"), quote("e")}}, quote("a")}}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("caar"), quote("e")}, []Exp{quote("quote"), quote("label")}}, []Exp{quote("eval"), []Exp{quote("cons"), []Exp{quote("caddar"), quote("e")}, []Exp{quote("cdr"), quote("e")}}, []Exp{quote("cons"), []Exp{quote("list"), []Exp{quote("cadar"), quote("e")}, []Exp{quote("car"), quote("e")}}, quote("a")}}}, []Exp{[]Exp{quote("eq"), []Exp{quote("caar"), quote("e")}, []Exp{quote("quote"), quote("lambda")}}, []Exp{quote("cond"), []Exp{[]Exp{quote("atom"), []Exp{quote("cadar"), quote("e")}}, []Exp{quote("eval"), []Exp{quote("caddar"), quote("e")}, []Exp{quote("cons"), []Exp{quote("list"), []Exp{quote("cadar"), quote("e")}, []Exp{quote("evlis"), []Exp{quote("cdr"), quote("e")}, quote("a")}}, quote("a")}}}, []Exp{[]Exp{quote("quote"), quote("t")}, []Exp{quote("eval"), []Exp{quote("caddar"), quote("e")}, []Exp{quote("append_go_sanitized"), []Exp{quote("pair"), []Exp{quote("cadar"), quote("e")}, []Exp{quote("evlis"), []Exp{quote("cdr"), quote("e")}, quote("a")}}, quote("a")}}}}}}}}
 
 func eval(args ...Exp) Exp {
 	if err := checklen(2, args); err != nil {
@@ -862,7 +862,7 @@ func eval(args ...Exp) Exp {
 						return "t"
 					}),
 					Func(func(...Exp) Exp {
-						return apply(eval, apply(caddar, e), apply(go_sanitized_append, apply(pair, apply(cadar, e), apply(evlis, apply(cdr, e), a)), a))
+						return apply(eval, apply(caddar, e), apply(append_go_sanitized, apply(pair, apply(cadar, e), apply(evlis, apply(cdr, e), a)), a))
 					}),
 				})
 			}),
@@ -984,16 +984,6 @@ func length(args ...Exp) Exp {
 	)
 }
 
-var xlist_label = []Exp{quote("label"), quote("xlist"), []Exp{quote("lambda"), quote("x"), quote("x")}}
-
-func xlist(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
-	x := args[0]
-	return x
-}
-
 var not_label = []Exp{quote("label"), quote("not"), []Exp{quote("lambda"), []Exp{quote("x")}, []Exp{quote("cond"), []Exp{quote("x"), []Exp{quote("quote"), []Exp{}}}, []Exp{[]Exp{quote("quote"), quote("t")}, []Exp{quote("quote"), quote("t")}}}}}
 
 func not(args ...Exp) Exp {
@@ -1109,25 +1099,20 @@ func subst(args ...Exp) Exp {
 	)
 }
 
-var testing_label = []Exp{quote("label"), quote("testing"), []Exp{quote("lambda"), []Exp{quote("x")}, []Exp{quote("display"), []Exp{quote("car"), quote("x")}}}}
+var xlist_label = []Exp{quote("label"), quote("xlist"), []Exp{quote("lambda"), quote("x"), quote("x")}}
 
-func testing(args ...Exp) Exp {
+func xlist(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
 		return err
 	}
 	x := args[0]
-	return apply(
-		display,
-		apply(
-			car,
-			x,
-		),
-	)
+	return x
 }
 
 func init() {
-	env = []Exp{[]Exp{"and", and_label},
-		[]Exp{"go_sanitized_append", go_sanitized_append_label},
+	env = []Exp{
+		[]Exp{"and", and_label},
+		[]Exp{"append_go_sanitized", append_go_sanitized_label},
 		[]Exp{"assoc", assoc_label},
 		[]Exp{"caaaar", caaaar_label},
 		[]Exp{"caaadr", caaadr_label},
@@ -1162,11 +1147,10 @@ func init() {
 		[]Exp{"evlis", evlis_label},
 		[]Exp{"factorial", factorial_label},
 		[]Exp{"length", length_label},
-		[]Exp{"xlist", xlist_label},
 		[]Exp{"not", not_label},
 		[]Exp{"null", null_label},
 		[]Exp{"pair", pair_label},
 		[]Exp{"subst", subst_label},
-		[]Exp{"testing", testing_label},
+		[]Exp{"xlist", xlist_label},
 	}
 }

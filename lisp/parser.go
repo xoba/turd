@@ -273,25 +273,25 @@ continue     for          import       return       var
 	return
 }
 
-func UnsanitizeGo(e Exp) Exp {
-	//return e
+func sanitize(s string) string {
+	return s + "_go_sanitized"
+}
 
+func UnsanitizeGo(e Exp) Exp {
 	for _, x := range GoIdentifiers() {
-		e = translateAtoms("go_sanitized_"+x, x, e)
+		e = translateAtoms(e, sanitize(x), x)
 	}
 	return e
 }
 
 func SanitizeGo(e Exp) Exp {
-	//return e
-
 	for _, x := range GoIdentifiers() {
-		e = translateAtoms(x, "go_sanitized_"+x, e)
+		e = translateAtoms(e, x, sanitize(x))
 	}
 	return e
 }
 
-func translateAtoms(from, to string, e Exp) Exp {
+func translateAtoms(e Exp, from, to string) Exp {
 	switch t := e.(type) {
 	case string:
 		if t == from {
@@ -301,7 +301,7 @@ func translateAtoms(from, to string, e Exp) Exp {
 	case []Exp:
 		var out []Exp
 		for _, c := range t {
-			out = append(out, translateAtoms(from, to, c))
+			out = append(out, translateAtoms(c, from, to))
 		}
 		return out
 	case error:

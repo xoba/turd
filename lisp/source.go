@@ -23,10 +23,10 @@ func CompiledEval(e Exp) Exp {
 }
 
 func InterpretedEval(e Exp, f EvalFunc) Exp {
-	quote := func(e Exp) Exp {
+	q := func(e Exp) Exp {
 		return []Exp{"quote", e}
 	}
-	return f([]Exp{eval_label, quote(e), quote(env)})
+	return f([]Exp{eval_label, q(e), q(env)})
 }
 
 func TestParse(c cnfg.Config) error {
@@ -315,7 +315,7 @@ func checkargs(args []Exp) error {
 		case error:
 			return t
 		default:
-			return fmt.Errorf("illegal exp type: %T %v", t, t)
+			return fmt.Errorf("illegal type %T: %v", t, t)
 		}
 	}
 	return nil
