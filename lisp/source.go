@@ -327,6 +327,12 @@ func Run(c cnfg.Config) error {
 		test("iscxr", `(iscxr 'cr)`, `()`)
 	}
 
+	test("runes", `(runes 'abc)`, "(a b c)")
+	test("runes", `(runes 'caddr)`, "(c a d d r)")
+
+	test("errors", `(err 'abc)`, "error: abc")
+	test("errors", `(err (list 'a 'b 'c))`, "error: (a b c)")
+
 	test("", ``, ``)
 	test("", ``, ``)
 	test("", ``, ``)

@@ -4,9 +4,14 @@
    ((atom (car e))
     (cond
 
-     ; somehow this doesn't work in interpreted mode!
-     ;((iscxr (car e)) (cxr (car e) (eval (cadr  e) a)))
-     ;((eq (car e) 'iscxr) (iscxr (eval (cadr  e) a)))
+     ; somehow this doesn't work in interpreted mode:
+     ;
+     ; ((iscxr (car e)) (cxr (car e) (eval (cadr  e) a)))
+     ; ((eq (car e) 'iscxr) (iscxr (eval (cadr  e) a)))
+     ;
+     ; maybe, we need an axiom to convert atoms to runes?
+     ((eq (car e) 'runes)   (runes (eval (cadr e) a)))
+     ((eq (car e) 'err)     (err (eval (cadr e) a)))
      
      ((eq (car e) 'quote)   (cadr e))
      ((eq (car e) 'atom)    (atom    (eval (cadr  e) a)))

@@ -2,6 +2,7 @@ package lisp
 
 import (
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"math/big"
 	"strings"
@@ -71,6 +72,30 @@ func three(args ...Exp) (Exp, Exp, Exp) {
 // ----------------------------------------------------------------------
 
 // TODO: maybe natively handle type []byte, rather than base64-encoded strings?
+
+func runes(args ...Exp) Exp {
+	if err := checklen(1, args); err != nil {
+		return err
+	}
+	x := args[0]
+	op, ok := x.(string)
+	if !ok {
+		return fmt.Errorf("not a string")
+	}
+	var out []Exp
+	for _, r := range op {
+		out = append(out, string(r))
+	}
+	return out
+}
+
+func err(args ...Exp) Exp {
+	if err := checklen(1, args); err != nil {
+		return err
+	}
+	x := args[0]
+	return errors.New(String(x))
+}
 
 // return true if it's car, cdr, cadr, cddr, ..., caaar, etc., else false
 func iscxr(args ...Exp) Exp {
