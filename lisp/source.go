@@ -55,7 +55,7 @@ func TestParse(c cnfg.Config) error {
 	return nil
 }
 
-func Run(cnfg.Config) error {
+func Run(c cnfg.Config) error {
 	var last string
 
 	type evalFunc func(e Exp) Exp
@@ -105,7 +105,9 @@ func Run(cnfg.Config) error {
 		},
 	}
 
-	delete(evals, "interpreted")
+	if !c.Debug {
+		delete(evals, "interpreted")
+	}
 
 	test := func(msg, input, expect string) {
 		for k, f := range evals {
@@ -272,7 +274,9 @@ func Run(cnfg.Config) error {
 	test("len", `(length '(a))`, `1`)
 	test("len", `(length '(a b c))`, `3`)
 
-	test("", ``, ``)
+	// first-order functions
+	test("fof", `((lambda (f) (f '(a))) 'car)`, `a`)
+
 	test("", ``, ``)
 	test("", ``, ``)
 	test("", ``, ``)
