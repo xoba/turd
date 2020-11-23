@@ -1,2 +1,2 @@
 (defun caddr (x)
-(car(cdr(cdr x))))
+  (car (cdr (cdr x))))

@@ -303,29 +303,29 @@ func Run(c cnfg.Config) error {
 	// first-order functions
 	test("fof", `((lambda (f) (f '(a))) 'car)`, `a`)
 
-	test("iscxr", `(iscxr 'car)`, `()`) // car is axiom
-	test("iscxr", `(iscxr 'cdr)`, `()`) // cdr is axiom
-
-	test("iscxr", `(iscxr 'caar)`, `t`)
-	test("iscxr", `(iscxr 'cadr)`, `t`)
-	test("iscxr", `(iscxr 'cdar)`, `t`)
-	test("iscxr", `(iscxr 'cddr)`, `t`)
-	test("iscxr", `(iscxr 'caaar)`, `t`)
-	test("iscxr", `(iscxr 'caaaar)`, `t`)
-
-	test("iscxr", `(iscxr 'dfdf)`, `()`)
-	test("iscxr", `(iscxr '123)`, `()`)
-	test("iscxr", `(iscxr 'caxr)`, `()`)
-	test("iscxr", `(iscxr 'cxdr)`, `()`)
-	test("iscxr", `(iscxr 'cdxr)`, `()`)
-	test("iscxr", `(iscxr 'caxaar)`, `()`)
-	test("iscxr", `(iscxr 'a)`, `()`)
-	test("iscxr", `(iscxr 'd)`, `()`)
-	test("iscxr", `(iscxr 'c)`, `()`)
-	test("iscxr", `(iscxr 'r)`, `()`)
-	test("iscxr", `(iscxr 'ar)`, `()`)
-	test("iscxr", `(iscxr 'dr)`, `()`)
-	test("iscxr", `(iscxr 'cr)`, `()`)
+	if false {
+		test("iscxr", `(iscxr 'car)`, `()`) // car is axiom
+		test("iscxr", `(iscxr 'cdr)`, `()`) // cdr is axiom
+		test("iscxr", `(iscxr 'caar)`, `t`)
+		test("iscxr", `(iscxr 'cadr)`, `t`)
+		test("iscxr", `(iscxr 'cdar)`, `t`)
+		test("iscxr", `(iscxr 'cddr)`, `t`)
+		test("iscxr", `(iscxr 'caaar)`, `t`)
+		test("iscxr", `(iscxr 'caaaar)`, `t`)
+		test("iscxr", `(iscxr 'dfdf)`, `()`)
+		test("iscxr", `(iscxr '123)`, `()`)
+		test("iscxr", `(iscxr 'caxr)`, `()`)
+		test("iscxr", `(iscxr 'cxdr)`, `()`)
+		test("iscxr", `(iscxr 'cdxr)`, `()`)
+		test("iscxr", `(iscxr 'caxaar)`, `()`)
+		test("iscxr", `(iscxr 'a)`, `()`)
+		test("iscxr", `(iscxr 'd)`, `()`)
+		test("iscxr", `(iscxr 'c)`, `()`)
+		test("iscxr", `(iscxr 'r)`, `()`)
+		test("iscxr", `(iscxr 'ar)`, `()`)
+		test("iscxr", `(iscxr 'dr)`, `()`)
+		test("iscxr", `(iscxr 'cr)`, `()`)
+	}
 
 	test("", ``, ``)
 	test("", ``, ``)

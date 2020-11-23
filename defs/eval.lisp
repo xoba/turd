@@ -5,15 +5,15 @@
     (cond
 
      ; somehow this doesn't work in interpreted mode!
-     ((eq (car e) 'car)     (car     (eval (cadr  e) a)))
-     ((eq (car e) 'cdr)     (cdr     (eval (cadr  e) a)))
-     ((iscxr (car e)) (cxr (car e) (eval (cadr  e) a)))
-     ((eq (car e) 'iscxr) (iscxr (eval (cadr  e) a)))
+     ;((iscxr (car e)) (cxr (car e) (eval (cadr  e) a)))
+     ;((eq (car e) 'iscxr) (iscxr (eval (cadr  e) a)))
      
      ((eq (car e) 'quote)   (cadr e))
      ((eq (car e) 'atom)    (atom    (eval (cadr  e) a)))
      ((eq (car e) 'eq)      (eq      (eval (cadr  e) a)
 			             (eval (caddr e) a)))
+     ((eq (car e) 'car)     (car     (eval (cadr  e) a)))
+     ((eq (car e) 'cdr)     (cdr     (eval (cadr  e) a)))
      ((eq (car e) 'plus)    (plus    (eval (cadr  e) a)
 			             (eval (caddr e) a)))
      ((eq (car e) 'minus)   (minus   (eval (cadr  e) a)
