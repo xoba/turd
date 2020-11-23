@@ -128,12 +128,6 @@ func iscxr(args ...Exp) Exp {
 }
 
 func cxr(args ...Exp) Exp {
-	r := _cxr(args...)
-	//fmt.Printf("cxr%s = %s\n", String(args), String(r))
-	return r
-}
-
-func _cxr(args ...Exp) Exp {
 	if err := checklen(2, args); err != nil {
 		return err
 	}
@@ -251,11 +245,11 @@ func cons(args ...Exp) Exp {
 	}
 	x := args[0]
 	y := manifest(args[1])
-	switch y.(type) {
+	switch t := y.(type) {
 	case []Exp:
 		var out []Exp
 		out = append(out, x)
-		out = append(out, y.([]Exp)...)
+		out = append(out, t...)
 		return out
 	default:
 		return fmt.Errorf("cons needs a list")
