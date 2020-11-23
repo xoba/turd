@@ -56,7 +56,7 @@ func CompileDef(cnfg.Config) error {
 			if err != nil {
 				return err
 			}
-			fmt.Fprintf(f, "var %s_exp = %s\n", name, string(env))
+			fmt.Fprintf(f, "var %s_label = %s\n", name, string(env))
 		}
 		name, code, err := Tofunc(e)
 		if err != nil {
@@ -68,7 +68,7 @@ func CompileDef(cnfg.Config) error {
 
 	fmt.Fprintf(f, "\n\nfunc init() { env = []Exp{")
 	for _, n := range names {
-		fmt.Fprintf(f, "[]Exp{%q,%s_exp},\n", n, n)
+		fmt.Fprintf(f, "[]Exp{%q,%s_label},\n", n, n)
 	}
 	fmt.Fprintf(f, "}}\n\n")
 
