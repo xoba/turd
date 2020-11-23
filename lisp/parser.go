@@ -274,7 +274,7 @@ continue     for          import       return       var
 }
 
 func UnsanitizeGo(e Exp) Exp {
-	return e
+	//return e
 
 	for _, x := range GoIdentifiers() {
 		e = translateAtoms("go_sanitized_"+x, x, e)
@@ -283,7 +283,7 @@ func UnsanitizeGo(e Exp) Exp {
 }
 
 func SanitizeGo(e Exp) Exp {
-	return e
+	//return e
 
 	for _, x := range GoIdentifiers() {
 		e = translateAtoms(x, "go_sanitized_"+x, e)

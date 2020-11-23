@@ -50,7 +50,7 @@ func CompileDef(cnfg.Config) error {
 		if err != nil {
 			return err
 		}
-		//e = SanitizeGo(e)
+		e = SanitizeGo(e)
 		{
 			name, env, err := ToEnv(e)
 			if err != nil {
@@ -58,15 +58,12 @@ func CompileDef(cnfg.Config) error {
 			}
 			fmt.Fprintf(f, "var env_%s = %s\n", name, string(env))
 		}
-
 		name, code, err := Tofunc(e)
 		if err != nil {
 			return err
 		}
 		fmt.Fprint(f, string(code))
-
 		names = append(names, name)
-
 	}
 
 	fmt.Fprintf(f, "\n\nfunc init() { env = []Exp{")

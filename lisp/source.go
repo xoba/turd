@@ -16,6 +16,17 @@ func Eval(e Exp) Exp {
 	return UnsanitizeGo(eval([]Exp{e, env}...))
 }
 
+func CompiledEval(e Exp) Exp {
+	return Eval(e)
+}
+
+func InterpretedEval(e Exp) Exp {
+	quote := func(e Exp) Exp {
+		return []Exp{"quote", e}
+	}
+	return Eval([]Exp{assoc("eval", env), quote(e), quote(env)})
+}
+
 func TestParse(c cnfg.Config) error {
 	test0 := func(s string) error {
 		fmt.Printf("testing %s\n", s)
@@ -96,13 +107,8 @@ func Run(c cnfg.Config) error {
 	}
 
 	evals := map[string]evalFunc{
-		"compiled": Eval,
-		"interpreted": func(e Exp) Exp {
-			quote := func(e Exp) Exp {
-				return []Exp{"quote", e}
-			}
-			return Eval([]Exp{assoc("eval", env), quote(e), quote(env)})
-		},
+		"compiled":    CompiledEval,
+		"interpreted": InterpretedEval,
 	}
 
 	if !c.Debug {
@@ -180,8 +186,8 @@ func Run(c cnfg.Config) error {
 	test("not", "(not (eq 'a 'a))", "()")
 	test("not", "(not (eq 'a 'b))", "t")
 
-	test("append", "(xappend '(a b) '(c d))", "(a b c d)")
-	test("append", "(xappend '() '(c d))", "(c d)")
+	test("append", "(append '(a b) '(c d))", "(a b c d)")
+	test("append", "(append '() '(c d))", "(c d)")
 
 	test("pair", "(pair '(x y z) '(a b c))", "((x a) (y b) (z c))")
 

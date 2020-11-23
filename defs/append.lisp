@@ -1,3 +1,3 @@
-(defun xappend (x y) 
+(defun append (x y) 
   (cond ((null x) y)
-	('t (cons (car x) (xappend (cdr x) y)))))
+	('t (cons (car x) (append (cdr x) y)))))
