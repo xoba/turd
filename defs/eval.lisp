@@ -22,7 +22,12 @@
 			             (eval (caddr e) a)))
      ((eq (car e) 'cond)    (evcon   (cdr e) a))
 
-     ;; arithmetic
+     ;; arithmetic:
+     ;;
+     ;; btw, we should be able to replace this section with
+     ;; something like "(twoargs 'plus 'minus 'mult)",
+     ;; which would be expanded into the following six lines:
+     ;;
      ((eq (car e) 'plus)    (plus    (eval (cadr  e) a)
 			             (eval (caddr e) a)))
      ((eq (car e) 'minus)   (minus   (eval (cadr  e) a)
