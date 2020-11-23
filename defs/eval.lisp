@@ -34,10 +34,10 @@
 			             (eval (caddr e) a)))
      ((eq (car e) 'mult)    (mult    (eval (cadr  e) a)
 			             (eval (caddr e) a)))
-     ;; time
+     ;; time:
      ((eq (car e) 'after)   (after   (eval (cadr  e) a)
 				     (eval (caddr e) a)))
-     ;; crypto
+     ;; crypto:
      ((eq (car e) 'concat)  (concat  (eval (cadr  e) a)
 				     (eval (caddr e) a)))
      ((eq (car e) 'hash)    (hash    (eval (cadr  e) a)))
@@ -48,14 +48,14 @@
      ((eq (car e) 'verify)  (verify  (eval (cadr  e)  a)
 				     (eval (caddr e)  a)
 				     (eval (cadddr e) a)))
-     ;; debug
+     ;; debug:
      ((eq (car e) 'display) (display (eval (cadr  e) a)))
      ((eq (car e) 'runes)   (runes (eval (cadr e) a)))
      ((eq (car e) 'err)     (err (eval (cadr e) a)))
      
      ((eq (car e) 'list)    (evlis   (cdr e) a))
      
-     ;; unknown op
+     ;; resolve an unknown op:
      ('t (eval (cons (assoc (car e) a)
 		     (cdr e))
 	       a))))
