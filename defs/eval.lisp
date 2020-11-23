@@ -3,13 +3,12 @@
    ((atom e) (assoc e a))
    ((atom (car e))
     (cond
-     
-     
-     ((iscxr (car e)) (cxr (car e) (eval (cadr  e) a)))
-     ((eq (car e) 'iscxr) (iscxr (eval (cadr  e) a)))
-     
+
+     ; somehow this doesn't work in interpreted mode!
      ((eq (car e) 'car)     (car     (eval (cadr  e) a)))
      ((eq (car e) 'cdr)     (cdr     (eval (cadr  e) a)))
+     ((iscxr (car e)) (cxr (car e) (eval (cadr  e) a)))
+     ((eq (car e) 'iscxr) (iscxr (eval (cadr  e) a)))
      
      ((eq (car e) 'quote)   (cadr e))
      ((eq (car e) 'atom)    (atom    (eval (cadr  e) a)))
