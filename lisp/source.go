@@ -333,7 +333,10 @@ func Run(c cnfg.Config) error {
 	test("errors", `(err 'abc)`, "error: abc")
 	test("errors", `(err (list 'a 'b 'c))`, "error: (a b c)")
 
-	test("", ``, ``)
+	return nil
+
+	// how to handle infinite eval loop with unknown operator?
+	test("eval", `(blah 'x)`, ``)
 	test("", ``, ``)
 	test("", ``, ``)
 	test("", ``, ``)

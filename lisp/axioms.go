@@ -280,9 +280,8 @@ func cond(args ...Exp) Exp {
 			if err := checklen(2, t); err != nil {
 				return err
 			}
-			p, e := t[0], t[1]
-			if expToBool(get(p)) {
-				return get(e)
+			if expToBool(get(t[0])) {
+				return get(t[1])
 			}
 		default:
 			return fmt.Errorf("illegal cond arg type %T: %v", t, t)
