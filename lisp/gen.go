@@ -85,132 +85,6 @@ func assoc(args ...Exp) Exp {
 	)
 }
 
-var caaaar_label = L("label", "caaaar", L("lambda", L("x"), L("car", L("car", L("car", L("car", "x"))))))
-
-func caaaar(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
-	x := args[0]
-	return apply(
-		car,
-		apply(
-			car,
-			apply(
-				car,
-				apply(
-					car,
-					x,
-				),
-			),
-		),
-	)
-}
-
-var caaadr_label = L("label", "caaadr", L("lambda", L("x"), L("car", L("car", L("car", L("cdr", "x"))))))
-
-func caaadr(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
-	x := args[0]
-	return apply(
-		car,
-		apply(
-			car,
-			apply(
-				car,
-				apply(
-					cdr,
-					x,
-				),
-			),
-		),
-	)
-}
-
-var caaar_label = L("label", "caaar", L("lambda", L("x"), L("car", L("car", L("car", "x")))))
-
-func caaar(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
-	x := args[0]
-	return apply(
-		car,
-		apply(
-			car,
-			apply(
-				car,
-				x,
-			),
-		),
-	)
-}
-
-var caadar_label = L("label", "caadar", L("lambda", L("x"), L("car", L("car", L("cdr", L("car", "x"))))))
-
-func caadar(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
-	x := args[0]
-	return apply(
-		car,
-		apply(
-			car,
-			apply(
-				cdr,
-				apply(
-					car,
-					x,
-				),
-			),
-		),
-	)
-}
-
-var caaddr_label = L("label", "caaddr", L("lambda", L("x"), L("car", L("car", L("cdr", L("cdr", "x"))))))
-
-func caaddr(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
-	x := args[0]
-	return apply(
-		car,
-		apply(
-			car,
-			apply(
-				cdr,
-				apply(
-					cdr,
-					x,
-				),
-			),
-		),
-	)
-}
-
-var caadr_label = L("label", "caadr", L("lambda", L("x"), L("car", L("car", L("cdr", "x")))))
-
-func caadr(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
-	x := args[0]
-	return apply(
-		car,
-		apply(
-			car,
-			apply(
-				cdr,
-				x,
-			),
-		),
-	)
-}
-
 var caar_label = L("label", "caar", L("lambda", L("x"), L("car", L("car", "x"))))
 
 func caar(args ...Exp) Exp {
@@ -223,50 +97,6 @@ func caar(args ...Exp) Exp {
 		apply(
 			car,
 			x,
-		),
-	)
-}
-
-var cadaar_label = L("label", "cadaar", L("lambda", L("x"), L("car", L("cdr", L("car", L("car", "x"))))))
-
-func cadaar(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
-	x := args[0]
-	return apply(
-		car,
-		apply(
-			cdr,
-			apply(
-				car,
-				apply(
-					car,
-					x,
-				),
-			),
-		),
-	)
-}
-
-var cadadr_label = L("label", "cadadr", L("lambda", L("x"), L("car", L("cdr", L("car", L("cdr", "x"))))))
-
-func cadadr(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
-	x := args[0]
-	return apply(
-		car,
-		apply(
-			cdr,
-			apply(
-				car,
-				apply(
-					cdr,
-					x,
-				),
-			),
 		),
 	)
 }
@@ -306,6 +136,31 @@ func caddar(args ...Exp) Exp {
 				apply(
 					car,
 					x,
+				),
+			),
+		),
+	)
+}
+
+var caddddr_label = L("label", "caddddr", L("lambda", L("x"), L("car", L("cdr", L("cdr", L("cdr", L("cdr", "x")))))))
+
+func caddddr(args ...Exp) Exp {
+	if err := checklen(1, args); err != nil {
+		return err
+	}
+	x := args[0]
+	return apply(
+		car,
+		apply(
+			cdr,
+			apply(
+				cdr,
+				apply(
+					cdr,
+					apply(
+						cdr,
+						x,
+					),
 				),
 			),
 		),
@@ -369,132 +224,6 @@ func cadr(args ...Exp) Exp {
 	)
 }
 
-var cdaaar_label = L("label", "cdaaar", L("lambda", L("x"), L("cdr", L("car", L("car", L("car", "x"))))))
-
-func cdaaar(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
-	x := args[0]
-	return apply(
-		cdr,
-		apply(
-			car,
-			apply(
-				car,
-				apply(
-					car,
-					x,
-				),
-			),
-		),
-	)
-}
-
-var cdaadr_label = L("label", "cdaadr", L("lambda", L("x"), L("cdr", L("car", L("car", L("cdr", "x"))))))
-
-func cdaadr(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
-	x := args[0]
-	return apply(
-		cdr,
-		apply(
-			car,
-			apply(
-				car,
-				apply(
-					cdr,
-					x,
-				),
-			),
-		),
-	)
-}
-
-var cdaar_label = L("label", "cdaar", L("lambda", L("x"), L("cdr", L("car", L("car", "x")))))
-
-func cdaar(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
-	x := args[0]
-	return apply(
-		cdr,
-		apply(
-			car,
-			apply(
-				car,
-				x,
-			),
-		),
-	)
-}
-
-var cdadar_label = L("label", "cdadar", L("lambda", L("x"), L("cdr", L("car", L("cdr", L("car", "x"))))))
-
-func cdadar(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
-	x := args[0]
-	return apply(
-		cdr,
-		apply(
-			car,
-			apply(
-				cdr,
-				apply(
-					car,
-					x,
-				),
-			),
-		),
-	)
-}
-
-var cdaddr_label = L("label", "cdaddr", L("lambda", L("x"), L("cdr", L("car", L("cdr", L("cdr", "x"))))))
-
-func cdaddr(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
-	x := args[0]
-	return apply(
-		cdr,
-		apply(
-			car,
-			apply(
-				cdr,
-				apply(
-					cdr,
-					x,
-				),
-			),
-		),
-	)
-}
-
-var cdadr_label = L("label", "cdadr", L("lambda", L("x"), L("cdr", L("car", L("cdr", "x")))))
-
-func cdadr(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
-	x := args[0]
-	return apply(
-		cdr,
-		apply(
-			car,
-			apply(
-				cdr,
-				x,
-			),
-		),
-	)
-}
-
 var cdar_label = L("label", "cdar", L("lambda", L("x"), L("cdr", L("car", "x"))))
 
 func cdar(args ...Exp) Exp {
@@ -511,149 +240,7 @@ func cdar(args ...Exp) Exp {
 	)
 }
 
-var cddaar_label = L("label", "cddaar", L("lambda", L("x"), L("cdr", L("cdr", L("car", L("car", "x"))))))
-
-func cddaar(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
-	x := args[0]
-	return apply(
-		cdr,
-		apply(
-			cdr,
-			apply(
-				car,
-				apply(
-					car,
-					x,
-				),
-			),
-		),
-	)
-}
-
-var cddadr_label = L("label", "cddadr", L("lambda", L("x"), L("cdr", L("cdr", L("car", L("cdr", "x"))))))
-
-func cddadr(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
-	x := args[0]
-	return apply(
-		cdr,
-		apply(
-			cdr,
-			apply(
-				car,
-				apply(
-					cdr,
-					x,
-				),
-			),
-		),
-	)
-}
-
-var cddar_label = L("label", "cddar", L("lambda", L("x"), L("cdr", L("cdr", L("car", "x")))))
-
-func cddar(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
-	x := args[0]
-	return apply(
-		cdr,
-		apply(
-			cdr,
-			apply(
-				car,
-				x,
-			),
-		),
-	)
-}
-
-var cdddar_label = L("label", "cdddar", L("lambda", L("x"), L("cdr", L("cdr", L("cdr", L("car", "x"))))))
-
-func cdddar(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
-	x := args[0]
-	return apply(
-		cdr,
-		apply(
-			cdr,
-			apply(
-				cdr,
-				apply(
-					car,
-					x,
-				),
-			),
-		),
-	)
-}
-
-var cddddr_label = L("label", "cddddr", L("lambda", L("x"), L("cdr", L("cdr", L("cdr", L("cdr", "x"))))))
-
-func cddddr(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
-	x := args[0]
-	return apply(
-		cdr,
-		apply(
-			cdr,
-			apply(
-				cdr,
-				apply(
-					cdr,
-					x,
-				),
-			),
-		),
-	)
-}
-
-var cdddr_label = L("label", "cdddr", L("lambda", L("x"), L("cdr", L("cdr", L("cdr", "x")))))
-
-func cdddr(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
-	x := args[0]
-	return apply(
-		cdr,
-		apply(
-			cdr,
-			apply(
-				cdr,
-				x,
-			),
-		),
-	)
-}
-
-var cddr_label = L("label", "cddr", L("lambda", L("x"), L("cdr", L("cdr", "x"))))
-
-func cddr(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
-	x := args[0]
-	return apply(
-		cdr,
-		apply(
-			cdr,
-			x,
-		),
-	)
-}
-
-var eval_label = L("label", "eval", L("lambda", L("e", "a"), L("cond", L(L("atom", "e"), L("assoc", "e", "a")), L(L("atom", L("car", "e")), L("cond", L(L("eq", L("car", "e"), L("quote", "quote")), L("cadr", "e")), L(L("eq", L("car", "e"), L("quote", "atom")), L("atom", L("eval", L("cadr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "eq")), L("eq", L("eval", L("cadr", "e"), "a"), L("eval", L("caddr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "plus")), L("plus", L("eval", L("cadr", "e"), "a"), L("eval", L("caddr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "minus")), L("minus", L("eval", L("cadr", "e"), "a"), L("eval", L("caddr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "mult")), L("mult", L("eval", L("cadr", "e"), "a"), L("eval", L("caddr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "after")), L("after", L("eval", L("cadr", "e"), "a"), L("eval", L("caddr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "display")), L("display", L("eval", L("cadr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "concat")), L("concat", L("eval", L("cadr", "e"), "a"), L("eval", L("caddr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "hash")), L("hash", L("eval", L("cadr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "newkey")), L("newkey")), L(L("eq", L("car", "e"), L("quote", "pub")), L("pub", L("eval", L("cadr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "sign")), L("sign", L("eval", L("cadr", "e"), "a"), L("eval", L("caddr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "verify")), L("verify", L("eval", L("cadr", "e"), "a"), L("eval", L("caddr", "e"), "a"), L("eval", L("cadddr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "car")), L("car", L("eval", L("cadr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "cdr")), L("cdr", L("eval", L("cadr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "cons")), L("cons", L("eval", L("cadr", "e"), "a"), L("eval", L("caddr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "cond")), L("evcon", L("cdr", "e"), "a")), L(L("eq", L("car", "e"), L("quote", "list")), L("evlis", L("cdr", "e"), "a")), L(L("quote", "t"), L("eval", L("cons", L("assoc", L("car", "e"), "a"), L("cdr", "e")), "a")))), L(L("eq", L("caar", "e"), L("quote", "label")), L("eval", L("cons", L("caddar", "e"), L("cdr", "e")), L("cons", L("list", L("cadar", "e"), L("car", "e")), "a"))), L(L("eq", L("caar", "e"), L("quote", "lambda")), L("cond", L(L("atom", L("cadar", "e")), L("eval", L("caddar", "e"), L("cons", L("list", L("cadar", "e"), L("evlis", L("cdr", "e"), "a")), "a"))), L(L("quote", "t"), L("eval", L("caddar", "e"), L("append_go_sanitized", L("pair", L("cadar", "e"), L("evlis", L("cdr", "e"), "a")), "a"))))))))
+var eval_label = L("label", "eval", L("lambda", L("e", "a"), L("cond", L(L("atom", "e"), L("assoc", "e", "a")), L(L("atom", L("car", "e")), L("cond", L(L("eq", L("car", "e"), L("quote", "iscxr")), L("iscxr", L("eval", L("cadr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "quote")), L("cadr", "e")), L(L("eq", L("car", "e"), L("quote", "atom")), L("atom", L("eval", L("cadr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "eq")), L("eq", L("eval", L("cadr", "e"), "a"), L("eval", L("caddr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "plus")), L("plus", L("eval", L("cadr", "e"), "a"), L("eval", L("caddr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "minus")), L("minus", L("eval", L("cadr", "e"), "a"), L("eval", L("caddr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "mult")), L("mult", L("eval", L("cadr", "e"), "a"), L("eval", L("caddr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "after")), L("after", L("eval", L("cadr", "e"), "a"), L("eval", L("caddr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "display")), L("display", L("eval", L("cadr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "concat")), L("concat", L("eval", L("cadr", "e"), "a"), L("eval", L("caddr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "hash")), L("hash", L("eval", L("cadr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "newkey")), L("newkey")), L(L("eq", L("car", "e"), L("quote", "pub")), L("pub", L("eval", L("cadr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "sign")), L("sign", L("eval", L("cadr", "e"), "a"), L("eval", L("caddr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "verify")), L("verify", L("eval", L("cadr", "e"), "a"), L("eval", L("caddr", "e"), "a"), L("eval", L("cadddr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "car")), L("car", L("eval", L("cadr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "cdr")), L("cdr", L("eval", L("cadr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "cons")), L("cons", L("eval", L("cadr", "e"), "a"), L("eval", L("caddr", "e"), "a"))), L(L("eq", L("car", "e"), L("quote", "cond")), L("evcon", L("cdr", "e"), "a")), L(L("eq", L("car", "e"), L("quote", "list")), L("evlis", L("cdr", "e"), "a")), L(L("quote", "t"), L("eval", L("cons", L("assoc", L("car", "e"), "a"), L("cdr", "e")), "a")))), L(L("eq", L("caar", "e"), L("quote", "label")), L("eval", L("cons", L("caddar", "e"), L("cdr", "e")), L("cons", L("list", L("cadar", "e"), L("car", "e")), "a"))), L(L("eq", L("caar", "e"), L("quote", "lambda")), L("cond", L(L("atom", L("cadar", "e")), L("eval", L("caddar", "e"), L("cons", L("list", L("cadar", "e"), L("evlis", L("cdr", "e"), "a")), "a"))), L(L("quote", "t"), L("eval", L("caddar", "e"), L("append_go_sanitized", L("pair", L("cadar", "e"), L("evlis", L("cdr", "e"), "a")), "a"))))))))
 
 func eval(args ...Exp) Exp {
 	if err := checklen(2, args); err != nil {
@@ -677,6 +264,13 @@ func eval(args ...Exp) Exp {
 			}),
 			Func(func(...Exp) Exp {
 				return apply(cond, []Exp{
+					Func(func(...Exp) Exp {
+						return apply(eq, apply(car, e), "iscxr")
+					}),
+					Func(func(...Exp) Exp {
+						return apply(iscxr, apply(eval, apply(cadr, e), a))
+					}),
+				}, []Exp{
 					Func(func(...Exp) Exp {
 						return apply(eq, apply(car, e), "quote")
 					}),
@@ -1060,34 +654,14 @@ func init() {
 		L("and", and_label),
 		L("append_go_sanitized", append_go_sanitized_label),
 		L("assoc", assoc_label),
-		L("caaaar", caaaar_label),
-		L("caaadr", caaadr_label),
-		L("caaar", caaar_label),
-		L("caadar", caadar_label),
-		L("caaddr", caaddr_label),
-		L("caadr", caadr_label),
 		L("caar", caar_label),
-		L("cadaar", cadaar_label),
-		L("cadadr", cadadr_label),
 		L("cadar", cadar_label),
 		L("caddar", caddar_label),
+		L("caddddr", caddddr_label),
 		L("cadddr", cadddr_label),
 		L("caddr", caddr_label),
 		L("cadr", cadr_label),
-		L("cdaaar", cdaaar_label),
-		L("cdaadr", cdaadr_label),
-		L("cdaar", cdaar_label),
-		L("cdadar", cdadar_label),
-		L("cdaddr", cdaddr_label),
-		L("cdadr", cdadr_label),
 		L("cdar", cdar_label),
-		L("cddaar", cddaar_label),
-		L("cddadr", cddadr_label),
-		L("cddar", cddar_label),
-		L("cdddar", cdddar_label),
-		L("cddddr", cddddr_label),
-		L("cdddr", cdddr_label),
-		L("cddr", cddr_label),
 		L("eval", eval_label),
 		L("evcon", evcon_label),
 		L("evlis", evlis_label),

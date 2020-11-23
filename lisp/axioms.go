@@ -72,6 +72,64 @@ func three(args ...Exp) (Exp, Exp, Exp) {
 
 // TODO: maybe natively handle type []byte, rather than base64-encoded strings?
 
+// return true if it's car, cdr, cadr, cddr, ..., caaar, etc., else false
+func iscxr(args ...Exp) Exp {
+	if err := checklen(1, args); err != nil {
+		return err
+	}
+	x := args[0]
+	op, ok := x.(string)
+	if !ok {
+		return fmt.Errorf("not a string")
+	}
+	runes := []rune(op)
+	if len(runes) < 3 {
+		return False
+	}
+	if runes[0] != 'c' {
+		return False
+	}
+	if runes[len(runes)-1] != 'r' {
+		return False
+	}
+	for _, r := range runes[1 : len(runes)-1] {
+		switch r {
+		case 'a', 'd':
+		default:
+			return False
+		}
+	}
+	return True
+}
+
+func cxr(args ...Exp) Exp {
+	if err := checklen(2, args); err != nil {
+		return err
+	}
+	x, y := args[0], args[1]
+	op, ok := x.(string)
+	if !ok {
+		return fmt.Errorf("not a string")
+	}
+	runes := []rune(op)
+	n := len(runes)
+	if len(runes) < 3 || runes[0] != 'c' || runes[n-1] != 'r' {
+		return fmt.Errorf("not a cxr: %q", op)
+	}
+	e := y
+	for i := 0; i < n-2; i++ {
+		switch runes[n-i-2] {
+		case 'a':
+			e = car(e)
+		case 'd':
+			e = cdr(e)
+		default:
+			return fmt.Errorf("not a cxr: %q", op)
+		}
+	}
+	return e
+}
+
 func quote(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
 		return err

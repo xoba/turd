@@ -3,6 +3,8 @@
    ((atom e) (assoc e a))
    ((atom (car e))
     (cond
+;     ((iscxr (car e)) (cxr (car e) (eval (cadr e) a)))
+     ((eq (car e) 'iscxr) (iscxr (eval (cadr  e) a)))
      ((eq (car e) 'quote)   (cadr e))
      ((eq (car e) 'atom)    (atom    (eval (cadr  e) a)))
      ((eq (car e) 'eq)      (eq      (eval (cadr  e) a)

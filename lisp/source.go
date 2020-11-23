@@ -187,6 +187,9 @@ func Run(c cnfg.Config) error {
 	test("cxr", "(cadr '((a b) (c d) e))", "(c d)")
 	test("cxr", "(caddr '((a b) (c d) e))", "e")
 	test("cxr", "(cdar '((a b) (c d) e))", "(b)")
+	test("cxr", "(caddr '(a b c d e))", "c")
+	test("cxr", "(cadddr '(a b c d e))", "d")
+	test("cxr", "(caddddr '(a b c d e))", "e")
 
 	test("list", "(cons 'a (cons 'b (cons 'c '())))", "(a b c)")
 	test("list", "(list 'a 'b 'c)", "(a b c)")
@@ -297,7 +300,22 @@ func Run(c cnfg.Config) error {
 	// first-order functions
 	test("fof", `((lambda (f) (f '(a))) 'car)`, `a`)
 
-	test("", ``, ``)
+	test("iscxr", `(iscxr 'car)`, `t`)
+	test("iscxr", `(iscxr 'cdr)`, `t`)
+	test("iscxr", `(iscxr 'caar)`, `t`)
+	test("iscxr", `(iscxr 'cadr)`, `t`)
+	test("iscxr", `(iscxr 'cdar)`, `t`)
+	test("iscxr", `(iscxr 'cddr)`, `t`)
+	test("iscxr", `(iscxr 'caaar)`, `t`)
+	test("iscxr", `(iscxr 'caaaar)`, `t`)
+
+	test("iscxr", `(iscxr 'dfdf)`, `()`)
+	test("iscxr", `(iscxr '123)`, `()`)
+	test("iscxr", `(iscxr 'caxr)`, `()`)
+	test("iscxr", `(iscxr 'cxdr)`, `()`)
+	test("iscxr", `(iscxr 'cdxr)`, `()`)
+	test("iscxr", `(iscxr 'caxaar)`, `()`)
+
 	test("", ``, ``)
 	test("", ``, ``)
 	test("", ``, ``)
