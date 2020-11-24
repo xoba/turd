@@ -41,22 +41,36 @@ return e
 }
 
 `)
-	var defs []string
-	{
-		const dir = "defs"
+
+	type definition struct {
+		file     string
+		compiled bool
+	}
+
+	var defs []definition
+
+	load := func(dir string, compiled bool) error {
 		files, err := ioutil.ReadDir(dir)
 		if err != nil {
 			return err
 		}
 		for _, fi := range files {
 			if name := fi.Name(); filepath.Ext(name) == ".lisp" {
-				defs = append(defs, filepath.Join(dir, name))
+				defs = append(defs, definition{
+					file:     filepath.Join(dir, name),
+					compiled: compiled,
+				})
 			}
 		}
+		return nil
 	}
+
+	load("defs/compiled", true)
+	load("defs/interpreted", false)
+
 	var names []string
 	for _, def := range defs {
-		buf, err := ioutil.ReadFile(def)
+		buf, err := ioutil.ReadFile(def.file)
 		if err != nil {
 			return err
 		}
@@ -77,7 +91,9 @@ return e
 		if err != nil {
 			return err
 		}
-		fmt.Fprint(f, string(code))
+		if def.compiled {
+			fmt.Fprint(f, string(code))
+		}
 		auto()
 		names = append(names, name)
 	}
@@ -223,8 +239,13 @@ func Compile(e Exp, indent bool) ([]byte, error) {
 				return nil, err
 			}
 			fmt.Fprint(w, q)
+
 		case Bool(eq(car(car(e)), "lambda")):
-			panic("compiling lambda")
+
+			fmt.Fprintf(w, `func() Exp {
+return Nil
+}()`)
+
 		case Bool(eq(car(car(e)), "label")):
 			panic("compiling label")
 		case Bool(eq(car(e), "cond")):

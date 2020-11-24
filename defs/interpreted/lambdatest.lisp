@@ -1,5 +1,5 @@
 (defun lambdatest (x)
-  (car x))
+  (list (car x) (cdr x)))
 ;;  ((lambda (first rest) 
 ;;     (list first rest))
 ;;   (car x) (cdr x)))
