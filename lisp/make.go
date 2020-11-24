@@ -202,11 +202,11 @@ func compileQuote(x Exp) (string, error) {
 
 func Compile(e Exp, indent bool) ([]byte, error) {
 	w := new(bytes.Buffer)
-	emit := func(msg string, list []string) {
+	emit := func(list []string) {
 		if indent {
-			fmt.Fprintf(w, "%s(\n%s,\n)", msg, strings.Join(list, ",\n"))
+			fmt.Fprintf(w, "apply(\n%s,\n)", strings.Join(list, ",\n"))
 		} else {
-			fmt.Fprintf(w, "%s(%s)", msg, strings.Join(list, ","))
+			fmt.Fprintf(w, "apply(%s)", strings.Join(list, ","))
 		}
 	}
 	switch e := e.(type) {
@@ -217,17 +217,17 @@ func Compile(e Exp, indent bool) ([]byte, error) {
 		switch {
 		case n == 0:
 			fmt.Fprintf(w, "Nil")
-		case n == 2 && String(e[0]) == "quote":
+		case Bool(eq(car(e), "quote")):
 			q, err := compileQuote(e[1])
 			if err != nil {
 				return nil, err
 			}
 			fmt.Fprint(w, q)
-		case n > 1 && String(e[0]) == "lambda":
+		case Bool(eq(car(car(e)), "lambda")):
 			panic("compiling lambda")
-		case n > 1 && String(e[0]) == "label":
+		case Bool(eq(car(car(e)), "label")):
 			panic("compiling label")
-		case n > 1 && String(e[0]) == "cond":
+		case Bool(eq(car(e), "cond")):
 			var list []string
 			for i, a := range e {
 				var f func(Exp) ([]byte, error)
@@ -244,7 +244,7 @@ func Compile(e Exp, indent bool) ([]byte, error) {
 				}
 				list = append(list, string(sub))
 			}
-			emit("apply", list)
+			emit(list)
 		default:
 			var list []string
 			for _, a := range e {
@@ -254,7 +254,7 @@ func Compile(e Exp, indent bool) ([]byte, error) {
 				}
 				list = append(list, string(sub))
 			}
-			emit("apply", list)
+			emit(list)
 		}
 	}
 	return w.Bytes(), nil
@@ -283,41 +283,6 @@ func LabelExpr(defun Exp) (Exp, error) {
 		),
 	)
 	return e, nil
-}
-
-func LabelCode(defun Exp) (string, []byte, error) {
-	if String(car(defun)) != "defun" {
-		return "", nil, fmt.Errorf("not a defun")
-	}
-	e, err := LabelExpr(defun)
-	if err != nil {
-		return "", nil, err
-	}
-	name := String(cadr(defun))
-	exp, err := ExpressionCode(e)
-	return String(name), exp, err
-}
-
-func ExpressionCode(e Exp) ([]byte, error) {
-	w := new(bytes.Buffer)
-	switch t := e.(type) {
-	case string:
-		fmt.Fprintf(w, "%q", t)
-	case []Exp:
-		list := t
-		var parts []string
-		for _, x := range list {
-			buf, err := ExpressionCode(x)
-			if err != nil {
-				return nil, err
-			}
-			parts = append(parts, string(buf))
-		}
-		fmt.Fprintf(w, "L(%s)", strings.Join(parts, ","))
-	default:
-		return nil, fmt.Errorf("ToExpression switch fallthrough: %T", t)
-	}
-	return w.Bytes(), nil
 }
 
 func Gofmt(file string) error {

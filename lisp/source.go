@@ -421,15 +421,6 @@ func checklen(n int, args []Exp) error {
 	return nil
 }
 
-func expToBool(e Exp) bool {
-	switch t := e.(type) {
-	case string:
-		return t == "t"
-	default:
-		return false
-	}
-}
-
 func boolToExp(v bool) Exp {
 	if v {
 		return True

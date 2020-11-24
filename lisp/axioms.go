@@ -24,6 +24,15 @@ var (
 	False Exp = Nil
 )
 
+func Bool(e Exp) bool {
+	switch t := e.(type) {
+	case string:
+		return t == "t"
+	default:
+		return false
+	}
+}
+
 func String(e Exp) string {
 	switch t := e.(type) {
 	case string:
@@ -274,7 +283,7 @@ func cond(args ...Exp) Exp {
 			if err := checklen(2, t); err != nil {
 				return err
 			}
-			if expToBool(get(t[0])) {
+			if Bool(get(t[0])) {
 				return get(t[1])
 			}
 		default:
