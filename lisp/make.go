@@ -42,6 +42,8 @@ return e
 
 `)
 
+	// definitions referenced by eval need
+	// to be compiled, since eval is compiled
 	type definition struct {
 		file     string
 		compiled bool
