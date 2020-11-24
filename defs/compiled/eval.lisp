@@ -4,6 +4,8 @@
    ((atom (car e))
     (cond
 
+     ((eq (car e) 'test)    (test    (eval (cadr  e) a)))
+
      ;; somehow cxr's don't work in interpreted mode:
      ;;
      ;; ((iscxr (car e)) (cxr (car e) (eval (cadr  e) a)))
