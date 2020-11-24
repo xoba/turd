@@ -358,7 +358,26 @@ func Run(c cnfg.Config) error {
 	test("try", fmt.Sprintf("(try '(10 0) '(cdr '(a b)) '%s)", String(env)), "(b)")
 	test("try", "(try '(10 0) '(blah '(a b)) '())", "error: (max 10)")
 
-	return nil
+	test("next", `(next '(10 6))`, `(10 7)`)
+	test("next", `(next '(10 10))`, `error: (max 10)`)
+
+	test("ltest", `((label lambdatest (lambda (x) 
+  (list (car x) (cdr x)))) '(a b c))`, "(a (b c))")
+	test("ltest", `((label lambdatest
+	(lambda (x)
+	  ((lambda (first rest) 
+	     (list first rest)) (car x) (cdr x))))
+ '(a b c))`, "(a (b c))")
+	test("ltest", `(lambdatest '(a b c))`, `(a (b c))`)
+
+	test("", ``, ``)
+	test("", ``, ``)
+	test("", ``, ``)
+	test("", ``, ``)
+	test("", ``, ``)
+	test("", ``, ``)
+	test("", ``, ``)
+	test("", ``, ``)
 	test("", ``, ``)
 	test("", ``, ``)
 
@@ -366,15 +385,6 @@ func Run(c cnfg.Config) error {
 
 	// how to handle infinite eval loop with unknown operator?
 	test("eval", `(blah 'x)`, ``)
-	test("", ``, ``)
-	test("", ``, ``)
-	test("", ``, ``)
-	test("", ``, ``)
-	test("", ``, ``)
-	test("", ``, ``)
-	test("", ``, ``)
-	test("", ``, ``)
-	test("", ``, ``)
 
 	return nil
 }

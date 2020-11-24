@@ -1,0 +1,6 @@
+(defun lambdatest (x)
+ (car x))
+;;  (lambda (x)
+;;    (lambda (first rest) 
+;;      (list first rest))
+;;    (car x) (cdr x)))
