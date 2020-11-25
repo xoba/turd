@@ -686,8 +686,13 @@ func test(args ...Exp) Exp {
 	}
 	x := args[0]
 	return func() Exp {
-		var lambda func(first, rest Exp) Exp
-		lambda = func(first, rest Exp) Exp {
+		var lambda func(...Exp) Exp
+		lambda = func(args ...Exp) Exp {
+			if err := checklen(2, args); err != nil {
+				return err
+			}
+			first := args[0]
+			rest := args[1]
 			return A(list, first, rest)
 		}
 		return lambda(A(car, x), A(cdr, x))
@@ -707,8 +712,13 @@ func test2(args ...Exp) Exp {
 	}
 	x := args[0]
 	return func() Exp {
-		var f func(first, rest Exp) Exp
-		f = func(first, rest Exp) Exp {
+		var f func(...Exp) Exp
+		f = func(args ...Exp) Exp {
+			if err := checklen(2, args); err != nil {
+				return err
+			}
+			first := args[0]
+			rest := args[1]
 			return A(list, first, rest)
 		}
 		return f(A(car, x), A(cdr, x))
@@ -720,18 +730,45 @@ func test2(args ...Exp) Exp {
 // test3 (compiled)
 //
 
-var test3_label = parse_env("(label test3 (lambda (x) (car x)))")
+var test3_label = parse_env("(label test3 (lambda (x) ((label fx (lambda (first rest) (cond ((eq first '0) (list first rest)) ('t (fx (minus first '1) rest))))) (car x) (cdr x))))")
 
 func test3(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
 		return err
 	}
 	x := args[0]
-	return A(
-		car,
-		x,
-	)
+	return func() Exp {
+		var fx func(...Exp) Exp
+		fx = func(args ...Exp) Exp {
+			if err := checklen(2, args); err != nil {
+				return err
+			}
+			first := args[0]
+			rest := args[1]
+			return A(cond, L(
+				Func(func(...Exp) Exp {
+					return A(eq, first, "0")
+				}),
+				Func(func(...Exp) Exp {
+					return A(list, first, rest)
+				}),
+			), L(
+				"t",
+				Func(func(...Exp) Exp {
+					return A(fx, A(minus, first, "1"), rest)
+				}),
+			))
+		}
+		return fx(A(car, x), A(cdr, x))
+	}()
+
 }
+
+//
+// test4 (interpreted)
+//
+
+var test4_label = parse_env("(label test4 (lambda (x) ((label f (lambda (first rest) (cond ((eq first '0) (list first rest)) ('t (f (minus first '1) rest))))) (car x) (cdr x))))")
 
 //
 // try (interpreted)
@@ -774,6 +811,7 @@ func init() {
 		L("test", test_label),
 		L("test2", test2_label),
 		L("test3", test3_label),
+		L("test4", test4_label),
 		L("try", try_label),
 		L("xlist", xlist_label),
 	)

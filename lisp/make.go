@@ -276,17 +276,29 @@ func Compile(e Exp, indent bool) ([]byte, error) {
 			arglist = append(arglist, string(arg))
 		}
 		fmt.Fprintf(w, `func() Exp {
-var %[1]s func(%[2]s Exp) Exp
-%[1]s = func(%[2]s Exp) Exp {
-return %[3]s
+var %[1]s func(... Exp) Exp
+%[1]s = func(args ... Exp) Exp {
+`,
+			name,
+		)
+
+		fmt.Fprintf(w, `	if err := checklen(%d, args); err != nil {
+		return err
+	}
+`, len(args))
+		for i, a := range args {
+			fmt.Fprintf(w, "%s := args[%d]\n", a, i)
+		}
+
+		fmt.Fprintf(w, `return %[2]s
 }
-return %[1]s(%[4]s)
+return %[1]s(%[3]s)
 }()
 `,
 			name,
-			strings.Join(args, ","),
 			string(body),
-			strings.Join(arglist, ","))
+			strings.Join(arglist, ","),
+		)
 		return nil
 	}
 
@@ -349,7 +361,7 @@ return %[1]s(%[4]s)
 
 func LabelExpr(defun Exp) (Exp, error) {
 	if String(car(defun)) != "defun" {
-		return nil, fmt.Errorf("not a defun")
+		return nil, fmt.Errorf("not a defun: %s", String(defun))
 	}
 	name := cadr(defun)
 	args := caddr(defun)
