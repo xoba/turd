@@ -5,6 +5,7 @@
     (cond
 
      ((eq (car e) 'test)    (test    (eval (cadr  e) a)))
+     ((eq (car e) 'test2)   (test2    (eval (cadr  e) a)))
 
      ;; somehow cxr's don't work in interpreted mode:
      ;;

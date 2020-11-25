@@ -42,8 +42,9 @@ return
 fmt.Println("%[3]s: %[4]s");
 }
 `, autogen, path.Base(pkg), filename, autogen)
-	fmt.Fprintln(f, `var L = list
-
+	fmt.Fprintln(f, `var( L = list
+A = apply
+)
 `)
 	fmt.Fprintf(f, `func parse_env(s string) Exp {
 e,err:= Parse(s)
@@ -233,11 +234,43 @@ func Compile(e Exp, indent bool) ([]byte, error) {
 	w := new(bytes.Buffer)
 	emit := func(list []string) {
 		if indent {
-			fmt.Fprintf(w, "apply(\n%s,\n)", strings.Join(list, ",\n"))
+			fmt.Fprintf(w, "A(\n%s,\n)", strings.Join(list, ",\n"))
 		} else {
-			fmt.Fprintf(w, "apply(%s)", strings.Join(list, ","))
+			fmt.Fprintf(w, "A(%s)", strings.Join(list, ","))
 		}
 	}
+	lambda := func(e Exp, name string) error {
+		body, err := Compile(caddar(e), false)
+		if err != nil {
+			return err
+		}
+		var args []string
+		for _, e := range cadar(e).([]Exp) {
+			args = append(args, String(e))
+		}
+		var arglist []string
+		for _, x := range cdr(e).([]Exp) {
+			arg, err := Compile(x, false)
+			if err != nil {
+				return err
+			}
+			arglist = append(arglist, string(arg))
+		}
+		fmt.Fprintf(w, `func() Exp {
+var %[1]s func(%[2]s Exp) Exp
+%[1]s = func(%[2]s Exp) Exp { // %[1]s
+return %[3]s
+}
+return %[1]s(%[4]s)
+}()
+`,
+			name,
+			strings.Join(args, ","),
+			string(body),
+			strings.Join(arglist, ","))
+		return nil
+	}
+
 	switch e := e.(type) {
 	case string:
 		fmt.Fprint(w, e)
@@ -253,34 +286,25 @@ func Compile(e Exp, indent bool) ([]byte, error) {
 			}
 			fmt.Fprint(w, q)
 
-		case Bool(eq(car(car(e)), "lambda")):
+		case Bool(eq(caar(e), "lambda")):
 
-			fmt.Printf("func body caddar: %s\n", caddar(e))
-			body, err := Compile(caddar(e), false)
-			if err != nil {
+			if err := lambda(e, "bogus"); err != nil {
 				return nil, err
 			}
-			fmt.Printf("body: %s\n", string(body))
-			var args []string
-			for _, e := range cadar(e).([]Exp) {
-				args = append(args, String(e))
-			}
-			fmt.Printf("func args cadar: %s\n", String(cadar(e)))
-			fmt.Printf("args cdr: %s\n", cdr(e))
-			var arglist []string
-			for _, x := range cdr(e).([]Exp) {
-				arg, err := Compile(x, false)
-				if err != nil {
-					return nil, err
-				}
-				arglist = append(arglist, string(arg))
-			}
-			fmt.Fprintf(w, `func(%s Exp) Exp {
-return %s
-}(%s)`, strings.Join(args, ","), string(body), strings.Join(arglist, ","))
 
-		case Bool(eq(car(car(e)), "label")):
-			panic("compiling label")
+		case Bool(eq(caar(e), "label")):
+
+			fmt.Printf("name = %s\n", String(cadar(e)))
+			fmt.Printf("body = %s\n", String(car(cdr(cdr(car(e))))))
+			fmt.Printf("args = %s\n", String(cdr(e)))
+
+			expr := cons(car(cdr(cdr(car(e)))), cdr(e))
+			fmt.Printf("expr = %s\n", String(expr))
+
+			if err := lambda(expr, String(cadar(e))); err != nil {
+				return nil, err
+			}
+
 		case Bool(eq(car(e), "cond")):
 			var list []string
 			for i, a := range e {
