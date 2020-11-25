@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/xoba/turd/cnfg"
@@ -61,6 +62,7 @@ return e
 	type definition struct {
 		file     string
 		name     string
+		expr     Exp
 		compiled bool
 	}
 
@@ -73,10 +75,21 @@ return e
 		}
 		for _, fi := range files {
 			if name := fi.Name(); filepath.Ext(name) == ".lisp" {
-				defs = append(defs, &definition{
+				def := &definition{
 					file:     filepath.Join(dir, name),
 					compiled: compiled,
-				})
+				}
+				buf, err := ioutil.ReadFile(def.file)
+				if err != nil {
+					return err
+				}
+				e, err := Parse(string(buf))
+				if err != nil {
+					return err
+				}
+				def.name = String(cadr(e))
+				def.expr = e
+				defs = append(defs, def)
 			}
 		}
 		return nil
@@ -85,21 +98,25 @@ return e
 	load("defs/compiled", true)
 	load("defs/interpreted", false)
 
+	sort.Slice(defs, func(i, j int) bool {
+		return defs[i].name < defs[j].name
+	})
+
 	for _, def := range defs {
-		buf, err := ioutil.ReadFile(def.file)
-		if err != nil {
-			return err
-		}
-		e, err := Parse(string(buf))
-		if err != nil {
-			return err
-		}
+		e := def.expr
 		e = SanitizeGo(e)
 		name := String(cadr(e))
 		label, err := LabelExpr(e)
 		if err != nil {
 			return err
 		}
+		var msg string
+		if def.compiled {
+			msg = "compiled"
+		} else {
+			msg = "interpreted"
+		}
+		fmt.Fprintf(f, "\n\n//\n// %s (%s)\n//\n\n\n", def.name, msg)
 		fmt.Fprintf(f, "var %[1]s_label = parse_env(%[2]q)\n", name, String(label))
 		name, code, err := DefunCode(e)
 		if err != nil {
