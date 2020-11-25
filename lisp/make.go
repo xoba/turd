@@ -108,7 +108,9 @@ return e
 		if def.compiled {
 			fmt.Fprint(f, string(code))
 		}
-		auto()
+		if false {
+			auto()
+		}
 		def.name = name
 	}
 
@@ -258,7 +260,7 @@ func Compile(e Exp, indent bool) ([]byte, error) {
 		}
 		fmt.Fprintf(w, `func() Exp {
 var %[1]s func(%[2]s Exp) Exp
-%[1]s = func(%[2]s Exp) Exp { // %[1]s
+%[1]s = func(%[2]s Exp) Exp {
 return %[3]s
 }
 return %[1]s(%[4]s)
@@ -287,24 +289,14 @@ return %[1]s(%[4]s)
 			fmt.Fprint(w, q)
 
 		case Bool(eq(caar(e), "lambda")):
-
-			if err := lambda(e, "bogus"); err != nil {
+			if err := lambda(e, "lambda"); err != nil {
 				return nil, err
 			}
-
 		case Bool(eq(caar(e), "label")):
-
-			fmt.Printf("name = %s\n", String(cadar(e)))
-			fmt.Printf("body = %s\n", String(car(cdr(cdr(car(e))))))
-			fmt.Printf("args = %s\n", String(cdr(e)))
-
 			expr := cons(car(cdr(cdr(car(e)))), cdr(e))
-			fmt.Printf("expr = %s\n", String(expr))
-
 			if err := lambda(expr, String(cadar(e))); err != nil {
 				return nil, err
 			}
-
 		case Bool(eq(car(e), "cond")):
 			var list []string
 			for i, a := range e {
