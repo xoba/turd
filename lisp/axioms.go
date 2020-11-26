@@ -12,7 +12,7 @@ import (
 	"github.com/xoba/turd/tnet"
 )
 
-// valid types: string, *big.Int, []byte, []Exp, Func, or error
+// valid types: string, *big.Int, []byte, *time.Time, []Exp, Func, or error
 type Exp interface{}
 
 type Func func(...Exp) Exp
@@ -41,6 +41,8 @@ func String(e Exp) string {
 		return marshal(t)
 	case *big.Int:
 		return t.String()
+	case time.Time:
+		return t.Format(TimeFormat)
 	case []Exp:
 		if len(t) == 2 && t[0] == "quote" {
 			return fmt.Sprintf("'%s", String(t[1]))
@@ -180,7 +182,7 @@ func atom(args ...Exp) Exp {
 		return err
 	}
 	switch t := one(args...).(type) {
-	case string, *big.Int:
+	case string, *big.Int, time.Time:
 		return True
 	case []Exp:
 		return boolToExp(len(t) == 0)
@@ -521,15 +523,18 @@ func after(args ...Exp) Exp {
 	}
 	x, y := two(args...)
 	parse := func(e Exp) (*time.Time, error) {
-		s, ok := e.(string)
-		if !ok {
-			return nil, fmt.Errorf("time not a string")
+		switch t := e.(type) {
+		case time.Time:
+			return &t, nil
+		case string:
+			tx, err := time.Parse(TimeFormat, t)
+			if err != nil {
+				return nil, err
+			}
+			return &tx, nil
+		default:
+			return nil, fmt.Errorf("not a time %T: %v", t, t)
 		}
-		tx, err := time.Parse(TimeFormat, s)
-		if err != nil {
-			return nil, err
-		}
-		return &tx, nil
 	}
 	tx, err := parse(x)
 	if err != nil {
