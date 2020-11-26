@@ -269,7 +269,7 @@ var cdar_label = parse_env("(label cdar (lambda (x) (cdr (car x))))")
 // eval (compiled)
 //
 
-var eval_label = parse_env("(label eval (lambda (e a) (cond ((atom e) (assoc e a)) ((atom (car e)) (cond ((eq (car e) 'test) (test (eval (cadr e) a))) ((eq (car e) 'test2) (test2 (eval (cadr e) a))) ((eq (car e) 'quote) (cadr e)) ((eq (car e) 'atom) (atom (eval (cadr e) a))) ((eq (car e) 'eq) (eq (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'car) (car (eval (cadr e) a))) ((eq (car e) 'cdr) (cdr (eval (cadr e) a))) ((eq (car e) 'cons) (cons (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'cond) (evcon (cdr e) a)) ((eq (car e) 'plus) (plus (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'inc) (plus (eval (cadr e) a) '1)) ((eq (car e) 'minus) (minus (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'mult) (mult (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'after) (after (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'concat) (concat (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'hash) (hash (eval (cadr e) a))) ((eq (car e) 'newkey) (newkey)) ((eq (car e) 'pub) (pub (eval (cadr e) a))) ((eq (car e) 'sign) (sign (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'verify) (verify (eval (cadr e) a) (eval (caddr e) a) (eval (cadddr e) a))) ((eq (car e) 'display) (display (eval (cadr e) a))) ((eq (car e) 'runes) (runes (eval (cadr e) a))) ((eq (car e) 'err) (err (eval (cadr e) a))) ((eq (car e) 'list) (evlis (cdr e) a)) ('t (eval (cons (assoc (car e) a) (cdr e)) a)))) ((eq (caar e) 'label) (eval (cons (caddar e) (cdr e)) (cons (list (cadar e) (car e)) a))) ((eq (caar e) 'lambda) (cond ((atom (cadar e)) (eval (caddar e) (cons (list (cadar e) (evlis (cdr e) a)) a))) ('t (eval (caddar e) (append_go_sanitized (pair (cadar e) (evlis (cdr e) a)) a))))))))")
+var eval_label = parse_env("(label eval (lambda (e a) (cond ((atom e) (assoc e a)) ((atom (car e)) (cond ((eq (car e) 'test) (test (eval (cadr e) a))) ((eq (car e) 'test2) (test2 (eval (cadr e) a))) ((eq (car e) 'quote) (cadr e)) ((eq (car e) 'atom) (atom (eval (cadr e) a))) ((eq (car e) 'eq) (eq (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'car) (car (eval (cadr e) a))) ((eq (car e) 'cdr) (cdr (eval (cadr e) a))) ((eq (car e) 'cons) (cons (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'cond) (evcon (cdr e) a)) ((eq (car e) 'plus) (plus (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'inc) (plus (eval (cadr e) a) '1)) ((eq (car e) 'minus) (minus (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'mult) (mult (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'exp) (exp (eval (cadr e) a) (eval (caddr e) a) (eval (cadddr e) a))) ((eq (car e) 'after) (after (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'concat) (concat (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'hash) (hash (eval (cadr e) a))) ((eq (car e) 'newkey) (newkey)) ((eq (car e) 'pub) (pub (eval (cadr e) a))) ((eq (car e) 'sign) (sign (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'verify) (verify (eval (cadr e) a) (eval (caddr e) a) (eval (cadddr e) a))) ((eq (car e) 'display) (display (eval (cadr e) a))) ((eq (car e) 'runes) (runes (eval (cadr e) a))) ((eq (car e) 'err) (err (eval (cadr e) a))) ((eq (car e) 'list) (evlis (cdr e) a)) ('t (eval (cons (assoc (car e) a) (cdr e)) a)))) ((eq (caar e) 'label) (eval (cons (caddar e) (cdr e)) (cons (list (cadar e) (car e)) a))) ((eq (caar e) 'lambda) (cond ((atom (cadar e)) (eval (caddar e) (cons (list (cadar e) (evlis (cdr e) a)) a))) ('t (eval (caddar e) (append_go_sanitized (pair (cadar e) (evlis (cdr e) a)) a))))))))")
 
 func eval(args ...Exp) Exp {
 	if err := checklen(2, args); err != nil {
@@ -382,6 +382,13 @@ func eval(args ...Exp) Exp {
 					}),
 					Func(func(...Exp) Exp {
 						return A(mult, A(eval, A(cadr, e), a), A(eval, A(caddr, e), a))
+					}),
+				), L(
+					Func(func(...Exp) Exp {
+						return A(eq, A(car, e), "exp")
+					}),
+					Func(func(...Exp) Exp {
+						return A(exp, A(eval, A(cadr, e), a), A(eval, A(caddr, e), a), A(eval, A(cadddr, e), a))
 					}),
 				), L(
 					Func(func(...Exp) Exp {

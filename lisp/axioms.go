@@ -194,43 +194,20 @@ func eq(args ...Exp) Exp {
 		return err
 	}
 	x, y := two(args...)
-	norm := func(e Exp) (string, error) {
-		switch t := e.(type) {
-		case string:
-			return t, nil
-		case *big.Int:
-			return t.String(), nil
-		case []byte:
-			return marshal(t), nil
-		default:
-			return "", fmt.Errorf("can't normalize: %T", t)
-		}
-	}
-
 	switch x := x.(type) {
-
 	case []Exp:
 		switch y := y.(type) {
-		case []Exp:
+		case []Exp: // both lists:
 			return boolToExp(len(x) == 0 && len(y) == 0)
 		default:
 			return False
 		}
-
 	default:
 		switch y := y.(type) {
 		case []Exp:
 			return False
-		default:
-			xn, err := norm(x)
-			if err != nil {
-				return err
-			}
-			yn, err := norm(y)
-			if err != nil {
-				return err
-			}
-			return boolToExp(xn == yn)
+		default: // both not lists:
+			return boolToExp(String(x) == String(y))
 		}
 	}
 }
@@ -290,22 +267,14 @@ func cond(args ...Exp) Exp {
 	if err := checkargs(args); err != nil {
 		return err
 	}
-	get := func(i interface{}) Exp {
-		switch v := i.(type) {
-		case Func:
-			return v()
-		default:
-			return v
-		}
-	}
 	for _, a := range args {
 		switch t := a.(type) {
 		case []Exp:
 			if err := checklen(2, t); err != nil {
 				return err
 			}
-			if Bool(get(t[0])) {
-				return get(t[1])
+			if Bool(manifest(t[0])) {
+				return manifest(t[1])
 			}
 		default:
 			return fmt.Errorf("illegal cond arg type %T: %v", t, t)
@@ -327,58 +296,78 @@ func list(args ...Exp) Exp {
 	return args
 }
 
-func mult(args ...Exp) Exp {
-	return arith("mult", args, func(i, j *big.Int) *big.Int {
-		var z big.Int
-		z.Mul(i, j)
-		return &z
-	})
-}
-
-func plus(args ...Exp) Exp {
-	return arith("plus", args, func(i, j *big.Int) *big.Int {
-		var z big.Int
-		z.Add(i, j)
-		return &z
-	})
-}
-
-func minus(args ...Exp) Exp {
-	return arith("minus", args, func(i, j *big.Int) *big.Int {
-		var z big.Int
-		z.Sub(i, j)
-		return &z
-	})
-}
-
-func arith(name string, args []Exp, f func(*big.Int, *big.Int) *big.Int) Exp {
-	if err := checklen(2, args); err != nil {
-		return err
+func arithargs(args []Exp) ([]*big.Int, error) {
+	var out []*big.Int
+	add := func(i *big.Int) {
+		out = append(out, i)
 	}
-	get := func(e Exp) (*big.Int, error) {
+	for _, e := range args {
 		switch t := e.(type) {
 		case string:
 			var i big.Int
 			if _, ok := i.SetString(t, 10); !ok {
 				return nil, fmt.Errorf("can't parse %q", t)
 			}
-			return &i, nil
+			add(&i)
 		case *big.Int:
-			return t, nil
+			add(t)
 		default:
 			return nil, fmt.Errorf("not an int: %T", e)
 		}
 	}
-	x, y := two(args...)
-	xv, err := get(x)
+	return out, nil
+}
+
+func exp(args ...Exp) Exp {
+	if err := checklen(3, args); err != nil {
+		return err
+	}
+	return arith(args, func(args ...*big.Int) *big.Int {
+		var z big.Int
+		z.Exp(args[0], args[1], args[2])
+		return &z
+	})
+}
+
+func mult(args ...Exp) Exp {
+	if err := checklen(2, args); err != nil {
+		return err
+	}
+	return arith(args, func(args ...*big.Int) *big.Int {
+		var z big.Int
+		z.Mul(args[0], args[1])
+		return &z
+	})
+}
+
+func plus(args ...Exp) Exp {
+	if err := checklen(2, args); err != nil {
+		return err
+	}
+	return arith(args, func(args ...*big.Int) *big.Int {
+		var z big.Int
+		z.Add(args[0], args[1])
+		return &z
+	})
+}
+
+func minus(args ...Exp) Exp {
+	if err := checklen(2, args); err != nil {
+		return err
+	}
+	return arith(args, func(args ...*big.Int) *big.Int {
+		var z big.Int
+		z.Sub(args[0], args[1])
+		return &z
+	})
+}
+
+func arith(args []Exp, f func(...*big.Int) *big.Int) Exp {
+	ints, err := arithargs(args)
 	if err != nil {
 		return err
 	}
-	yv, err := get(y)
-	if err != nil {
-		return err
-	}
-	return f(xv, yv)
+	return f(ints...)
 }
 
 func marshal(buf []byte) string {

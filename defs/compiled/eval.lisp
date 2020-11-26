@@ -38,6 +38,9 @@
 			             (eval (caddr e) a)))
      ((eq (car e) 'mult)    (mult    (eval (cadr  e) a)
 			             (eval (caddr e) a)))
+     ((eq (car e) 'exp)     (exp     (eval (cadr  e)  a)
+				     (eval (caddr e)  a)
+				     (eval (cadddr e) a)))
      ;; time:
      ((eq (car e) 'after)   (after   (eval (cadr  e) a)
 				     (eval (caddr e) a)))
