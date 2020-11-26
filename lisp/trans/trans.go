@@ -23,9 +23,6 @@ import (
 // be a mining hash, calculated in appropriate manner.
 
 // TODO: needs potentially multiple signatures
-// TODO: maybe signature block should be generic arguments to scripts,
-// to be accessed via "assoc". makes sense to use some sort of hash of key
-// for signature names.
 type Transaction struct {
 	Type      string    `asn1:"optional,utf8" json:",omitempty"`
 	Inputs    []Input   `asn1:"omitempty" json:",omitempty"`

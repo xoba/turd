@@ -86,8 +86,6 @@ func three(args ...Exp) (Exp, Exp, Exp) {
 // AXIOMS
 // ----------------------------------------------------------------------
 
-// TODO: maybe natively handle type []byte, rather than base64-encoded strings?
-
 func runes(args ...Exp) Exp {
 	if err := checklen(1, args); err != nil {
 		return err
