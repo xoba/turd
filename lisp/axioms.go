@@ -209,42 +209,6 @@ func eq(args ...Exp) Exp {
 
 	switch x := x.(type) {
 
-	case string:
-		switch y := y.(type) {
-		case []Exp:
-			return False
-		default:
-			yn, err := norm(y)
-			if err != nil {
-				return err
-			}
-			return boolToExp(x == yn)
-		}
-
-	case []byte:
-		switch y := y.(type) {
-		case []Exp:
-			return False
-		default:
-			yn, err := norm(y)
-			if err != nil {
-				return err
-			}
-			return boolToExp(marshal(x) == yn)
-		}
-
-	case *big.Int:
-		switch y := y.(type) {
-		case []Exp:
-			return false
-		default:
-			xn, err := norm(x)
-			if err != nil {
-				return err
-			}
-			return boolToExp(xn == y)
-		}
-
 	case []Exp:
 		switch y := y.(type) {
 		case []Exp:
@@ -252,8 +216,22 @@ func eq(args ...Exp) Exp {
 		default:
 			return False
 		}
+
 	default:
-		return fmt.Errorf("bad first argument to eq: %T", x)
+		switch y := y.(type) {
+		case []Exp:
+			return False
+		default:
+			xn, err := norm(x)
+			if err != nil {
+				return err
+			}
+			yn, err := norm(y)
+			if err != nil {
+				return err
+			}
+			return boolToExp(xn == yn)
+		}
 	}
 }
 

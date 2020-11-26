@@ -402,7 +402,7 @@ func Run(cnfg.Config) error {
 	bhash := make([]byte, 10)
 	rand.Read(bhash)
 	start := time.Now()
-	for _, t := range trans {
+	for i, t := range trans {
 		if err := t.Validate(); err != nil {
 			return err
 		}
@@ -430,8 +430,10 @@ func Run(cnfg.Config) error {
 					return err
 				}
 				bhash = buf
+			case []byte:
+				bhash = t
 			default:
-				return fmt.Errorf("bad result: %s\n", lisp.String(res))
+				return fmt.Errorf("%d. bad result: %s\n", i, lisp.String(res))
 			}
 			dec(input.Address(), input.Quantity)
 		}
