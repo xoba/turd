@@ -401,16 +401,13 @@ func Run(cnfg.Config) error {
 	// block hash to be chained through all inputs of all transactions
 	bhash := make([]byte, 10)
 	rand.Read(bhash)
-	for i, t := range trans {
-		fmt.Printf("%d. %s\n", i, t)
-
-		fmt.Printf("EXPR = %s\n", lisp.String(t.Lisp()))
-
+	start := time.Now()
+	for _, t := range trans {
 		if err := t.Validate(); err != nil {
 			return err
 		}
 
-		for j, input := range t.Inputs {
+		for _, input := range t.Inputs {
 			if b := balance(input.Address()); b.Cmp(input.Quantity) < 0 {
 				return fmt.Errorf("input %s from %s", input.Quantity, b)
 			}
@@ -425,7 +422,6 @@ func Run(cnfg.Config) error {
 			if err != nil {
 				return err
 			}
-			fmt.Printf("EVAL(%s)\n", lisp.String(e))
 			res := lisp.Eval(e)
 			switch t := res.(type) {
 			case string:
@@ -433,22 +429,19 @@ func Run(cnfg.Config) error {
 				if err != nil {
 					return err
 				}
-				fmt.Printf("%d.%d. %s\n", i, j, marshal(buf))
 				bhash = buf
 			default:
 				return fmt.Errorf("bad result: %s\n", lisp.String(res))
 			}
 			dec(input.Address(), input.Quantity)
-			fmt.Printf("balances: %s\n", balances)
 		}
 
-		for j, o := range t.Outputs {
-			fmt.Printf("%d.%d. output %s\n", i, j, o)
+		for _, o := range t.Outputs {
 			inc(o.Address, o.Quantity)
-			fmt.Printf("balances: %s\n", balances)
 		}
 	}
-
+	fmt.Printf("%v / transaction\n", time.Since(start)/time.Duration(len(trans)))
+	fmt.Printf("balances: %s\n", balances)
 	fmt.Printf("final hash = %s\n", marshal(bhash))
 	return nil
 }
