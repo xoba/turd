@@ -402,6 +402,7 @@ func checkargs(args []Exp) error {
 		switch t := a.(type) {
 		case string:
 		case *big.Int:
+		case []byte:
 		case []Exp:
 		case Func:
 		case error:

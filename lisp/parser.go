@@ -264,7 +264,7 @@ func translateAtoms(e Exp, from, to string) Exp {
 			return to
 		}
 		return t
-	case *big.Int:
+	case *big.Int, []byte:
 		return t
 	case []Exp:
 		var out []Exp

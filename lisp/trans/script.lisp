@@ -1,4 +1,4 @@
-; this is a script that has time and signature constraints
+;; this is a script that has time and signature constraints
 ((lambda
    (input block trans)
    ((lambda (pub t0 time thash sig)
@@ -13,3 +13,4 @@
     (assoc 'time block) ; time
     (assoc 'hash trans) ; thash
     (assoc '{{.pubname}} (assoc 'arguments trans)))) ; sig
+ 

@@ -12,7 +12,7 @@ import (
 	"github.com/xoba/turd/tnet"
 )
 
-// valid types: string, *big.Int, []Exp, Func, or error
+// valid types: string, *big.Int, []byte, []Exp, Func, or error
 type Exp interface{}
 
 type Func func(...Exp) Exp
@@ -37,6 +37,8 @@ func String(e Exp) string {
 	switch t := e.(type) {
 	case string:
 		return t
+	case []byte:
+		return marshal(t)
 	case *big.Int:
 		return t.String()
 	case []Exp:
@@ -192,28 +194,60 @@ func eq(args ...Exp) Exp {
 		return err
 	}
 	x, y := two(args...)
+	norm := func(e Exp) (string, error) {
+		switch t := e.(type) {
+		case string:
+			return t, nil
+		case *big.Int:
+			return t.String(), nil
+		case []byte:
+			return marshal(t), nil
+		default:
+			return "", fmt.Errorf("can't normalize: %T", t)
+		}
+	}
+
 	switch x := x.(type) {
+
 	case string:
 		switch y := y.(type) {
-		case string:
-			return boolToExp(x == y)
-		case *big.Int:
-			return boolToExp(x == y.String())
-		default:
+		case []Exp:
 			return False
+		default:
+			yn, err := norm(y)
+			if err != nil {
+				return err
+			}
+			return boolToExp(x == yn)
 		}
+
+	case []byte:
+		switch y := y.(type) {
+		case []Exp:
+			return False
+		default:
+			yn, err := norm(y)
+			if err != nil {
+				return err
+			}
+			return boolToExp(marshal(x) == yn)
+		}
+
 	case *big.Int:
 		switch y := y.(type) {
-		case string:
-			return boolToExp(x.String() == y)
-		case *big.Int:
-			return boolToExp(x.Cmp(y) == 0)
+		case []Exp:
+			return false
 		default:
-			return False
+			xn, err := norm(x)
+			if err != nil {
+				return err
+			}
+			return boolToExp(xn == y)
 		}
+
 	case []Exp:
 		switch y := y.(type) {
-		case []Exp: // both lists
+		case []Exp:
 			return boolToExp(len(x) == 0 && len(y) == 0)
 		default:
 			return False
@@ -369,16 +403,19 @@ func arith(name string, args []Exp, f func(*big.Int, *big.Int) *big.Int) Exp {
 	return f(xv, yv)
 }
 
-func marshal(buf []byte) Exp {
+func marshal(buf []byte) string {
 	return base64.RawStdEncoding.EncodeToString(buf)
 }
 
 func unmarshal(e Exp) ([]byte, error) {
-	s, ok := e.(string)
-	if !ok {
-		return nil, fmt.Errorf("unmarshal needs string, got %s", String(e))
+	switch t := e.(type) {
+	case string:
+		return base64.RawStdEncoding.DecodeString(t)
+	case []byte:
+		return t, nil
+	default:
+		return nil, fmt.Errorf("can't unmarshal %T", t)
 	}
-	return base64.RawStdEncoding.DecodeString(s)
 }
 
 // hashes content
@@ -390,7 +427,7 @@ func hash(args ...Exp) Exp {
 	if err != nil {
 		return err
 	}
-	return marshal(thash.Hash(buf))
+	return thash.Hash(buf)
 }
 
 // concats two blobs
@@ -410,7 +447,7 @@ func concat(args ...Exp) Exp {
 	var out []byte
 	out = append(out, xb...)
 	out = append(out, yb...)
-	return marshal(out)
+	return out
 }
 
 // creates a new private key
@@ -426,7 +463,7 @@ func newkey(args ...Exp) Exp {
 	if err != nil {
 		return err
 	}
-	return marshal(buf)
+	return buf
 }
 
 // derives public from private key
@@ -447,7 +484,7 @@ func pub(args ...Exp) Exp {
 	if err != nil {
 		return err
 	}
-	return marshal(public)
+	return public
 }
 
 // sign blob with private key
@@ -475,7 +512,7 @@ func sign(args ...Exp) Exp {
 	if err != nil {
 		return err
 	}
-	return marshal(sig)
+	return sig
 }
 
 // verify blob with public key and signature
