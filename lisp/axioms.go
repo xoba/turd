@@ -12,7 +12,7 @@ import (
 	"github.com/xoba/turd/tnet"
 )
 
-// valid types: string, []Exp, Func, or error
+// valid types: string, *big.Int, []Exp, Func, or error
 type Exp interface{}
 
 type Func func(...Exp) Exp
@@ -26,7 +26,7 @@ var (
 
 func Bool(e Exp) bool {
 	switch t := e.(type) {
-	case string:
+	case string, *big.Int:
 		return t == "t"
 	default:
 		return false
@@ -37,6 +37,8 @@ func String(e Exp) string {
 	switch t := e.(type) {
 	case string:
 		return t
+	case *big.Int:
+		return t.String()
 	case []Exp:
 		if len(t) == 2 && t[0] == "quote" {
 			return fmt.Sprintf("'%s", String(t[1]))
@@ -176,7 +178,7 @@ func atom(args ...Exp) Exp {
 		return err
 	}
 	switch t := one(args...).(type) {
-	case string:
+	case string, *big.Int:
 		return True
 	case []Exp:
 		return boolToExp(len(t) == 0)
@@ -193,21 +195,28 @@ func eq(args ...Exp) Exp {
 	switch x := x.(type) {
 	case string:
 		switch y := y.(type) {
-		case string: // both atoms
+		case string:
 			return boolToExp(x == y)
-		case []Exp:
-			return False
+		case *big.Int:
+			return boolToExp(x == y.String())
 		default:
-			return fmt.Errorf("bad second argument to eq: %T", y)
+			return False
+		}
+	case *big.Int:
+		switch y := y.(type) {
+		case string:
+			return boolToExp(x.String() == y)
+		case *big.Int:
+			return boolToExp(x.Cmp(y) == 0)
+		default:
+			return False
 		}
 	case []Exp:
 		switch y := y.(type) {
-		case string:
-			return False
 		case []Exp: // both lists
 			return boolToExp(len(x) == 0 && len(y) == 0)
 		default:
-			return fmt.Errorf("bad second argument to eq: %T", y)
+			return False
 		}
 	default:
 		return fmt.Errorf("bad first argument to eq: %T", x)
@@ -334,30 +343,30 @@ func arith(name string, args []Exp, f func(*big.Int, *big.Int) *big.Int) Exp {
 	if err := checklen(2, args); err != nil {
 		return err
 	}
-	x, y := two(args...)
-	xs, ok := x.(string)
-	if !ok {
-		return fmt.Errorf("x not string")
-	}
-	ys, ok := y.(string)
-	if !ok {
-		return fmt.Errorf("y not string")
-	}
-	//fmt.Printf("%s(%s,%s)\n", name, xs, ys)
-	var xv, yv big.Int
-	set := func(i *big.Int, s string) error {
-		if _, ok := i.SetString(s, 10); !ok {
-			return fmt.Errorf("can't parse %q", s)
+	get := func(e Exp) (*big.Int, error) {
+		switch t := e.(type) {
+		case string:
+			var i big.Int
+			if _, ok := i.SetString(t, 10); !ok {
+				return nil, fmt.Errorf("can't parse %q", t)
+			}
+			return &i, nil
+		case *big.Int:
+			return t, nil
+		default:
+			return nil, fmt.Errorf("not an int: %T", e)
 		}
-		return nil
 	}
-	if err := set(&xv, xs); err != nil {
+	x, y := two(args...)
+	xv, err := get(x)
+	if err != nil {
 		return err
 	}
-	if err := set(&yv, ys); err != nil {
+	yv, err := get(y)
+	if err != nil {
 		return err
 	}
-	return f(&xv, &yv).String()
+	return f(xv, yv)
 }
 
 func marshal(buf []byte) Exp {

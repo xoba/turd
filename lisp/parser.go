@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"math/big"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -262,6 +263,8 @@ func translateAtoms(e Exp, from, to string) Exp {
 		if t == from {
 			return to
 		}
+		return t
+	case *big.Int:
 		return t
 	case []Exp:
 		var out []Exp

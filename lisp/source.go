@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/big"
 	"path/filepath"
 	"time"
 
@@ -400,6 +401,7 @@ func checkargs(args []Exp) error {
 	for _, a := range args {
 		switch t := a.(type) {
 		case string:
+		case *big.Int:
 		case []Exp:
 		case Func:
 		case error:

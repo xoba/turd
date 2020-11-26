@@ -338,7 +338,7 @@ func Run(cnfg.Config) error {
 	{
 		var t Transaction
 		t.Type = "turd"
-		if err := t.NewOutput(10, key1.Public(), "key1", after); err != nil {
+		if err := t.NewOutput(1000, key1.Public(), "key1", after); err != nil {
 			return err
 		}
 		// no need to sign mining transaction
@@ -347,14 +347,14 @@ func Run(cnfg.Config) error {
 	{
 		var t Transaction
 		t.Type = "turd"
-		if err := t.NewOutput(10, key3.Public(), "key3", after); err != nil {
+		if err := t.NewOutput(1000, key3.Public(), "key3", after); err != nil {
 			return err
 		}
 		// no need to sign mining transaction
 		addt(t)
 	}
 
-	{
+	for i := 0; i < 100; i++ {
 		var t Transaction
 		t.Type = "normal"
 		if err := t.NewInput(3, key1.Public(), "key1", after); err != nil {
