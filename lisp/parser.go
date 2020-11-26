@@ -3,47 +3,12 @@ package lisp
 import (
 	"bufio"
 	"bytes"
-	"encoding/asn1"
 	"fmt"
 	"io"
 	"strings"
 	"unicode"
 	"unicode/utf8"
 )
-
-type Marshalled struct {
-	Atom     string       `asn1:"utf8,optional"`
-	Blob     []byte       `asn1:"optional"`
-	Children []Marshalled `asn1:"omitempty"`
-}
-
-func toMarshalled(e Exp) (*Marshalled, error) {
-	switch t := e.(type) {
-	case string:
-		return &Marshalled{Atom: t}, nil
-	case []Exp:
-		var children []Marshalled
-		for _, c := range t {
-			x, err := toMarshalled(c)
-			if err != nil {
-				return nil, err
-			}
-			children = append(children, *x)
-		}
-		return &Marshalled{Children: children}, nil
-	default:
-		return nil, fmt.Errorf("unsupported type: %T", t)
-	}
-}
-
-// to asn.1
-func Marshal(e Exp) ([]byte, error) {
-	m, err := toMarshalled(e)
-	if err != nil {
-		return nil, err
-	}
-	return asn1.Marshal(*m)
-}
 
 func Parse(s string) (Exp, error) {
 	if !utf8.ValidString(s) {

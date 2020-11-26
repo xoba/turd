@@ -2,11 +2,11 @@
 package lisp
 
 import (
-	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"path/filepath"
+	"time"
 
 	"github.com/xoba/turd/cnfg"
 )
@@ -14,11 +14,7 @@ import (
 type EvalFunc func(e Exp) Exp
 
 func Eval(e Exp) Exp {
-	if true {
-		return CompiledEval(e)
-	} else {
-		return InterpretedEval(e, CompiledEval)
-	}
+	return CompiledEval(e)
 }
 
 func CompiledEval(e Exp) Exp {
@@ -76,6 +72,23 @@ func Run(c cnfg.Config) error {
 
 	tests := make(map[string]int)
 
+	benchmark := func(input string) time.Duration {
+		in, err := Parse(input)
+		if err != nil {
+			log.Fatal(err)
+		}
+		var n int
+		start := time.Now()
+		for {
+			Eval(in)
+			n++
+			if time.Since(start) > time.Second {
+				break
+			}
+		}
+		return time.Now().Sub(start) / time.Duration(n)
+	}
+
 	test0 := func(msg, input, expect string, f EvalFunc, name string) {
 		if msg == "" {
 			return
@@ -90,18 +103,6 @@ func Run(c cnfg.Config) error {
 		}
 		tests[String(in)]++
 		log.Printf("%3d. %-13s %-10s %-20s -> %s", len(tests), name, msg+":", String(in), expect)
-		{
-			buf, err := Marshal(in)
-			if err != nil {
-				log.Fatal(err)
-			}
-			if len(buf) < len(input) { // is asn.1 more compact?
-				fmt.Printf("%d/%d asn1 bytes = %s\n",
-					len(buf), len(input),
-					base64.StdEncoding.EncodeToString(buf),
-				)
-			}
-		}
 		res := f(in)
 		if expect == "" {
 			fmt.Printf("got %s\n", String(res))
@@ -125,7 +126,7 @@ func Run(c cnfg.Config) error {
 	}
 
 	// interpreted2 is way too slow! never actually saw it finish:
-	delete(evals, "interpreted2")
+	//delete(evals, "interpreted2")
 
 	if !c.Debug {
 		delete(evals, "interpreted2")
@@ -262,7 +263,6 @@ func Run(c cnfg.Config) error {
 	test("factorial", "(factorial '0)", "1")
 	test("factorial", "(factorial '1)", "1")
 	test("factorial", "(factorial '3)", "6")
-	test("factorial", "(factorial '10)", "3628800")
 	test("factorial", "(factorial '100)", "93326215443944152681699238856266700490715968264381621468592963895217599993229915608941463976156518286253697920827223758251185210916864000000000000000000000000")
 
 	test("lexpr", " ((lambda (x) (cdr x)) '(a b c))", "(b c)")
@@ -375,6 +375,8 @@ func Run(c cnfg.Config) error {
 	test("ltest", `(test4 '(3 b c))`, `(0 (b c))`)
 
 	test("ltest", `(test3 '(3 b c))`, `(0 (b c))`)
+
+	fmt.Printf("factorial bench = %v\n", benchmark("(factorial '10)"))
 
 	test("", ``, ``)
 	test("", ``, ``)
