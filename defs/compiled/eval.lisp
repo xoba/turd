@@ -61,15 +61,19 @@
      ((eq (car e) 'err)     (err (eval (cadr e) a)))
      
      ((eq (car e) 'list)    (evlis   (cdr e) a))
-     
+
      ;; resolve an unknown op:
      ('t (eval (cons (assoc (car e) a)
 		     (cdr e))
 	       a))))
    
+   ((eq (caar e) 'macro)
+    (eval (eval (cadddar e) (pair (caddar e) (cdr e))) a))
+   
    ((eq (caar e) 'label)
     (eval (cons (caddar e) (cdr e))
 	  (cons (list (cadar e) (car e)) a)))
+   
    ((eq (caar e) 'lambda)
     (cond
      ((atom (cadar e)) ; lexpr

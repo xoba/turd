@@ -185,6 +185,67 @@ func caddar(args ...Exp) Exp {
 }
 
 //
+// cadddar (compiled)
+//
+
+var cadddar_label = parse_env("(label cadddar (lambda (x) (car (cdr (cdr (cdr (car x)))))))")
+
+func cadddar(args ...Exp) Exp {
+	if err := checklen(1, args); err != nil {
+		return err
+	}
+	x := args[0]
+	return A(
+		car,
+		A(
+			cdr,
+			A(
+				cdr,
+				A(
+					cdr,
+					A(
+						car,
+						x,
+					),
+				),
+			),
+		),
+	)
+}
+
+//
+// caddddar (compiled)
+//
+
+var caddddar_label = parse_env("(label caddddar (lambda (x) (car (cdr (cdr (cdr (cdr (car x))))))))")
+
+func caddddar(args ...Exp) Exp {
+	if err := checklen(1, args); err != nil {
+		return err
+	}
+	x := args[0]
+	return A(
+		car,
+		A(
+			cdr,
+			A(
+				cdr,
+				A(
+					cdr,
+					A(
+						cdr,
+						A(
+							car,
+							x,
+						),
+					),
+				),
+			),
+		),
+	)
+}
+
+//
 // caddddr (interpreted)
 //
 
@@ -266,10 +327,36 @@ func cadr(args ...Exp) Exp {
 var cdar_label = parse_env("(label cdar (lambda (x) (cdr (car x))))")
 
 //
+// cdddar (compiled)
+//
+
+var cdddar_label = parse_env("(label cdddar (lambda (x) (cdr (cdr (cdr (car x))))))")
+
+func cdddar(args ...Exp) Exp {
+	if err := checklen(1, args); err != nil {
+		return err
+	}
+	x := args[0]
+	return A(
+		cdr,
+		A(
+			cdr,
+			A(
+				cdr,
+				A(
+					car,
+					x,
+				),
+			),
+		),
+	)
+}
+
+//
 // eval (compiled)
 //
 
-var eval_label = parse_env("(label eval (lambda (e a) (cond ((atom e) (assoc e a)) ((atom (car e)) (cond ((eq (car e) 'test) (test (eval (cadr e) a))) ((eq (car e) 'test2) (test2 (eval (cadr e) a))) ((eq (car e) 'quote) (cadr e)) ((eq (car e) 'atom) (atom (eval (cadr e) a))) ((eq (car e) 'eq) (eq (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'car) (car (eval (cadr e) a))) ((eq (car e) 'cdr) (cdr (eval (cadr e) a))) ((eq (car e) 'cons) (cons (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'cond) (evcon (cdr e) a)) ((eq (car e) 'plus) (plus (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'inc) (plus (eval (cadr e) a) '1)) ((eq (car e) 'minus) (minus (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'mult) (mult (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'exp) (exp (eval (cadr e) a) (eval (caddr e) a) (eval (cadddr e) a))) ((eq (car e) 'after) (after (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'concat) (concat (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'hash) (hash (eval (cadr e) a))) ((eq (car e) 'newkey) (newkey)) ((eq (car e) 'pub) (pub (eval (cadr e) a))) ((eq (car e) 'sign) (sign (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'verify) (verify (eval (cadr e) a) (eval (caddr e) a) (eval (cadddr e) a))) ((eq (car e) 'display) (display (eval (cadr e) a))) ((eq (car e) 'runes) (runes (eval (cadr e) a))) ((eq (car e) 'err) (err (eval (cadr e) a))) ((eq (car e) 'list) (evlis (cdr e) a)) ('t (eval (cons (assoc (car e) a) (cdr e)) a)))) ((eq (caar e) 'label) (eval (cons (caddar e) (cdr e)) (cons (list (cadar e) (car e)) a))) ((eq (caar e) 'lambda) (cond ((atom (cadar e)) (eval (caddar e) (cons (list (cadar e) (evlis (cdr e) a)) a))) ('t (eval (caddar e) (append_go_sanitized (pair (cadar e) (evlis (cdr e) a)) a))))))))")
+var eval_label = parse_env("(label eval (lambda (e a) (cond ((atom e) (assoc e a)) ((atom (car e)) (cond ((eq (car e) 'test) (test (eval (cadr e) a))) ((eq (car e) 'test2) (test2 (eval (cadr e) a))) ((eq (car e) 'quote) (cadr e)) ((eq (car e) 'atom) (atom (eval (cadr e) a))) ((eq (car e) 'eq) (eq (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'car) (car (eval (cadr e) a))) ((eq (car e) 'cdr) (cdr (eval (cadr e) a))) ((eq (car e) 'cons) (cons (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'cond) (evcon (cdr e) a)) ((eq (car e) 'plus) (plus (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'inc) (plus (eval (cadr e) a) '1)) ((eq (car e) 'minus) (minus (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'mult) (mult (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'exp) (exp (eval (cadr e) a) (eval (caddr e) a) (eval (cadddr e) a))) ((eq (car e) 'after) (after (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'concat) (concat (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'hash) (hash (eval (cadr e) a))) ((eq (car e) 'newkey) (newkey)) ((eq (car e) 'pub) (pub (eval (cadr e) a))) ((eq (car e) 'sign) (sign (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'verify) (verify (eval (cadr e) a) (eval (caddr e) a) (eval (cadddr e) a))) ((eq (car e) 'display) (display (eval (cadr e) a))) ((eq (car e) 'runes) (runes (eval (cadr e) a))) ((eq (car e) 'err) (err (eval (cadr e) a))) ((eq (car e) 'list) (evlis (cdr e) a)) ('t (eval (cons (assoc (car e) a) (cdr e)) a)))) ((eq (caar e) 'macro) (eval (eval (cadddar e) (pair (caddar e) (cdr e))) a)) ((eq (caar e) 'label) (eval (cons (caddar e) (cdr e)) (cons (list (cadar e) (car e)) a))) ((eq (caar e) 'lambda) (cond ((atom (cadar e)) (eval (caddar e) (cons (list (cadar e) (evlis (cdr e) a)) a))) ('t (eval (caddar e) (append_go_sanitized (pair (cadar e) (evlis (cdr e) a)) a))))))))")
 
 func eval(args ...Exp) Exp {
 	if err := checklen(2, args); err != nil {
@@ -473,6 +560,14 @@ func eval(args ...Exp) Exp {
 						return A(eval, A(cons, A(assoc, A(car, e), a), A(cdr, e)), a)
 					}),
 				))
+			}),
+		),
+		L(
+			Func(func(...Exp) Exp {
+				return A(eq, A(caar, e), "macro")
+			}),
+			Func(func(...Exp) Exp {
+				return A(eval, A(eval, A(cadddar, e), A(pair, A(caddar, e), A(cdr, e))), a)
 			}),
 		),
 		L(
@@ -797,11 +892,14 @@ func init() {
 		L("caar", caar_label),
 		L("cadar", cadar_label),
 		L("caddar", caddar_label),
+		L("cadddar", cadddar_label),
+		L("caddddar", caddddar_label),
 		L("caddddr", caddddr_label),
 		L("cadddr", cadddr_label),
 		L("caddr", caddr_label),
 		L("cadr", cadr_label),
 		L("cdar", cdar_label),
+		L("cdddar", cdddar_label),
 		L("eval", eval_label),
 		L("evcon", evcon_label),
 		L("evlis", evlis_label),

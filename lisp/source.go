@@ -379,6 +379,13 @@ func Run(c cnfg.Config) error {
 
 	test("ltest", `(test3 '(3 b c))`, `(0 (b c))`)
 
+	test("macro", "(pair '(x) '((a b c)))", "((x (a b c)))")
+
+	test("macro", `((macro test (x) (cdr x))
+ (a car '(1 2)))`, "1")
+
+	return nil
+
 	fmt.Printf("factorial bench = %v\n", benchmark("(factorial '10)"))
 
 	test("", ``, ``)
