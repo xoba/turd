@@ -397,11 +397,29 @@ func Run(c cnfg.Config) error {
 `,
 		"30")
 
+	// this is generating some cond clauses for 1-arg ops
+	// TODO: how to get list out to args?
+	// TODO: how to get atom,car,cdr quoted?
+	test("macro", `
+(list 'cond (car ((label macrotest 
+	(lambda (list)
+	  (cond
+	   ((atom list) ())
+	   ('t
+	    (cons
+	     (list (list 'eq '(car e) (car list)) (list (car list) '(eval (cadr  e) a)))
+	     (macrotest (cdr list)))))))
+ '(atom car cdr))))
+`, "")
+
+	test("macro", `((macro test (list)
+	(cons (car list) (cdr list)))
+ (list 'b 'c))`, ``)
+
 	return nil
 
 	fmt.Printf("factorial bench = %v\n", benchmark("(factorial '10)"))
 
-	test("", ``, ``)
 	test("", ``, ``)
 	test("", ``, ``)
 	test("", ``, ``)

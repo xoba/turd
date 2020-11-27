@@ -370,25 +370,6 @@ func Run(cnfg.Config) error {
 		addt(t)
 	}
 
-	balances := make(map[string]*big.Int)
-
-	balance := func(addr []byte) *big.Int {
-		key := marshal(addr)[:6]
-		i, ok := balances[key]
-		if !ok {
-			i = big.NewInt(0)
-			balances[key] = i
-		}
-		return i
-	}
-	inc := func(addr []byte, o *big.Int) {
-		i := balance(addr)
-		i.Add(i, o)
-	}
-	dec := func(addr []byte, o *big.Int) {
-		inc(addr, big.NewInt(0).Neg(o))
-	}
-
 	bhash := make([]byte, 10)
 	rand.Read(bhash)
 
@@ -406,9 +387,30 @@ func Run(cnfg.Config) error {
 
 	start := time.Now()
 	for time.Since(start) < 5*time.Minute {
+
 		var rounds int
 		for {
 			rounds++
+
+			balances := make(map[string]*big.Int)
+
+			balance := func(addr []byte) *big.Int {
+				key := marshal(addr)[:6]
+				i, ok := balances[key]
+				if !ok {
+					i = big.NewInt(0)
+					balances[key] = i
+				}
+				return i
+			}
+			inc := func(addr []byte, o *big.Int) {
+				i := balance(addr)
+				i.Add(i, o)
+			}
+			dec := func(addr []byte, o *big.Int) {
+				inc(addr, big.NewInt(0).Neg(o))
+			}
+
 			// block hash to be chained through all inputs of all transactions
 			start := time.Now()
 			for i, t := range trans {
@@ -467,6 +469,7 @@ func Run(cnfg.Config) error {
 			len(allRounds),
 		)
 	}
+	fmt.Println(allRounds)
 	return nil
 }
 

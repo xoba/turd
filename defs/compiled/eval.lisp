@@ -66,9 +66,10 @@
      ('t (eval (cons (assoc (car e) a)
 		     (cdr e))
 	       a))))
-   
+
+   ;; initial macro concept, note the two evals:
    ((eq (caar e) 'macro)
-    (eval (eval (cadddar e) (pair (caddar e) (cdr e))) a))
+    (eval (display (eval (cadddar e) (pair (caddar e) (cdr e)))) a))
    
    ((eq (caar e) 'label)
     (eval (cons (caddar e) (cdr e))
