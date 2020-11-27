@@ -381,8 +381,21 @@ func Run(c cnfg.Config) error {
 
 	test("macro", "(pair '(x) '((a b c)))", "((x (a b c)))")
 
-	test("macro", `((macro test (x) (cdr x))
- (a car '(1 2)))`, "1")
+	// TODO: should be more like ((macro test (lambda (x) (cdr x))) ...),
+	// where "test" is also expanded within the lambda body, not just "x".
+
+	test("macro", `
+((macro test (x)
+	(cdr x))
+ (a car '(1 2)))
+`, "1")
+
+	test("macro", `
+((macro test (x y z)
+	(list (car x) (car y) (car z)))
+ (mult 1 2 3) ('5 a b c) ('6 x))
+`,
+		"30")
 
 	return nil
 
