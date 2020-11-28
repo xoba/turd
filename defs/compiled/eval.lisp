@@ -4,40 +4,27 @@
    ((atom (car e))
     (cond
 
-     ((eq (car e) 'test)    (test    (eval (cadr  e) a)))
-     ((eq (car e) 'test2)   (test2    (eval (cadr  e) a)))
-
-     ;; somehow cxr's don't work in interpreted mode:
-     ;;
-     ;; ((iscxr (car e)) (cxr (car e) (eval (cadr  e) a)))
-     ;; ((eq (car e) 'iscxr) (iscxr (eval (cadr  e) a)))
-     ;;
-     ;; maybe, we need an axiom to convert atoms to runes?
+     ((eq (car e) 'test1)   (test1   (eval (cadr  e) a)))
+     ((eq (car e) 'test2)   (test2   (eval (cadr  e) a)))
      
      ;; axioms:
      ((eq (car e) 'quote)   (cadr e))
      ((eq (car e) 'atom)    (atom    (eval (cadr  e) a)))
      ((eq (car e) 'eq)      (eq      (eval (cadr  e) a)
-			             (eval (caddr e) a)))
+				     (eval (caddr e) a)))
      ((eq (car e) 'car)     (car     (eval (cadr  e) a)))
      ((eq (car e) 'cdr)     (cdr     (eval (cadr  e) a)))
      ((eq (car e) 'cons)    (cons    (eval (cadr  e) a)
-			             (eval (caddr e) a)))
+				     (eval (caddr e) a)))
      ((eq (car e) 'cond)    (evcon   (cdr e) a))
 
-     ;; arithmetic:
-     ;;
-     ;; btw, we should be able to replace this section with
-     ;; something like "(twoargs 'plus 'minus 'mult)",
-     ;; which would be expanded into the following six lines:
-     ;;
      ((eq (car e) 'plus)    (plus    (eval (cadr  e) a)
-			             (eval (caddr e) a)))
+				     (eval (caddr e) a)))
      ((eq (car e) 'inc)     (plus    (eval (cadr  e) a) '1))
      ((eq (car e) 'minus)   (minus   (eval (cadr  e) a)
-			             (eval (caddr e) a)))
+				     (eval (caddr e) a)))
      ((eq (car e) 'mult)    (mult    (eval (cadr  e) a)
-			             (eval (caddr e) a)))
+				     (eval (caddr e) a)))
      ((eq (car e) 'exp)     (exp     (eval (cadr  e)  a)
 				     (eval (caddr e)  a)
 				     (eval (cadddr e) a)))
@@ -66,7 +53,7 @@
      ('t (eval (cons (assoc (car e) a)
 		     (cdr e))
 	       a))))
-
+   
    ;; initial macro concept, note the two evals:
    ((eq (caar e) 'macro)
     (eval (display (eval (cadddar e) (pair (caddar e) (cdr e)))) a))

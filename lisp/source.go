@@ -372,7 +372,7 @@ func Run(c cnfg.Config) error {
  '(a b c))`, "(a (b c))")
 	test("ltest", `(lambdatest '(a b c))`, `(a (b c))`)
 
-	test("ltest", `(test '(a b c))`, `(a (b c))`)
+	test("ltest", `(test1 '(a b c))`, `(a (b c))`)
 	test("ltest", `(test2 '(a b c))`, `(a (b c))`)
 	test("ltest", `(test4 '(3 b c))`, `(0 (b c))`)
 
