@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"math/big"
 	"path/filepath"
 	"time"
 
@@ -441,12 +440,8 @@ func Run(c cnfg.Config) error {
 
 func checkargs(args []Exp) error {
 	for _, a := range args {
-		switch t := a.(type) {
-		case string, *big.Int, []byte, []Exp, Func:
-		case error:
-			return t
-		default:
-			return fmt.Errorf("illegal type %T: %v", t, t)
+		if e, ok := a.(error); ok {
+			return e
 		}
 	}
 	return nil
