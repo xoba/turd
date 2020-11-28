@@ -2,57 +2,59 @@
   (cond
    ((atom e) (assoc e a))
    ((atom (car e))
-    (cond
+    ((lambda (op first second third)
+       (cond
 
-     ((eq (car e) 'test1)   (test1   (eval (cadr  e) a)))
-     ((eq (car e) 'test2)   (test2   (eval (cadr  e) a)))
-     
-     ;; axioms:
-     ((eq (car e) 'quote)   (cadr e))
-     ((eq (car e) 'atom)    (atom    (eval (cadr  e) a)))
-     ((eq (car e) 'eq)      (eq      (eval (cadr  e) a)
-				     (eval (caddr e) a)))
-     ((eq (car e) 'car)     (car     (eval (cadr  e) a)))
-     ((eq (car e) 'cdr)     (cdr     (eval (cadr  e) a)))
-     ((eq (car e) 'cons)    (cons    (eval (cadr  e) a)
-				     (eval (caddr e) a)))
-     ((eq (car e) 'cond)    (evcon   (cdr e) a))
+	((eq op 'test1)   (test1   (eval first a)))
+	((eq op 'test2)   (test2   (eval first a)))
+	
+	;; axioms:
+	((eq op 'quote)   (cadr e))
+	((eq op 'atom)    (atom    (eval first a)))
+	((eq op 'eq)      (eq      (eval first a)
+				   (eval second a)))
+	((eq op 'car)     (car     (eval first a)))
+	((eq op 'cdr)     (cdr     (eval first a)))
+	((eq op 'cons)    (cons    (eval first a)
+				   (eval second a)))
+	((eq op 'cond)    (evcon   (cdr e) a))
 
-     ((eq (car e) 'plus)    (plus    (eval (cadr  e) a)
-				     (eval (caddr e) a)))
-     ((eq (car e) 'inc)     (plus    (eval (cadr  e) a) '1))
-     ((eq (car e) 'minus)   (minus   (eval (cadr  e) a)
-				     (eval (caddr e) a)))
-     ((eq (car e) 'mult)    (mult    (eval (cadr  e) a)
-				     (eval (caddr e) a)))
-     ((eq (car e) 'exp)     (exp     (eval (cadr  e)  a)
-				     (eval (caddr e)  a)
-				     (eval (cadddr e) a)))
-     ;; time:
-     ((eq (car e) 'after)   (after   (eval (cadr  e) a)
-				     (eval (caddr e) a)))
-     ;; crypto:
-     ((eq (car e) 'concat)  (concat  (eval (cadr  e) a)
-				     (eval (caddr e) a)))
-     ((eq (car e) 'hash)    (hash    (eval (cadr  e) a)))
-     ((eq (car e) 'newkey)  (newkey))
-     ((eq (car e) 'pub)     (pub     (eval (cadr  e)  a)))
-     ((eq (car e) 'sign)    (sign    (eval (cadr  e)  a)
-				     (eval (caddr e)  a)))
-     ((eq (car e) 'verify)  (verify  (eval (cadr  e)  a)
-				     (eval (caddr e)  a)
-				     (eval (cadddr e) a)))
-     ;; debug:
-     ((eq (car e) 'display) (display (eval (cadr  e) a)))
-     ((eq (car e) 'runes)   (runes (eval (cadr e) a)))
-     ((eq (car e) 'err)     (err (eval (cadr e) a)))
-     
-     ((eq (car e) 'list)    (evlis   (cdr e) a))
+	((eq op 'plus)    (plus    (eval first a)
+				   (eval second a)))
+	((eq op 'inc)     (plus    (eval first a) '1))
+	((eq op 'minus)   (minus   (eval first a)
+				   (eval second a)))
+	((eq op 'mult)    (mult    (eval first a)
+				   (eval second a)))
+	((eq op 'exp)     (exp     (eval first  a)
+				   (eval second  a)
+				   (eval third a)))
+	;; time:
+	((eq op 'after)   (after   (eval first a)
+				   (eval second a)))
+	;; crypto:
+	((eq op 'concat)  (concat  (eval first a)
+				   (eval second a)))
+	((eq op 'hash)    (hash    (eval first a)))
+	((eq op 'newkey)  (newkey))
+	((eq op 'pub)     (pub     (eval first  a)))
+	((eq op 'sign)    (sign    (eval first  a)
+				   (eval second  a)))
+	((eq op 'verify)  (verify  (eval first  a)
+				   (eval second  a)
+				   (eval third a)))
+	;; debug:
+	((eq op 'display) (display (eval first a)))
+	((eq op 'runes)   (runes (eval (cadr e) a)))
+	((eq op 'err)     (err (eval (cadr e) a)))
+	
+	((eq op 'list)    (evlis   (cdr e) a))
 
-     ;; resolve an unknown op:
-     ('t (eval (cons (assoc (car e) a)
-		     (cdr e))
-	       a))))
+	;; resolve an unknown op:
+	('t (eval (cons (assoc op a)
+			(cdr e))
+		  a))))
+     (car e) (cadr e) (caddr e) (cadddr e)))
    
    ;; initial macro concept, note the two evals:
    ((eq (caar e) 'macro)

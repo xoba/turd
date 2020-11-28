@@ -320,7 +320,7 @@ func cdddar(args ...Exp) Exp {
 // eval (compiled)
 //
 
-var eval_label = parse_env("(label eval (lambda (e a) (cond ((atom e) (assoc e a)) ((atom (car e)) (cond ((eq (car e) 'test1) (test1 (eval (cadr e) a))) ((eq (car e) 'test2) (test2 (eval (cadr e) a))) ((eq (car e) 'quote) (cadr e)) ((eq (car e) 'atom) (atom (eval (cadr e) a))) ((eq (car e) 'eq) (eq (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'car) (car (eval (cadr e) a))) ((eq (car e) 'cdr) (cdr (eval (cadr e) a))) ((eq (car e) 'cons) (cons (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'cond) (evcon (cdr e) a)) ((eq (car e) 'plus) (plus (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'inc) (plus (eval (cadr e) a) '1)) ((eq (car e) 'minus) (minus (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'mult) (mult (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'exp) (exp (eval (cadr e) a) (eval (caddr e) a) (eval (cadddr e) a))) ((eq (car e) 'after) (after (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'concat) (concat (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'hash) (hash (eval (cadr e) a))) ((eq (car e) 'newkey) (newkey)) ((eq (car e) 'pub) (pub (eval (cadr e) a))) ((eq (car e) 'sign) (sign (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'verify) (verify (eval (cadr e) a) (eval (caddr e) a) (eval (cadddr e) a))) ((eq (car e) 'display) (display (eval (cadr e) a))) ((eq (car e) 'runes) (runes (eval (cadr e) a))) ((eq (car e) 'err) (err (eval (cadr e) a))) ((eq (car e) 'list) (evlis (cdr e) a)) ('t (eval (cons (assoc (car e) a) (cdr e)) a)))) ((eq (caar e) 'macro) (eval (display (eval (cadddar e) (pair (caddar e) (cdr e)))) a)) ((eq (caar e) 'label) (eval (cons (caddar e) (cdr e)) (cons (list (cadar e) (car e)) a))) ((eq (caar e) 'lambda) (cond ((atom (cadar e)) (eval (caddar e) (cons (list (cadar e) (evlis (cdr e) a)) a))) ('t (eval (caddar e) (append_go_sanitized (pair (cadar e) (evlis (cdr e) a)) a))))))))")
+var eval_label = parse_env("(label eval (lambda (e a) (cond ((atom e) (assoc e a)) ((atom (car e)) ((lambda (op first second third) (cond ((eq op 'test1) (test1 (eval first a))) ((eq op 'test2) (test2 (eval first a))) ((eq op 'quote) (cadr e)) ((eq op 'atom) (atom (eval first a))) ((eq op 'eq) (eq (eval first a) (eval second a))) ((eq op 'car) (car (eval first a))) ((eq op 'cdr) (cdr (eval first a))) ((eq op 'cons) (cons (eval first a) (eval second a))) ((eq op 'cond) (evcon (cdr e) a)) ((eq op 'plus) (plus (eval first a) (eval second a))) ((eq op 'inc) (plus (eval first a) '1)) ((eq op 'minus) (minus (eval first a) (eval second a))) ((eq op 'mult) (mult (eval first a) (eval second a))) ((eq op 'exp) (exp (eval first a) (eval second a) (eval third a))) ((eq op 'after) (after (eval first a) (eval second a))) ((eq op 'concat) (concat (eval first a) (eval second a))) ((eq op 'hash) (hash (eval first a))) ((eq op 'newkey) (newkey)) ((eq op 'pub) (pub (eval first a))) ((eq op 'sign) (sign (eval first a) (eval second a))) ((eq op 'verify) (verify (eval first a) (eval second a) (eval third a))) ((eq op 'display) (display (eval first a))) ((eq op 'runes) (runes (eval (cadr e) a))) ((eq op 'err) (err (eval (cadr e) a))) ((eq op 'list) (evlis (cdr e) a)) ('t (eval (cons (assoc op a) (cdr e)) a)))) (car e) (cadr e) (caddr e) (cadddr e))) ((eq (caar e) 'macro) (eval (display (eval (cadddar e) (pair (caddar e) (cdr e)))) a)) ((eq (caar e) 'label) (eval (cons (caddar e) (cdr e)) (cons (list (cadar e) (car e)) a))) ((eq (caar e) 'lambda) (cond ((atom (cadar e)) (eval (caddar e) (cons (list (cadar e) (evlis (cdr e) a)) a))) ('t (eval (caddar e) (append_go_sanitized (pair (cadar e) (evlis (cdr e) a)) a))))))))")
 
 func eval(args ...Exp) Exp {
 	e := args[0]
@@ -340,187 +340,198 @@ func eval(args ...Exp) Exp {
 				return A(atom, A(car, e))
 			}),
 			Func(func(...Exp) Exp {
-				return A(cond, L(
-					Func(func(...Exp) Exp {
-						return A(eq, A(car, e), "test1")
-					}),
-					Func(func(...Exp) Exp {
-						return A(test1, A(eval, A(cadr, e), a))
-					}),
-				), L(
-					Func(func(...Exp) Exp {
-						return A(eq, A(car, e), "test2")
-					}),
-					Func(func(...Exp) Exp {
-						return A(test2, A(eval, A(cadr, e), a))
-					}),
-				), L(
-					Func(func(...Exp) Exp {
-						return A(eq, A(car, e), "quote")
-					}),
-					Func(func(...Exp) Exp {
-						return A(cadr, e)
-					}),
-				), L(
-					Func(func(...Exp) Exp {
-						return A(eq, A(car, e), "atom")
-					}),
-					Func(func(...Exp) Exp {
-						return A(atom, A(eval, A(cadr, e), a))
-					}),
-				), L(
-					Func(func(...Exp) Exp {
-						return A(eq, A(car, e), "eq")
-					}),
-					Func(func(...Exp) Exp {
-						return A(eq, A(eval, A(cadr, e), a), A(eval, A(caddr, e), a))
-					}),
-				), L(
-					Func(func(...Exp) Exp {
-						return A(eq, A(car, e), "car")
-					}),
-					Func(func(...Exp) Exp {
-						return A(car, A(eval, A(cadr, e), a))
-					}),
-				), L(
-					Func(func(...Exp) Exp {
-						return A(eq, A(car, e), "cdr")
-					}),
-					Func(func(...Exp) Exp {
-						return A(cdr, A(eval, A(cadr, e), a))
-					}),
-				), L(
-					Func(func(...Exp) Exp {
-						return A(eq, A(car, e), "cons")
-					}),
-					Func(func(...Exp) Exp {
-						return A(cons, A(eval, A(cadr, e), a), A(eval, A(caddr, e), a))
-					}),
-				), L(
-					Func(func(...Exp) Exp {
-						return A(eq, A(car, e), "cond")
-					}),
-					Func(func(...Exp) Exp {
-						return A(evcon, A(cdr, e), a)
-					}),
-				), L(
-					Func(func(...Exp) Exp {
-						return A(eq, A(car, e), "plus")
-					}),
-					Func(func(...Exp) Exp {
-						return A(plus, A(eval, A(cadr, e), a), A(eval, A(caddr, e), a))
-					}),
-				), L(
-					Func(func(...Exp) Exp {
-						return A(eq, A(car, e), "inc")
-					}),
-					Func(func(...Exp) Exp {
-						return A(plus, A(eval, A(cadr, e), a), "1")
-					}),
-				), L(
-					Func(func(...Exp) Exp {
-						return A(eq, A(car, e), "minus")
-					}),
-					Func(func(...Exp) Exp {
-						return A(minus, A(eval, A(cadr, e), a), A(eval, A(caddr, e), a))
-					}),
-				), L(
-					Func(func(...Exp) Exp {
-						return A(eq, A(car, e), "mult")
-					}),
-					Func(func(...Exp) Exp {
-						return A(mult, A(eval, A(cadr, e), a), A(eval, A(caddr, e), a))
-					}),
-				), L(
-					Func(func(...Exp) Exp {
-						return A(eq, A(car, e), "exp")
-					}),
-					Func(func(...Exp) Exp {
-						return A(exp, A(eval, A(cadr, e), a), A(eval, A(caddr, e), a), A(eval, A(cadddr, e), a))
-					}),
-				), L(
-					Func(func(...Exp) Exp {
-						return A(eq, A(car, e), "after")
-					}),
-					Func(func(...Exp) Exp {
-						return A(after, A(eval, A(cadr, e), a), A(eval, A(caddr, e), a))
-					}),
-				), L(
-					Func(func(...Exp) Exp {
-						return A(eq, A(car, e), "concat")
-					}),
-					Func(func(...Exp) Exp {
-						return A(concat, A(eval, A(cadr, e), a), A(eval, A(caddr, e), a))
-					}),
-				), L(
-					Func(func(...Exp) Exp {
-						return A(eq, A(car, e), "hash")
-					}),
-					Func(func(...Exp) Exp {
-						return A(hash, A(eval, A(cadr, e), a))
-					}),
-				), L(
-					Func(func(...Exp) Exp {
-						return A(eq, A(car, e), "newkey")
-					}),
-					Func(func(...Exp) Exp {
-						return A(newkey)
-					}),
-				), L(
-					Func(func(...Exp) Exp {
-						return A(eq, A(car, e), "pub")
-					}),
-					Func(func(...Exp) Exp {
-						return A(pub, A(eval, A(cadr, e), a))
-					}),
-				), L(
-					Func(func(...Exp) Exp {
-						return A(eq, A(car, e), "sign")
-					}),
-					Func(func(...Exp) Exp {
-						return A(sign, A(eval, A(cadr, e), a), A(eval, A(caddr, e), a))
-					}),
-				), L(
-					Func(func(...Exp) Exp {
-						return A(eq, A(car, e), "verify")
-					}),
-					Func(func(...Exp) Exp {
-						return A(verify, A(eval, A(cadr, e), a), A(eval, A(caddr, e), a), A(eval, A(cadddr, e), a))
-					}),
-				), L(
-					Func(func(...Exp) Exp {
-						return A(eq, A(car, e), "display")
-					}),
-					Func(func(...Exp) Exp {
-						return A(display, A(eval, A(cadr, e), a))
-					}),
-				), L(
-					Func(func(...Exp) Exp {
-						return A(eq, A(car, e), "runes")
-					}),
-					Func(func(...Exp) Exp {
-						return A(runes, A(eval, A(cadr, e), a))
-					}),
-				), L(
-					Func(func(...Exp) Exp {
-						return A(eq, A(car, e), "err")
-					}),
-					Func(func(...Exp) Exp {
-						return A(err, A(eval, A(cadr, e), a))
-					}),
-				), L(
-					Func(func(...Exp) Exp {
-						return A(eq, A(car, e), "list")
-					}),
-					Func(func(...Exp) Exp {
-						return A(evlis, A(cdr, e), a)
-					}),
-				), L(
-					"t",
-					Func(func(...Exp) Exp {
-						return A(eval, A(cons, A(assoc, A(car, e), a), A(cdr, e)), a)
-					}),
-				))
+				return func() Exp {
+					var lambda func(...Exp) Exp
+					lambda = func(args ...Exp) Exp {
+						op := args[0]
+						first := args[1]
+						second := args[2]
+						third := args[3]
+						return A(cond, L(
+							Func(func(...Exp) Exp {
+								return A(eq, op, "test1")
+							}),
+							Func(func(...Exp) Exp {
+								return A(test1, A(eval, first, a))
+							}),
+						), L(
+							Func(func(...Exp) Exp {
+								return A(eq, op, "test2")
+							}),
+							Func(func(...Exp) Exp {
+								return A(test2, A(eval, first, a))
+							}),
+						), L(
+							Func(func(...Exp) Exp {
+								return A(eq, op, "quote")
+							}),
+							Func(func(...Exp) Exp {
+								return A(cadr, e)
+							}),
+						), L(
+							Func(func(...Exp) Exp {
+								return A(eq, op, "atom")
+							}),
+							Func(func(...Exp) Exp {
+								return A(atom, A(eval, first, a))
+							}),
+						), L(
+							Func(func(...Exp) Exp {
+								return A(eq, op, "eq")
+							}),
+							Func(func(...Exp) Exp {
+								return A(eq, A(eval, first, a), A(eval, second, a))
+							}),
+						), L(
+							Func(func(...Exp) Exp {
+								return A(eq, op, "car")
+							}),
+							Func(func(...Exp) Exp {
+								return A(car, A(eval, first, a))
+							}),
+						), L(
+							Func(func(...Exp) Exp {
+								return A(eq, op, "cdr")
+							}),
+							Func(func(...Exp) Exp {
+								return A(cdr, A(eval, first, a))
+							}),
+						), L(
+							Func(func(...Exp) Exp {
+								return A(eq, op, "cons")
+							}),
+							Func(func(...Exp) Exp {
+								return A(cons, A(eval, first, a), A(eval, second, a))
+							}),
+						), L(
+							Func(func(...Exp) Exp {
+								return A(eq, op, "cond")
+							}),
+							Func(func(...Exp) Exp {
+								return A(evcon, A(cdr, e), a)
+							}),
+						), L(
+							Func(func(...Exp) Exp {
+								return A(eq, op, "plus")
+							}),
+							Func(func(...Exp) Exp {
+								return A(plus, A(eval, first, a), A(eval, second, a))
+							}),
+						), L(
+							Func(func(...Exp) Exp {
+								return A(eq, op, "inc")
+							}),
+							Func(func(...Exp) Exp {
+								return A(plus, A(eval, first, a), "1")
+							}),
+						), L(
+							Func(func(...Exp) Exp {
+								return A(eq, op, "minus")
+							}),
+							Func(func(...Exp) Exp {
+								return A(minus, A(eval, first, a), A(eval, second, a))
+							}),
+						), L(
+							Func(func(...Exp) Exp {
+								return A(eq, op, "mult")
+							}),
+							Func(func(...Exp) Exp {
+								return A(mult, A(eval, first, a), A(eval, second, a))
+							}),
+						), L(
+							Func(func(...Exp) Exp {
+								return A(eq, op, "exp")
+							}),
+							Func(func(...Exp) Exp {
+								return A(exp, A(eval, first, a), A(eval, second, a), A(eval, third, a))
+							}),
+						), L(
+							Func(func(...Exp) Exp {
+								return A(eq, op, "after")
+							}),
+							Func(func(...Exp) Exp {
+								return A(after, A(eval, first, a), A(eval, second, a))
+							}),
+						), L(
+							Func(func(...Exp) Exp {
+								return A(eq, op, "concat")
+							}),
+							Func(func(...Exp) Exp {
+								return A(concat, A(eval, first, a), A(eval, second, a))
+							}),
+						), L(
+							Func(func(...Exp) Exp {
+								return A(eq, op, "hash")
+							}),
+							Func(func(...Exp) Exp {
+								return A(hash, A(eval, first, a))
+							}),
+						), L(
+							Func(func(...Exp) Exp {
+								return A(eq, op, "newkey")
+							}),
+							Func(func(...Exp) Exp {
+								return A(newkey)
+							}),
+						), L(
+							Func(func(...Exp) Exp {
+								return A(eq, op, "pub")
+							}),
+							Func(func(...Exp) Exp {
+								return A(pub, A(eval, first, a))
+							}),
+						), L(
+							Func(func(...Exp) Exp {
+								return A(eq, op, "sign")
+							}),
+							Func(func(...Exp) Exp {
+								return A(sign, A(eval, first, a), A(eval, second, a))
+							}),
+						), L(
+							Func(func(...Exp) Exp {
+								return A(eq, op, "verify")
+							}),
+							Func(func(...Exp) Exp {
+								return A(verify, A(eval, first, a), A(eval, second, a), A(eval, third, a))
+							}),
+						), L(
+							Func(func(...Exp) Exp {
+								return A(eq, op, "display")
+							}),
+							Func(func(...Exp) Exp {
+								return A(display, A(eval, first, a))
+							}),
+						), L(
+							Func(func(...Exp) Exp {
+								return A(eq, op, "runes")
+							}),
+							Func(func(...Exp) Exp {
+								return A(runes, A(eval, A(cadr, e), a))
+							}),
+						), L(
+							Func(func(...Exp) Exp {
+								return A(eq, op, "err")
+							}),
+							Func(func(...Exp) Exp {
+								return A(err, A(eval, A(cadr, e), a))
+							}),
+						), L(
+							Func(func(...Exp) Exp {
+								return A(eq, op, "list")
+							}),
+							Func(func(...Exp) Exp {
+								return A(evlis, A(cdr, e), a)
+							}),
+						), L(
+							"t",
+							Func(func(...Exp) Exp {
+								return A(eval, A(cons, A(assoc, op, a), A(cdr, e)), a)
+							}),
+						))
+					}
+					return lambda(A(car, e), A(cadr, e), A(caddr, e), A(cadddr, e))
+				}()
+
 			}),
 		),
 		L(
