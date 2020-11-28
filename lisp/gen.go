@@ -612,19 +612,13 @@ func test3(args ...Exp) Exp {
 		fx = func(args ...Exp) Exp {
 			first := args[0]
 			rest := args[1]
-			return A(cond, L(
-				Func(func(...Exp) Exp {
-					return A(eq, first, "0")
-				}),
-				Func(func(...Exp) Exp {
-					return A(list, first, rest)
-				}),
-			), L(
-				"t",
-				Func(func(...Exp) Exp {
-					return A(fx, A(minus, first, "1"), rest)
-				}),
-			))
+			return func() Exp {
+				if f, ok := map_27[String(first)]; ok {
+					return f(x, first, rest)
+				}
+				return A(fx, A(minus, first, "1"), rest)
+			}()
+
 		}
 		return fx(A(car, x), A(cdr, x))
 	}()
@@ -651,136 +645,156 @@ var xlist_label = parse_env("(label xlist (lambda x x))")
 
 // cases:
 
-func after_515cbbd8f947c37b7d1dc2951e924a4d(e, a, op, first, second, third Exp) Exp {
+func F_0_60a3caf220a5e9e8d986965c79b20f11(x, first, rest Exp) Exp {
+	return A(list, first, rest)
+}
+
+func F_after_515cbbd8f947c37b7d1dc2951e924a4d(e, a, op, first, second, third Exp) Exp {
 	return A(after, A(eval, first, a), A(eval, second, a))
 }
 
-func atom_8f3c75e470915a3502aaee0ca1577fcc(e, a, op, first, second, third Exp) Exp {
+func F_atom_8f3c75e470915a3502aaee0ca1577fcc(e, a, op, first, second, third Exp) Exp {
 	return A(atom, A(eval, first, a))
 }
 
-func car_9ccdcb1ba9d132a44726ab42f27ff4e9(e, a, op, first, second, third Exp) Exp {
+func F_car_9ccdcb1ba9d132a44726ab42f27ff4e9(e, a, op, first, second, third Exp) Exp {
 	return A(car, A(eval, first, a))
 }
 
-func cdr_07b8b4fee0b4a65b5f5e3e5580aaa311(e, a, op, first, second, third Exp) Exp {
+func F_cdr_07b8b4fee0b4a65b5f5e3e5580aaa311(e, a, op, first, second, third Exp) Exp {
 	return A(cdr, A(eval, first, a))
 }
 
-func concat_51c24458711a1d6106cab433642d0c9c(e, a, op, first, second, third Exp) Exp {
+func F_concat_51c24458711a1d6106cab433642d0c9c(e, a, op, first, second, third Exp) Exp {
 	return A(concat, A(eval, first, a), A(eval, second, a))
 }
 
-func cond_7b60153e8c9796298806c07f80f3c12e(e, a, op, first, second, third Exp) Exp {
+func F_cond_7b60153e8c9796298806c07f80f3c12e(e, a, op, first, second, third Exp) Exp {
 	return A(evcon, A(cdr, e), a)
 }
 
-func cons_e5efa02a9e5b367e867a09002212f851(e, a, op, first, second, third Exp) Exp {
+func F_cons_e5efa02a9e5b367e867a09002212f851(e, a, op, first, second, third Exp) Exp {
 	return A(cons, A(eval, first, a), A(eval, second, a))
 }
 
-func display_ad275a4d1320cdde3e44710b8a67ddef(e, a, op, first, second, third Exp) Exp {
+func F_display_ad275a4d1320cdde3e44710b8a67ddef(e, a, op, first, second, third Exp) Exp {
 	return A(display, A(eval, first, a))
 }
 
-func eq_d0e57c13aee9aef9ae17b85b67503bf0(e, a, op, first, second, third Exp) Exp {
+func F_eq_d0e57c13aee9aef9ae17b85b67503bf0(e, a, op, first, second, third Exp) Exp {
 	return A(eq, A(eval, first, a), A(eval, second, a))
 }
 
-func err_6bbc47e9027043d4689777651239c2ff(e, a, op, first, second, third Exp) Exp {
+func F_err_6bbc47e9027043d4689777651239c2ff(e, a, op, first, second, third Exp) Exp {
 	return A(err, A(eval, A(cadr, e), a))
 }
 
-func exp_af5bcba2f722aebdc27bbc820ffab22f(e, a, op, first, second, third Exp) Exp {
+func F_exp_af5bcba2f722aebdc27bbc820ffab22f(e, a, op, first, second, third Exp) Exp {
 	return A(exp, A(eval, first, a), A(eval, second, a), A(eval, third, a))
 }
 
-func hash_a2c0339d4437ecca89bf201adb7d1163(e, a, op, first, second, third Exp) Exp {
+func F_hash_a2c0339d4437ecca89bf201adb7d1163(e, a, op, first, second, third Exp) Exp {
 	return A(hash, A(eval, first, a))
 }
 
-func inc_c7587605642eb29d0d026da3b2833f89(e, a, op, first, second, third Exp) Exp {
+func F_inc_c7587605642eb29d0d026da3b2833f89(e, a, op, first, second, third Exp) Exp {
 	return A(plus, A(eval, first, a), "1")
 }
 
-func list_69bc1c031779ce3278497999af69288e(e, a, op, first, second, third Exp) Exp {
+func F_list_69bc1c031779ce3278497999af69288e(e, a, op, first, second, third Exp) Exp {
 	return A(evlis, A(cdr, e), a)
+}
+
+func F_minus_354cdf993884320912b9b8ab41de16b3(e, a, op, first, second, third Exp) Exp {
+	return A(minus, A(eval, first, a), A(eval, second, a))
+}
+
+func F_mult_ea1e11a9012b0dfa54c5423616a4f0c4(e, a, op, first, second, third Exp) Exp {
+	return A(mult, A(eval, first, a), A(eval, second, a))
+}
+
+func F_newkey_eb320fe7889a92ac8dbdacd07152a23e(e, a, op, first, second, third Exp) Exp {
+	return A(newkey)
+}
+
+func F_plus_c4ef2e3805a01fa6bc94b68f29bc7208(e, a, op, first, second, third Exp) Exp {
+	return A(plus, A(eval, first, a), A(eval, second, a))
+}
+
+func F_pub_48401e110dae546272407c5eff0a4a24(e, a, op, first, second, third Exp) Exp {
+	return A(pub, A(eval, first, a))
+}
+
+func F_quote_9d5418c8b7809b2da600bfc812226bc4(e, a, op, first, second, third Exp) Exp {
+	return A(cadr, e)
+}
+
+func F_runes_9497265e8a0baaf9c7e9ac783fd5c02b(e, a, op, first, second, third Exp) Exp {
+	return A(runes, A(eval, A(cadr, e), a))
+}
+
+func F_sign_5a1e6f12da842fac062579e3ff554e4b(e, a, op, first, second, third Exp) Exp {
+	return A(sign, A(eval, first, a), A(eval, second, a))
+}
+
+func F_test1_1bdc61bba4f3c7d50dc11a03e1c223bb(e, a, op, first, second, third Exp) Exp {
+	return A(test1, A(eval, first, a))
+}
+
+func F_test2_5feee42882cd3faa875e5e551b346d74(e, a, op, first, second, third Exp) Exp {
+	return A(test2, A(eval, first, a))
+}
+
+func F_verify_66b0d5b8e697b8cf42702e0edd6a8d16(e, a, op, first, second, third Exp) Exp {
+	return A(verify, A(eval, first, a), A(eval, second, a), A(eval, third, a))
 }
 
 var map_25 = make(map[string]func(e, a, op, first, second, third Exp) Exp)
 
 func init() {
 	map_25 = map[string]func(e, a, op, first, second, third Exp) Exp{
-		"test1":   test1_1bdc61bba4f3c7d50dc11a03e1c223bb,
-		"test2":   test2_5feee42882cd3faa875e5e551b346d74,
-		"quote":   quote_9d5418c8b7809b2da600bfc812226bc4,
-		"atom":    atom_8f3c75e470915a3502aaee0ca1577fcc,
-		"eq":      eq_d0e57c13aee9aef9ae17b85b67503bf0,
-		"car":     car_9ccdcb1ba9d132a44726ab42f27ff4e9,
-		"cdr":     cdr_07b8b4fee0b4a65b5f5e3e5580aaa311,
-		"cons":    cons_e5efa02a9e5b367e867a09002212f851,
-		"cond":    cond_7b60153e8c9796298806c07f80f3c12e,
-		"plus":    plus_c4ef2e3805a01fa6bc94b68f29bc7208,
-		"inc":     inc_c7587605642eb29d0d026da3b2833f89,
-		"minus":   minus_354cdf993884320912b9b8ab41de16b3,
-		"mult":    mult_ea1e11a9012b0dfa54c5423616a4f0c4,
-		"exp":     exp_af5bcba2f722aebdc27bbc820ffab22f,
-		"after":   after_515cbbd8f947c37b7d1dc2951e924a4d,
-		"concat":  concat_51c24458711a1d6106cab433642d0c9c,
-		"hash":    hash_a2c0339d4437ecca89bf201adb7d1163,
-		"newkey":  newkey_eb320fe7889a92ac8dbdacd07152a23e,
-		"pub":     pub_48401e110dae546272407c5eff0a4a24,
-		"sign":    sign_5a1e6f12da842fac062579e3ff554e4b,
-		"verify":  verify_66b0d5b8e697b8cf42702e0edd6a8d16,
-		"display": display_ad275a4d1320cdde3e44710b8a67ddef,
-		"runes":   runes_9497265e8a0baaf9c7e9ac783fd5c02b,
-		"err":     err_6bbc47e9027043d4689777651239c2ff,
-		"list":    list_69bc1c031779ce3278497999af69288e,
+		"test1":   F_test1_1bdc61bba4f3c7d50dc11a03e1c223bb,
+		"test2":   F_test2_5feee42882cd3faa875e5e551b346d74,
+		"quote":   F_quote_9d5418c8b7809b2da600bfc812226bc4,
+		"atom":    F_atom_8f3c75e470915a3502aaee0ca1577fcc,
+		"eq":      F_eq_d0e57c13aee9aef9ae17b85b67503bf0,
+		"car":     F_car_9ccdcb1ba9d132a44726ab42f27ff4e9,
+		"cdr":     F_cdr_07b8b4fee0b4a65b5f5e3e5580aaa311,
+		"cons":    F_cons_e5efa02a9e5b367e867a09002212f851,
+		"cond":    F_cond_7b60153e8c9796298806c07f80f3c12e,
+		"plus":    F_plus_c4ef2e3805a01fa6bc94b68f29bc7208,
+		"inc":     F_inc_c7587605642eb29d0d026da3b2833f89,
+		"minus":   F_minus_354cdf993884320912b9b8ab41de16b3,
+		"mult":    F_mult_ea1e11a9012b0dfa54c5423616a4f0c4,
+		"exp":     F_exp_af5bcba2f722aebdc27bbc820ffab22f,
+		"after":   F_after_515cbbd8f947c37b7d1dc2951e924a4d,
+		"concat":  F_concat_51c24458711a1d6106cab433642d0c9c,
+		"hash":    F_hash_a2c0339d4437ecca89bf201adb7d1163,
+		"newkey":  F_newkey_eb320fe7889a92ac8dbdacd07152a23e,
+		"pub":     F_pub_48401e110dae546272407c5eff0a4a24,
+		"sign":    F_sign_5a1e6f12da842fac062579e3ff554e4b,
+		"verify":  F_verify_66b0d5b8e697b8cf42702e0edd6a8d16,
+		"display": F_display_ad275a4d1320cdde3e44710b8a67ddef,
+		"runes":   F_runes_9497265e8a0baaf9c7e9ac783fd5c02b,
+		"err":     F_err_6bbc47e9027043d4689777651239c2ff,
+		"list":    F_list_69bc1c031779ce3278497999af69288e,
 	}
 }
 
-func minus_354cdf993884320912b9b8ab41de16b3(e, a, op, first, second, third Exp) Exp {
-	return A(minus, A(eval, first, a), A(eval, second, a))
+var map_27 = make(map[string]func(x, first, rest Exp) Exp)
+
+func init() {
+	map_27 = map[string]func(x, first, rest Exp) Exp{
+		"0": F_0_60a3caf220a5e9e8d986965c79b20f11,
+	}
 }
 
-func mult_ea1e11a9012b0dfa54c5423616a4f0c4(e, a, op, first, second, third Exp) Exp {
-	return A(mult, A(eval, first, a), A(eval, second, a))
-}
+var map_28 = make(map[string]func(x, first, rest Exp) Exp)
 
-func newkey_eb320fe7889a92ac8dbdacd07152a23e(e, a, op, first, second, third Exp) Exp {
-	return A(newkey)
-}
-
-func plus_c4ef2e3805a01fa6bc94b68f29bc7208(e, a, op, first, second, third Exp) Exp {
-	return A(plus, A(eval, first, a), A(eval, second, a))
-}
-
-func pub_48401e110dae546272407c5eff0a4a24(e, a, op, first, second, third Exp) Exp {
-	return A(pub, A(eval, first, a))
-}
-
-func quote_9d5418c8b7809b2da600bfc812226bc4(e, a, op, first, second, third Exp) Exp {
-	return A(cadr, e)
-}
-
-func runes_9497265e8a0baaf9c7e9ac783fd5c02b(e, a, op, first, second, third Exp) Exp {
-	return A(runes, A(eval, A(cadr, e), a))
-}
-
-func sign_5a1e6f12da842fac062579e3ff554e4b(e, a, op, first, second, third Exp) Exp {
-	return A(sign, A(eval, first, a), A(eval, second, a))
-}
-
-func test1_1bdc61bba4f3c7d50dc11a03e1c223bb(e, a, op, first, second, third Exp) Exp {
-	return A(test1, A(eval, first, a))
-}
-
-func test2_5feee42882cd3faa875e5e551b346d74(e, a, op, first, second, third Exp) Exp {
-	return A(test2, A(eval, first, a))
-}
-
-func verify_66b0d5b8e697b8cf42702e0edd6a8d16(e, a, op, first, second, third Exp) Exp {
-	return A(verify, A(eval, first, a), A(eval, second, a), A(eval, third, a))
+func init() {
+	map_28 = map[string]func(x, first, rest Exp) Exp{
+		"0": F_0_60a3caf220a5e9e8d986965c79b20f11,
+	}
 }
 
 func init() {

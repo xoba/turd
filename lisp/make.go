@@ -226,7 +226,7 @@ func funcName(p, s string) string {
 	if p == "" {
 		return fmt.Sprintf("F%x", h.Sum(nil))
 	}
-	return fmt.Sprintf("%s_%x", p, h.Sum(nil))
+	return fmt.Sprintf("F_%s_%x", p, h.Sum(nil))
 }
 
 func CompileLazy(c context, e Exp, vars []string) ([]byte, error) {
@@ -374,7 +374,6 @@ return %[1]s(%[3]s)
 					}
 					eq := car(a)
 					key := car(cdr(car(cdr(cdr(eq)))))
-					fmt.Printf("%d: %q\n", i, String(key))
 					sub, err := Compile(c, cadr(a), false, vars)
 					if err != nil {
 						return nil, err
@@ -475,7 +474,7 @@ return %[3]s
 
 func isMaplikeCond(e []Exp) (string, bool) {
 	out := true
-	if len(e) < 11 {
+	if len(e) < 2 {
 		out = false
 	}
 	ops := make(map[string]bool)
