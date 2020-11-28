@@ -161,11 +161,12 @@ func DefunCode(defun Exp) (string, []byte, error) {
 	w := new(bytes.Buffer)
 
 	fmt.Fprintf(w, "func %[1]s(args ... Exp) Exp {\n", name)
-	//fmt.Fprintf(w, "debug(%q,args...)\n", name)
-	fmt.Fprintf(w, `if err:= checklen(%d,args); err != nil {
+	if false {
+		fmt.Fprintf(w, `if err:= checklen(%d,args); err != nil {
 return err
 }
 `, len(args))
+	}
 	for i, a := range args {
 		if !isString(a) {
 			return name, nil, fmt.Errorf("not a string: %s", a)
@@ -282,10 +283,12 @@ var %[1]s func(... Exp) Exp
 			name,
 		)
 
-		fmt.Fprintf(w, `	if err := checklen(%d, args); err != nil {
+		if false {
+			fmt.Fprintf(w, `	if err := checklen(%d, args); err != nil {
 		return err
 	}
 `, len(args))
+		}
 		for i, a := range args {
 			fmt.Fprintf(w, "%s := args[%d]\n", a, i)
 		}

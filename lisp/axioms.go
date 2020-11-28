@@ -86,99 +86,11 @@ func three(args ...Exp) (Exp, Exp, Exp) {
 // AXIOMS
 // ----------------------------------------------------------------------
 
-func runes(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
-	x := args[0]
-	op, ok := x.(string)
-	if !ok {
-		return fmt.Errorf("not a string")
-	}
-	var out []Exp
-	for _, r := range op {
-		out = append(out, string(r))
-	}
-	return out
-}
-
-func err(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
-	x := args[0]
-	return errors.New(String(x))
-}
-
-// return true if it's car, cdr, cadr, cddr, ..., caaar, etc., else false
-func iscxr(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
-	x := args[0]
-	op, ok := x.(string)
-	if !ok {
-		return fmt.Errorf("not a string")
-	}
-	runes := []rune(op)
-	if len(runes) < 4 {
-		return False
-	}
-	if runes[0] != 'c' {
-		return False
-	}
-	if runes[len(runes)-1] != 'r' {
-		return False
-	}
-	for _, r := range runes[1 : len(runes)-1] {
-		switch r {
-		case 'a', 'd':
-		default:
-			return False
-		}
-	}
-	return True
-}
-
-func cxr(args ...Exp) Exp {
-	if err := checklen(2, args); err != nil {
-		return err
-	}
-	x, y := args[0], args[1]
-	op, ok := x.(string)
-	if !ok {
-		return fmt.Errorf("not a string")
-	}
-	runes := []rune(op)
-	n := len(runes)
-	if len(runes) < 3 || runes[0] != 'c' || runes[n-1] != 'r' {
-		return fmt.Errorf("not a cxr: %q", op)
-	}
-	e := y
-	for i := 0; i < n-2; i++ {
-		switch runes[n-i-2] {
-		case 'a':
-			e = car(e)
-		case 'd':
-			e = cdr(e)
-		default:
-			return fmt.Errorf("not a cxr: %q", op)
-		}
-	}
-	return e
-}
-
 func quote(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
 	return args[0]
 }
 
 func atom(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
 	switch t := one(args...).(type) {
 	case string, *big.Int, time.Time:
 		return True
@@ -190,9 +102,6 @@ func atom(args ...Exp) Exp {
 }
 
 func eq(args ...Exp) Exp {
-	if err := checklen(2, args); err != nil {
-		return err
-	}
 	x, y := two(args...)
 	switch x := x.(type) {
 	case []Exp:
@@ -213,9 +122,6 @@ func eq(args ...Exp) Exp {
 }
 
 func car(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
 	switch t := one(args...).(type) {
 	case []Exp:
 		switch len(t) {
@@ -230,9 +136,6 @@ func car(args ...Exp) Exp {
 }
 
 func cdr(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
 	switch t := one(args...).(type) {
 	case []Exp:
 		switch len(t) {
@@ -247,9 +150,6 @@ func cdr(args ...Exp) Exp {
 }
 
 func cons(args ...Exp) Exp {
-	if err := checklen(2, args); err != nil {
-		return err
-	}
 	x := args[0]
 	y := manifest(args[1])
 	switch t := y.(type) {
@@ -270,9 +170,6 @@ func cond(args ...Exp) Exp {
 	for _, a := range args {
 		switch t := a.(type) {
 		case []Exp:
-			if err := checklen(2, t); err != nil {
-				return err
-			}
 			if Bool(manifest(t[0])) {
 				return manifest(t[1])
 			}
@@ -284,9 +181,6 @@ func cond(args ...Exp) Exp {
 }
 
 func display(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
 	a := one(args...)
 	fmt.Printf("(display %s)\n", String(a))
 	return a
@@ -296,7 +190,15 @@ func list(args ...Exp) Exp {
 	return args
 }
 
-func arithargs(args []Exp) ([]*big.Int, error) {
+func compute(args []Exp, f func(...*big.Int) *big.Int) Exp {
+	ints, err := toInts(args)
+	if err != nil {
+		return err
+	}
+	return f(ints...)
+}
+
+func toInts(args []Exp) ([]*big.Int, error) {
 	var out []*big.Int
 	add := func(i *big.Int) {
 		out = append(out, i)
@@ -319,55 +221,27 @@ func arithargs(args []Exp) ([]*big.Int, error) {
 }
 
 func exp(args ...Exp) Exp {
-	if err := checklen(3, args); err != nil {
-		return err
-	}
-	return arith(args, func(args ...*big.Int) *big.Int {
-		var z big.Int
-		z.Exp(args[0], args[1], args[2])
-		return &z
+	return compute(args, func(args ...*big.Int) *big.Int {
+		return big.NewInt(0).Exp(args[0], args[1], args[2])
 	})
 }
 
 func mult(args ...Exp) Exp {
-	if err := checklen(2, args); err != nil {
-		return err
-	}
-	return arith(args, func(args ...*big.Int) *big.Int {
-		var z big.Int
-		z.Mul(args[0], args[1])
-		return &z
+	return compute(args, func(args ...*big.Int) *big.Int {
+		return big.NewInt(0).Mul(args[0], args[1])
 	})
 }
 
 func plus(args ...Exp) Exp {
-	if err := checklen(2, args); err != nil {
-		return err
-	}
-	return arith(args, func(args ...*big.Int) *big.Int {
-		var z big.Int
-		z.Add(args[0], args[1])
-		return &z
+	return compute(args, func(args ...*big.Int) *big.Int {
+		return big.NewInt(0).Add(args[0], args[1])
 	})
 }
 
 func minus(args ...Exp) Exp {
-	if err := checklen(2, args); err != nil {
-		return err
-	}
-	return arith(args, func(args ...*big.Int) *big.Int {
-		var z big.Int
-		z.Sub(args[0], args[1])
-		return &z
+	return compute(args, func(args ...*big.Int) *big.Int {
+		return big.NewInt(0).Sub(args[0], args[1])
 	})
-}
-
-func arith(args []Exp, f func(...*big.Int) *big.Int) Exp {
-	ints, err := arithargs(args)
-	if err != nil {
-		return err
-	}
-	return f(ints...)
 }
 
 func marshal(buf []byte) string {
@@ -387,9 +261,6 @@ func unmarshal(e Exp) ([]byte, error) {
 
 // hashes content
 func hash(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
 	buf, err := unmarshal(one(args...))
 	if err != nil {
 		return err
@@ -399,9 +270,6 @@ func hash(args ...Exp) Exp {
 
 // concats two blobs
 func concat(args ...Exp) Exp {
-	if err := checklen(2, args); err != nil {
-		return err
-	}
 	x, y := two(args...)
 	xb, err := unmarshal(x)
 	if err != nil {
@@ -419,9 +287,6 @@ func concat(args ...Exp) Exp {
 
 // creates a new private key
 func newkey(args ...Exp) Exp {
-	if err := checklen(0, args); err != nil {
-		return err
-	}
 	key, err := tnet.NewKey()
 	if err != nil {
 		return err
@@ -436,9 +301,6 @@ func newkey(args ...Exp) Exp {
 // derives public from private key
 // (pub private) -> public
 func pub(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
 	buf, err := unmarshal(one(args...))
 	if err != nil {
 		return err
@@ -457,9 +319,6 @@ func pub(args ...Exp) Exp {
 // sign blob with private key
 // (sign private blob) -> signature
 func sign(args ...Exp) Exp {
-	if err := checklen(2, args); err != nil {
-		return err
-	}
 	x, y := two(args...)
 	var private tnet.PrivateKey
 	{
@@ -485,9 +344,6 @@ func sign(args ...Exp) Exp {
 // verify blob with public key and signature
 // (verify public blob signature) -> t or () [true or false]
 func verify(args ...Exp) Exp {
-	if err := checklen(3, args); err != nil {
-		return err
-	}
 	x, y, z := three(args...)
 	var public tnet.PublicKey
 	{
@@ -516,9 +372,6 @@ func verify(args ...Exp) Exp {
 const TimeFormat = "2006-01-02T15:04:05.000Z"
 
 func after(args ...Exp) Exp {
-	if err := checklen(2, args); err != nil {
-		return err
-	}
 	x, y := two(args...)
 	parse := func(e Exp) (*time.Time, error) {
 		switch t := e.(type) {
@@ -546,4 +399,76 @@ func after(args ...Exp) Exp {
 		return True
 	}
 	return False
+}
+
+// in development:
+
+func err(args ...Exp) Exp {
+	x := one(args...)
+	return errors.New(String(x))
+}
+
+func runes(args ...Exp) Exp {
+	x := one(args...)
+	op, ok := x.(string)
+	if !ok {
+		return fmt.Errorf("not a string")
+	}
+	var out []Exp
+	for _, r := range op {
+		out = append(out, string(r))
+	}
+	return out
+}
+
+// return true if it's car, cdr, cadr, cddr, ..., caaar, etc., else false
+func iscxr(args ...Exp) Exp {
+	x := args[0]
+	op, ok := x.(string)
+	if !ok {
+		return fmt.Errorf("not a string")
+	}
+	runes := []rune(op)
+	if len(runes) < 4 {
+		return False
+	}
+	if runes[0] != 'c' {
+		return False
+	}
+	if runes[len(runes)-1] != 'r' {
+		return False
+	}
+	for _, r := range runes[1 : len(runes)-1] {
+		switch r {
+		case 'a', 'd':
+		default:
+			return False
+		}
+	}
+	return True
+}
+
+func cxr(args ...Exp) Exp {
+	x, y := args[0], args[1]
+	op, ok := x.(string)
+	if !ok {
+		return fmt.Errorf("not a string")
+	}
+	runes := []rune(op)
+	n := len(runes)
+	if len(runes) < 3 || runes[0] != 'c' || runes[n-1] != 'r' {
+		return fmt.Errorf("not a cxr: %q", op)
+	}
+	e := y
+	for i := 0; i < n-2; i++ {
+		switch runes[n-i-2] {
+		case 'a':
+			e = car(e)
+		case 'd':
+			e = cdr(e)
+		default:
+			return fmt.Errorf("not a cxr: %q", op)
+		}
+	}
+	return e
 }

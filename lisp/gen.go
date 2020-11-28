@@ -29,9 +29,6 @@ func parse_env(s string) Exp {
 var and_label = parse_env("(label and (lambda (x y) (cond (x (cond (y 't) ('t ()))) ('t '()))))")
 
 func and(args ...Exp) Exp {
-	if err := checklen(2, args); err != nil {
-		return err
-	}
 	x := args[0]
 	y := args[1]
 	return A(
@@ -62,9 +59,6 @@ func and(args ...Exp) Exp {
 var append_go_sanitized_label = parse_env("(label append_go_sanitized (lambda (x y) (cond ((null x) y) ('t (cons (car x) (append_go_sanitized (cdr x) y))))))")
 
 func append_go_sanitized(args ...Exp) Exp {
-	if err := checklen(2, args); err != nil {
-		return err
-	}
 	x := args[0]
 	y := args[1]
 	return A(
@@ -91,9 +85,6 @@ func append_go_sanitized(args ...Exp) Exp {
 var assoc_label = parse_env("(label assoc (lambda (x y) (cond ((eq (caar y) x) (cadar y)) ('t (assoc x (cdr y))))))")
 
 func assoc(args ...Exp) Exp {
-	if err := checklen(2, args); err != nil {
-		return err
-	}
 	x := args[0]
 	y := args[1]
 	return A(
@@ -122,9 +113,6 @@ func assoc(args ...Exp) Exp {
 var caar_label = parse_env("(label caar (lambda (x) (car (car x))))")
 
 func caar(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
 	x := args[0]
 	return A(
 		car,
@@ -142,9 +130,6 @@ func caar(args ...Exp) Exp {
 var cadar_label = parse_env("(label cadar (lambda (x) (car (cdr (car x)))))")
 
 func cadar(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
 	x := args[0]
 	return A(
 		car,
@@ -165,9 +150,6 @@ func cadar(args ...Exp) Exp {
 var caddar_label = parse_env("(label caddar (lambda (x) (car (cdr (cdr (car x))))))")
 
 func caddar(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
 	x := args[0]
 	return A(
 		car,
@@ -191,9 +173,6 @@ func caddar(args ...Exp) Exp {
 var cadddar_label = parse_env("(label cadddar (lambda (x) (car (cdr (cdr (cdr (car x)))))))")
 
 func cadddar(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
 	x := args[0]
 	return A(
 		car,
@@ -220,9 +199,6 @@ func cadddar(args ...Exp) Exp {
 var caddddar_label = parse_env("(label caddddar (lambda (x) (car (cdr (cdr (cdr (cdr (car x))))))))")
 
 func caddddar(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
 	x := args[0]
 	return A(
 		car,
@@ -258,9 +234,6 @@ var caddddr_label = parse_env("(label caddddr (lambda (x) (car (cdr (cdr (cdr (c
 var cadddr_label = parse_env("(label cadddr (lambda (x) (car (cdr (cdr (cdr x))))))")
 
 func cadddr(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
 	x := args[0]
 	return A(
 		car,
@@ -284,9 +257,6 @@ func cadddr(args ...Exp) Exp {
 var caddr_label = parse_env("(label caddr (lambda (x) (car (cdr (cdr x)))))")
 
 func caddr(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
 	x := args[0]
 	return A(
 		car,
@@ -307,9 +277,6 @@ func caddr(args ...Exp) Exp {
 var cadr_label = parse_env("(label cadr (lambda (x) (car (cdr x))))")
 
 func cadr(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
 	x := args[0]
 	return A(
 		car,
@@ -333,9 +300,6 @@ var cdar_label = parse_env("(label cdar (lambda (x) (cdr (car x))))")
 var cdddar_label = parse_env("(label cdddar (lambda (x) (cdr (cdr (cdr (car x))))))")
 
 func cdddar(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
 	x := args[0]
 	return A(
 		cdr,
@@ -359,9 +323,6 @@ func cdddar(args ...Exp) Exp {
 var eval_label = parse_env("(label eval (lambda (e a) (cond ((atom e) (assoc e a)) ((atom (car e)) (cond ((eq (car e) 'test) (test (eval (cadr e) a))) ((eq (car e) 'test2) (test2 (eval (cadr e) a))) ((eq (car e) 'quote) (cadr e)) ((eq (car e) 'atom) (atom (eval (cadr e) a))) ((eq (car e) 'eq) (eq (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'car) (car (eval (cadr e) a))) ((eq (car e) 'cdr) (cdr (eval (cadr e) a))) ((eq (car e) 'cons) (cons (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'cond) (evcon (cdr e) a)) ((eq (car e) 'plus) (plus (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'inc) (plus (eval (cadr e) a) '1)) ((eq (car e) 'minus) (minus (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'mult) (mult (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'exp) (exp (eval (cadr e) a) (eval (caddr e) a) (eval (cadddr e) a))) ((eq (car e) 'after) (after (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'concat) (concat (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'hash) (hash (eval (cadr e) a))) ((eq (car e) 'newkey) (newkey)) ((eq (car e) 'pub) (pub (eval (cadr e) a))) ((eq (car e) 'sign) (sign (eval (cadr e) a) (eval (caddr e) a))) ((eq (car e) 'verify) (verify (eval (cadr e) a) (eval (caddr e) a) (eval (cadddr e) a))) ((eq (car e) 'display) (display (eval (cadr e) a))) ((eq (car e) 'runes) (runes (eval (cadr e) a))) ((eq (car e) 'err) (err (eval (cadr e) a))) ((eq (car e) 'list) (evlis (cdr e) a)) ('t (eval (cons (assoc (car e) a) (cdr e)) a)))) ((eq (caar e) 'macro) (eval (display (eval (cadddar e) (pair (caddar e) (cdr e)))) a)) ((eq (caar e) 'label) (eval (cons (caddar e) (cdr e)) (cons (list (cadar e) (car e)) a))) ((eq (caar e) 'lambda) (cond ((atom (cadar e)) (eval (caddar e) (cons (list (cadar e) (evlis (cdr e) a)) a))) ('t (eval (caddar e) (append_go_sanitized (pair (cadar e) (evlis (cdr e) a)) a))))))))")
 
 func eval(args ...Exp) Exp {
-	if err := checklen(2, args); err != nil {
-		return err
-	}
 	e := args[0]
 	a := args[1]
 	return A(
@@ -608,9 +569,6 @@ func eval(args ...Exp) Exp {
 var evcon_label = parse_env("(label evcon (lambda (c a) (cond ((eval (caar c) a) (eval (cadar c) a)) ('t (evcon (cdr c) a)))))")
 
 func evcon(args ...Exp) Exp {
-	if err := checklen(2, args); err != nil {
-		return err
-	}
 	c := args[0]
 	a := args[1]
 	return A(
@@ -639,9 +597,6 @@ func evcon(args ...Exp) Exp {
 var evlis_label = parse_env("(label evlis (lambda (m a) (cond ((null m) '()) ('t (cons (eval (car m) a) (evlis (cdr m) a))))))")
 
 func evlis(args ...Exp) Exp {
-	if err := checklen(2, args); err != nil {
-		return err
-	}
 	m := args[0]
 	a := args[1]
 	return A(
@@ -698,9 +653,6 @@ var next_label = parse_env("(label next (lambda (t) (cond ((eq (car t) (cadr t))
 var not_label = parse_env("(label not (lambda (x) (cond (x '()) ('t 't))))")
 
 func not(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
 	x := args[0]
 	return A(
 		cond,
@@ -722,9 +674,6 @@ func not(args ...Exp) Exp {
 var null_label = parse_env("(label null (lambda (x) (eq x '())))")
 
 func null(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
 	x := args[0]
 	return A(
 		eq,
@@ -740,9 +689,6 @@ func null(args ...Exp) Exp {
 var pair_label = parse_env("(label pair (lambda (x y) (cond ((and (null x) (null y)) '()) ((and (not (atom x)) (not (atom y))) (cons (list (car x) (car y)) (pair (cdr x) (cdr y)))))))")
 
 func pair(args ...Exp) Exp {
-	if err := checklen(2, args); err != nil {
-		return err
-	}
 	x := args[0]
 	y := args[1]
 	return A(
@@ -783,16 +729,10 @@ var tassoc_label = parse_env("(label tassoc (lambda (t x y) (cond ((eq (caar y) 
 var test_label = parse_env("(label test (lambda (x) ((lambda (first rest) (list first rest)) (car x) (cdr x))))")
 
 func test(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
 	x := args[0]
 	return func() Exp {
 		var lambda func(...Exp) Exp
 		lambda = func(args ...Exp) Exp {
-			if err := checklen(2, args); err != nil {
-				return err
-			}
 			first := args[0]
 			rest := args[1]
 			return A(list, first, rest)
@@ -809,16 +749,10 @@ func test(args ...Exp) Exp {
 var test2_label = parse_env("(label test2 (lambda (x) ((label f (lambda (first rest) (list first rest))) (car x) (cdr x))))")
 
 func test2(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
 	x := args[0]
 	return func() Exp {
 		var f func(...Exp) Exp
 		f = func(args ...Exp) Exp {
-			if err := checklen(2, args); err != nil {
-				return err
-			}
 			first := args[0]
 			rest := args[1]
 			return A(list, first, rest)
@@ -835,16 +769,10 @@ func test2(args ...Exp) Exp {
 var test3_label = parse_env("(label test3 (lambda (x) ((label fx (lambda (first rest) (cond ((eq first '0) (list first rest)) ('t (fx (minus first '1) rest))))) (car x) (cdr x))))")
 
 func test3(args ...Exp) Exp {
-	if err := checklen(1, args); err != nil {
-		return err
-	}
 	x := args[0]
 	return func() Exp {
 		var fx func(...Exp) Exp
 		fx = func(args ...Exp) Exp {
-			if err := checklen(2, args); err != nil {
-				return err
-			}
 			first := args[0]
 			rest := args[1]
 			return A(cond, L(

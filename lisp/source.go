@@ -416,6 +416,8 @@ func Run(c cnfg.Config) error {
 	(cons (car list) (cdr list)))
  (list 'b 'c))`, ``)
 
+	test("checklen", "(cdr '(1 2 3) 'x)", "")
+
 	return nil
 
 	fmt.Printf("factorial bench = %v\n", benchmark("(factorial '10)"))
@@ -440,11 +442,7 @@ func Run(c cnfg.Config) error {
 func checkargs(args []Exp) error {
 	for _, a := range args {
 		switch t := a.(type) {
-		case string:
-		case *big.Int:
-		case []byte:
-		case []Exp:
-		case Func:
+		case string, *big.Int, []byte, []Exp, Func:
 		case error:
 			return t
 		default:
@@ -459,16 +457,6 @@ func apply(f Func, args ...Exp) Exp {
 		return err
 	}
 	return f(args...)
-}
-
-func checklen(n int, args []Exp) error {
-	if len(args) != n {
-		return fmt.Errorf("expected %d, got %d args", n, len(args))
-	}
-	if err := checkargs(args); err != nil {
-		return err
-	}
-	return nil
 }
 
 func boolToExp(v bool) Exp {
