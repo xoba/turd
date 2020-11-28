@@ -2,6 +2,7 @@ package lisp
 
 import (
 	"bytes"
+	"crypto/md5"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -102,6 +103,9 @@ return e
 		return defs[i].name < defs[j].name
 	})
 
+	c := context{
+		funcs: make(map[string]string),
+	}
 	for _, def := range defs {
 		e := def.expr
 		e = SanitizeGo(e)
@@ -118,7 +122,7 @@ return e
 		}
 		fmt.Fprintf(f, "\n\n//\n// %s (%s)\n//\n\n\n", def.name, msg)
 		fmt.Fprintf(f, "var %[1]s_label = parse_env(%[2]q)\n", name, String(label))
-		name, code, err := DefunCode(e)
+		name, code, err := DefunCode(c, e)
 		if err != nil {
 			return err
 		}
@@ -129,6 +133,15 @@ return e
 			auto()
 		}
 		def.name = name
+	}
+
+	if false {
+		fmt.Printf("emitting %d funcs\n", len(c.funcs))
+		for k, v := range c.funcs {
+			fmt.Fprintf(f, `// %s
+%s
+`, k, v)
+		}
 	}
 
 	fmt.Fprintf(f, "\n\nfunc init() { env = L(\n")
@@ -146,7 +159,7 @@ return e
 	return nil
 }
 
-func DefunCode(defun Exp) (string, []byte, error) {
+func DefunCode(c context, defun Exp) (string, []byte, error) {
 	if String(car(defun)) != "defun" {
 		return "", nil, fmt.Errorf("not a defun")
 	}
@@ -173,7 +186,7 @@ return err
 		}
 		fmt.Fprintf(w, "%s := args[%d];\n", String(a), i)
 	}
-	code, err := Compile(body, true)
+	code, err := Compile(c, body, true)
 	if err != nil {
 		return name, nil, err
 	}
@@ -190,7 +203,11 @@ func isString(e Exp) bool {
 	}
 }
 
-func CompileLazy(e Exp) ([]byte, error) {
+type context struct {
+	funcs map[string]string
+}
+
+func CompileLazy(c context, e Exp) ([]byte, error) {
 	w := new(bytes.Buffer)
 	list, ok := e.([]Exp)
 	if !ok {
@@ -200,6 +217,13 @@ func CompileLazy(e Exp) ([]byte, error) {
 		return nil, fmt.Errorf("malformed cond with %d parts: %s", len(list), e)
 	}
 	f := func(s string) string {
+		h := md5.New()
+		h.Write([]byte(s))
+		name := fmt.Sprintf("F%x", h.Sum(nil))
+		c.funcs[name] = fmt.Sprintf(`func %s(...Exp) Exp {
+return %s
+}
+`, name, s)
 		return fmt.Sprintf(`Func(func(...Exp) Exp {
 return %s
 })`, s)
@@ -213,10 +237,10 @@ return %s
 			case len(t) == 0:
 				return "Nil", nil
 			case len(t) == 2 && String(t[0]) == "quote":
-				return compileQuote(t[1])
+				return compileQuote(c, t[1])
 			}
 		}
-		pb, err := Compile(e, false)
+		pb, err := Compile(c, e, false)
 		if err != nil {
 			return "", err
 		}
@@ -237,12 +261,12 @@ return %s
 	return w.Bytes(), nil
 }
 
-func compileQuote(x Exp) (string, error) {
+func compileQuote(c context, x Exp) (string, error) {
 	switch t := x.(type) {
 	case string:
 		return fmt.Sprintf("%q", t), nil
 	default:
-		compiled, err := Compile(t, false)
+		compiled, err := Compile(c, t, false)
 		if err != nil {
 			return "", err
 		}
@@ -250,7 +274,7 @@ func compileQuote(x Exp) (string, error) {
 	}
 }
 
-func Compile(e Exp, indent bool) ([]byte, error) {
+func Compile(c context, e Exp, indent bool) ([]byte, error) {
 	w := new(bytes.Buffer)
 	emit := func(list []string) {
 		if indent {
@@ -260,7 +284,7 @@ func Compile(e Exp, indent bool) ([]byte, error) {
 		}
 	}
 	lambda := func(e Exp, name string) error {
-		body, err := Compile(caddar(e), false)
+		body, err := Compile(c, caddar(e), false)
 		if err != nil {
 			return err
 		}
@@ -270,7 +294,7 @@ func Compile(e Exp, indent bool) ([]byte, error) {
 		}
 		var arglist []string
 		for _, x := range cdr(e).([]Exp) {
-			arg, err := Compile(x, false)
+			arg, err := Compile(c, x, false)
 			if err != nil {
 				return err
 			}
@@ -314,7 +338,7 @@ return %[1]s(%[3]s)
 		case n == 0:
 			fmt.Fprintf(w, "Nil")
 		case Bool(eq(car(e), "quote")):
-			q, err := compileQuote(e[1])
+			q, err := compileQuote(c, e[1])
 			if err != nil {
 				return nil, err
 			}
@@ -332,15 +356,15 @@ return %[1]s(%[3]s)
 		case Bool(eq(car(e), "cond")):
 			var list []string
 			for i, a := range e {
-				var f func(Exp) ([]byte, error)
+				var f func(context, Exp) ([]byte, error)
 				if i == 0 {
-					f = func(e Exp) ([]byte, error) {
-						return Compile(e, true)
+					f = func(c context, e Exp) ([]byte, error) {
+						return Compile(c, e, true)
 					}
 				} else {
 					f = CompileLazy
 				}
-				sub, err := f(a)
+				sub, err := f(c, a)
 				if err != nil {
 					return nil, err
 				}
@@ -350,7 +374,7 @@ return %[1]s(%[3]s)
 		default:
 			var list []string
 			for _, a := range e {
-				sub, err := Compile(a, indent)
+				sub, err := Compile(c, a, indent)
 				if err != nil {
 					return nil, err
 				}
