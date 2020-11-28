@@ -384,10 +384,30 @@ func Run(cnfg.Config) error {
 	difficulty := Difficulty(MaxHash(32), big.NewInt(30))
 
 	var allRounds []int
-	var times, times2 []time.Duration
+
+	times := make(map[string][]time.Duration)
+
+	timing := func(name string, f func() error) error {
+		t0 := time.Now()
+		err := f()
+		dt := time.Since(t0)
+		times[name] = append(times[name], dt)
+		return err
+	}
+
+	median := func(name string) time.Duration {
+		list := times[name]
+		sort.Slice(list, func(i, j int) bool {
+			return list[i] < list[j]
+		})
+		return list[len(list)/2]
+	}
+	count := func(name string) int {
+		return len(times[name])
+	}
 
 	start := time.Now()
-	for time.Since(start) < 5*time.Minute {
+	for time.Since(start) < time.Minute {
 
 		var rounds int
 		for {
@@ -412,53 +432,85 @@ func Run(cnfg.Config) error {
 				inc(addr, big.NewInt(0).Neg(o))
 			}
 
-			// block hash to be chained through all inputs of all transactions
-			start := time.Now()
-			for i, t := range trans {
+			type compiled struct {
+				transaction lisp.Exp
+				inputs      []lisp.Exp
+			}
+
+			var compiledTrans []compiled
+			for _, t := range trans {
 				if err := t.Validate(); err != nil {
 					return err
 				}
+				c := compiled{
+					transaction: t.Lisp(),
+				}
 				for _, input := range t.Inputs {
-					if b := balance(input.Address()); b.Cmp(input.Quantity) < 0 {
-						return fmt.Errorf("input %s from %s", input.Quantity, b)
-					}
-					// TODO: maybe do this parsing once, not every time?
-					e, err := lisp.Parse(
-						fmt.Sprintf("(%s '%s '%s '%s)",
-							input.Script,
-							marshal(bhash),
-							lisp.String(block.Lisp()),
-							lisp.String(t.Lisp()),
-						),
-					)
+					input, err := lisp.Parse(input.Script)
 					if err != nil {
 						return err
 					}
-					t0 := time.Now()
-					res := lisp.Eval(e)
-					times2 = append(times2, time.Since(t0))
-					switch t := res.(type) {
-					case string:
-						buf, err := base64.RawStdEncoding.DecodeString(t)
-						if err != nil {
-							return err
-						}
-						bhash = buf
-					case []byte:
-						bhash = t
-					default:
-						return fmt.Errorf("%d. bad result: %s\n", i, lisp.String(res))
-					}
-					dec(input.Address(), input.Quantity)
+					c.inputs = append(c.inputs, input)
 				}
-				for _, o := range t.Outputs {
-					inc(o.Address, o.Quantity)
-				}
+				compiledTrans = append(compiledTrans, c)
 			}
 
-			times = append(times, time.Since(start))
+			blockLisp := block.Lisp()
+			quote := func(e lisp.Exp) lisp.Exp {
+				return []lisp.Exp{"quote", e}
+			}
 
-			fmt.Printf("%v / transaction (%d)\n", time.Since(start)/time.Duration(len(trans)), len(trans))
+			// block hash to be chained through all inputs of all transactions
+			if err := timing("proc", func() error {
+				for i, t := range trans {
+					if err := timing("trans", func() error {
+						if err := t.Validate(); err != nil {
+							return err
+						}
+						for j, input := range t.Inputs {
+							if b := balance(input.Address()); b.Cmp(input.Quantity) < 0 {
+								return fmt.Errorf("input %s from %s", input.Quantity, b)
+							}
+							e := []lisp.Exp{
+								compiledTrans[i].inputs[j],
+								quote(bhash),
+								quote(blockLisp),
+								quote(compiledTrans[i].transaction),
+							}
+							var res lisp.Exp
+							if err := timing("eval", func() error {
+								res = lisp.Eval(e)
+								return nil
+							}); err != nil {
+								return err
+							}
+							switch t := res.(type) {
+							case string:
+								buf, err := base64.RawStdEncoding.DecodeString(t)
+								if err != nil {
+									return err
+								}
+								bhash = buf
+							case []byte:
+								bhash = t
+							default:
+								return fmt.Errorf("%d. bad result: %s\n", i, lisp.String(res))
+							}
+							dec(input.Address(), input.Quantity)
+						}
+						for _, o := range t.Outputs {
+							inc(o.Address, o.Quantity)
+						}
+						return nil
+					}); err != nil {
+						return err
+					}
+				}
+				return nil
+			}); err != nil {
+				return err
+			}
+
 			fmt.Printf("balances: %s\n", balances)
 			fmt.Printf("final hash = %s\n", marshal(bhash))
 
@@ -475,16 +527,10 @@ func Run(cnfg.Config) error {
 			len(allRounds),
 		)
 	}
-	fmt.Println(allRounds)
-
-	sort.Slice(times, func(i, j int) bool {
-		return times[i] < times[j]
-	})
-	sort.Slice(times2, func(i, j int) bool {
-		return times2[i] < times2[j]
-	})
-	fmt.Printf("median time: %v (%d)\n", times[len(times)/2], len(times))
-	fmt.Printf("median time2: %v (%d)\n", times2[len(times2)/2], len(times2))
+	fmt.Printf("all rounds: %v\n", allRounds)
+	for k := range times {
+		fmt.Printf("median %s time (%d): %v\n", k, count(k), median(k))
+	}
 
 	return nil
 }
