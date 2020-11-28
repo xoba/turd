@@ -347,187 +347,13 @@ func eval(args ...Exp) Exp {
 						first := args[1]
 						second := args[2]
 						third := args[3]
-						return A(cond, L(
-							Func(func(...Exp) Exp {
-								return A(eq, op, "test1")
-							}),
-							Func(func(...Exp) Exp {
-								return A(test1, A(eval, first, a))
-							}),
-						), L(
-							Func(func(...Exp) Exp {
-								return A(eq, op, "test2")
-							}),
-							Func(func(...Exp) Exp {
-								return A(test2, A(eval, first, a))
-							}),
-						), L(
-							Func(func(...Exp) Exp {
-								return A(eq, op, "quote")
-							}),
-							Func(func(...Exp) Exp {
-								return A(cadr, e)
-							}),
-						), L(
-							Func(func(...Exp) Exp {
-								return A(eq, op, "atom")
-							}),
-							Func(func(...Exp) Exp {
-								return A(atom, A(eval, first, a))
-							}),
-						), L(
-							Func(func(...Exp) Exp {
-								return A(eq, op, "eq")
-							}),
-							Func(func(...Exp) Exp {
-								return A(eq, A(eval, first, a), A(eval, second, a))
-							}),
-						), L(
-							Func(func(...Exp) Exp {
-								return A(eq, op, "car")
-							}),
-							Func(func(...Exp) Exp {
-								return A(car, A(eval, first, a))
-							}),
-						), L(
-							Func(func(...Exp) Exp {
-								return A(eq, op, "cdr")
-							}),
-							Func(func(...Exp) Exp {
-								return A(cdr, A(eval, first, a))
-							}),
-						), L(
-							Func(func(...Exp) Exp {
-								return A(eq, op, "cons")
-							}),
-							Func(func(...Exp) Exp {
-								return A(cons, A(eval, first, a), A(eval, second, a))
-							}),
-						), L(
-							Func(func(...Exp) Exp {
-								return A(eq, op, "cond")
-							}),
-							Func(func(...Exp) Exp {
-								return A(evcon, A(cdr, e), a)
-							}),
-						), L(
-							Func(func(...Exp) Exp {
-								return A(eq, op, "plus")
-							}),
-							Func(func(...Exp) Exp {
-								return A(plus, A(eval, first, a), A(eval, second, a))
-							}),
-						), L(
-							Func(func(...Exp) Exp {
-								return A(eq, op, "inc")
-							}),
-							Func(func(...Exp) Exp {
-								return A(plus, A(eval, first, a), "1")
-							}),
-						), L(
-							Func(func(...Exp) Exp {
-								return A(eq, op, "minus")
-							}),
-							Func(func(...Exp) Exp {
-								return A(minus, A(eval, first, a), A(eval, second, a))
-							}),
-						), L(
-							Func(func(...Exp) Exp {
-								return A(eq, op, "mult")
-							}),
-							Func(func(...Exp) Exp {
-								return A(mult, A(eval, first, a), A(eval, second, a))
-							}),
-						), L(
-							Func(func(...Exp) Exp {
-								return A(eq, op, "exp")
-							}),
-							Func(func(...Exp) Exp {
-								return A(exp, A(eval, first, a), A(eval, second, a), A(eval, third, a))
-							}),
-						), L(
-							Func(func(...Exp) Exp {
-								return A(eq, op, "after")
-							}),
-							Func(func(...Exp) Exp {
-								return A(after, A(eval, first, a), A(eval, second, a))
-							}),
-						), L(
-							Func(func(...Exp) Exp {
-								return A(eq, op, "concat")
-							}),
-							Func(func(...Exp) Exp {
-								return A(concat, A(eval, first, a), A(eval, second, a))
-							}),
-						), L(
-							Func(func(...Exp) Exp {
-								return A(eq, op, "hash")
-							}),
-							Func(func(...Exp) Exp {
-								return A(hash, A(eval, first, a))
-							}),
-						), L(
-							Func(func(...Exp) Exp {
-								return A(eq, op, "newkey")
-							}),
-							Func(func(...Exp) Exp {
-								return A(newkey)
-							}),
-						), L(
-							Func(func(...Exp) Exp {
-								return A(eq, op, "pub")
-							}),
-							Func(func(...Exp) Exp {
-								return A(pub, A(eval, first, a))
-							}),
-						), L(
-							Func(func(...Exp) Exp {
-								return A(eq, op, "sign")
-							}),
-							Func(func(...Exp) Exp {
-								return A(sign, A(eval, first, a), A(eval, second, a))
-							}),
-						), L(
-							Func(func(...Exp) Exp {
-								return A(eq, op, "verify")
-							}),
-							Func(func(...Exp) Exp {
-								return A(verify, A(eval, first, a), A(eval, second, a), A(eval, third, a))
-							}),
-						), L(
-							Func(func(...Exp) Exp {
-								return A(eq, op, "display")
-							}),
-							Func(func(...Exp) Exp {
-								return A(display, A(eval, first, a))
-							}),
-						), L(
-							Func(func(...Exp) Exp {
-								return A(eq, op, "runes")
-							}),
-							Func(func(...Exp) Exp {
-								return A(runes, A(eval, A(cadr, e), a))
-							}),
-						), L(
-							Func(func(...Exp) Exp {
-								return A(eq, op, "err")
-							}),
-							Func(func(...Exp) Exp {
-								return A(err, A(eval, A(cadr, e), a))
-							}),
-						), L(
-							Func(func(...Exp) Exp {
-								return A(eq, op, "list")
-							}),
-							Func(func(...Exp) Exp {
-								return A(evlis, A(cdr, e), a)
-							}),
-						), L(
-							"t",
-							Func(func(...Exp) Exp {
-								return A(eval, A(cons, A(assoc, op, a), A(cdr, e)), a)
-							}),
-						))
+						return func() Exp {
+							if f, ok := map_25[String(op)]; ok {
+								return f(e, a, op, first, second, third)
+							}
+							return A(eval, A(cons, A(assoc, op, a), A(cdr, e)), a)
+						}()
+
 					}
 					return lambda(A(car, e), A(cadr, e), A(caddr, e), A(cadddr, e))
 				}()
@@ -823,127 +649,136 @@ var try_label = parse_env("(label try (lambda (t e a) (cond ((atom e) (assoc e a
 
 var xlist_label = parse_env("(label xlist (lambda x x))")
 
-// cases
+// cases:
+
 func after_515cbbd8f947c37b7d1dc2951e924a4d(e, a, op, first, second, third Exp) Exp {
 	return A(after, A(eval, first, a), A(eval, second, a))
 }
 
-// cases
 func atom_8f3c75e470915a3502aaee0ca1577fcc(e, a, op, first, second, third Exp) Exp {
 	return A(atom, A(eval, first, a))
 }
 
-// cases
 func car_9ccdcb1ba9d132a44726ab42f27ff4e9(e, a, op, first, second, third Exp) Exp {
 	return A(car, A(eval, first, a))
 }
 
-// cases
 func cdr_07b8b4fee0b4a65b5f5e3e5580aaa311(e, a, op, first, second, third Exp) Exp {
 	return A(cdr, A(eval, first, a))
 }
 
-// cases
 func concat_51c24458711a1d6106cab433642d0c9c(e, a, op, first, second, third Exp) Exp {
 	return A(concat, A(eval, first, a), A(eval, second, a))
 }
 
-// cases
 func cond_7b60153e8c9796298806c07f80f3c12e(e, a, op, first, second, third Exp) Exp {
 	return A(evcon, A(cdr, e), a)
 }
 
-// cases
 func cons_e5efa02a9e5b367e867a09002212f851(e, a, op, first, second, third Exp) Exp {
 	return A(cons, A(eval, first, a), A(eval, second, a))
 }
 
-// cases
 func display_ad275a4d1320cdde3e44710b8a67ddef(e, a, op, first, second, third Exp) Exp {
 	return A(display, A(eval, first, a))
 }
 
-// cases
 func eq_d0e57c13aee9aef9ae17b85b67503bf0(e, a, op, first, second, third Exp) Exp {
 	return A(eq, A(eval, first, a), A(eval, second, a))
 }
 
-// cases
 func err_6bbc47e9027043d4689777651239c2ff(e, a, op, first, second, third Exp) Exp {
 	return A(err, A(eval, A(cadr, e), a))
 }
 
-// cases
 func exp_af5bcba2f722aebdc27bbc820ffab22f(e, a, op, first, second, third Exp) Exp {
 	return A(exp, A(eval, first, a), A(eval, second, a), A(eval, third, a))
 }
 
-// cases
 func hash_a2c0339d4437ecca89bf201adb7d1163(e, a, op, first, second, third Exp) Exp {
 	return A(hash, A(eval, first, a))
 }
 
-// cases
 func inc_c7587605642eb29d0d026da3b2833f89(e, a, op, first, second, third Exp) Exp {
 	return A(plus, A(eval, first, a), "1")
 }
 
-// cases
 func list_69bc1c031779ce3278497999af69288e(e, a, op, first, second, third Exp) Exp {
 	return A(evlis, A(cdr, e), a)
 }
 
-// cases
+var map_25 = make(map[string]func(e, a, op, first, second, third Exp) Exp)
+
+func init() {
+	map_25 = map[string]func(e, a, op, first, second, third Exp) Exp{
+		"test1":   test1_1bdc61bba4f3c7d50dc11a03e1c223bb,
+		"test2":   test2_5feee42882cd3faa875e5e551b346d74,
+		"quote":   quote_9d5418c8b7809b2da600bfc812226bc4,
+		"atom":    atom_8f3c75e470915a3502aaee0ca1577fcc,
+		"eq":      eq_d0e57c13aee9aef9ae17b85b67503bf0,
+		"car":     car_9ccdcb1ba9d132a44726ab42f27ff4e9,
+		"cdr":     cdr_07b8b4fee0b4a65b5f5e3e5580aaa311,
+		"cons":    cons_e5efa02a9e5b367e867a09002212f851,
+		"cond":    cond_7b60153e8c9796298806c07f80f3c12e,
+		"plus":    plus_c4ef2e3805a01fa6bc94b68f29bc7208,
+		"inc":     inc_c7587605642eb29d0d026da3b2833f89,
+		"minus":   minus_354cdf993884320912b9b8ab41de16b3,
+		"mult":    mult_ea1e11a9012b0dfa54c5423616a4f0c4,
+		"exp":     exp_af5bcba2f722aebdc27bbc820ffab22f,
+		"after":   after_515cbbd8f947c37b7d1dc2951e924a4d,
+		"concat":  concat_51c24458711a1d6106cab433642d0c9c,
+		"hash":    hash_a2c0339d4437ecca89bf201adb7d1163,
+		"newkey":  newkey_eb320fe7889a92ac8dbdacd07152a23e,
+		"pub":     pub_48401e110dae546272407c5eff0a4a24,
+		"sign":    sign_5a1e6f12da842fac062579e3ff554e4b,
+		"verify":  verify_66b0d5b8e697b8cf42702e0edd6a8d16,
+		"display": display_ad275a4d1320cdde3e44710b8a67ddef,
+		"runes":   runes_9497265e8a0baaf9c7e9ac783fd5c02b,
+		"err":     err_6bbc47e9027043d4689777651239c2ff,
+		"list":    list_69bc1c031779ce3278497999af69288e,
+	}
+}
+
 func minus_354cdf993884320912b9b8ab41de16b3(e, a, op, first, second, third Exp) Exp {
 	return A(minus, A(eval, first, a), A(eval, second, a))
 }
 
-// cases
 func mult_ea1e11a9012b0dfa54c5423616a4f0c4(e, a, op, first, second, third Exp) Exp {
 	return A(mult, A(eval, first, a), A(eval, second, a))
 }
 
-// cases
 func newkey_eb320fe7889a92ac8dbdacd07152a23e(e, a, op, first, second, third Exp) Exp {
 	return A(newkey)
 }
 
-// cases
 func plus_c4ef2e3805a01fa6bc94b68f29bc7208(e, a, op, first, second, third Exp) Exp {
 	return A(plus, A(eval, first, a), A(eval, second, a))
 }
 
-// cases
 func pub_48401e110dae546272407c5eff0a4a24(e, a, op, first, second, third Exp) Exp {
 	return A(pub, A(eval, first, a))
 }
 
-// cases
 func quote_9d5418c8b7809b2da600bfc812226bc4(e, a, op, first, second, third Exp) Exp {
 	return A(cadr, e)
 }
 
-// cases
 func runes_9497265e8a0baaf9c7e9ac783fd5c02b(e, a, op, first, second, third Exp) Exp {
 	return A(runes, A(eval, A(cadr, e), a))
 }
 
-// cases
 func sign_5a1e6f12da842fac062579e3ff554e4b(e, a, op, first, second, third Exp) Exp {
 	return A(sign, A(eval, first, a), A(eval, second, a))
 }
 
-// cases
 func test1_1bdc61bba4f3c7d50dc11a03e1c223bb(e, a, op, first, second, third Exp) Exp {
 	return A(test1, A(eval, first, a))
 }
 
-// cases
 func test2_5feee42882cd3faa875e5e551b346d74(e, a, op, first, second, third Exp) Exp {
 	return A(test2, A(eval, first, a))
 }
 
-// cases
 func verify_66b0d5b8e697b8cf42702e0edd6a8d16(e, a, op, first, second, third Exp) Exp {
 	return A(verify, A(eval, first, a), A(eval, second, a), A(eval, third, a))
 }

@@ -207,10 +207,11 @@ func (c context) emit() string {
 			list = append(list, k)
 		}
 		sort.Strings(list)
+		fmt.Fprintf(w, "\n// %s:\n\n", name)
 		for _, k := range list {
-			fmt.Fprintf(w, `// %s
+			fmt.Fprintf(w, ` 
 %s
-`, name, m[k])
+`, m[k])
 		}
 	}
 	f("cases", c.cases)
@@ -360,7 +361,10 @@ return %[1]s(%[3]s)
 
 		case ExpToBool(eq(car(e), "cond")):
 
-			if optimize && isMaplikeCond(e) {
+			if op, ok := isMaplikeCond(e); optimize && ok {
+
+				var funcs, names []string
+
 				for i, a := range e {
 					if i == 0 {
 						continue
@@ -384,27 +388,61 @@ return %[3]s
 						strings.Join(vars, ","),
 						string(sub),
 					)
-					c.cases[name] = w.String()
+					f := w.String()
+					names = append(names, String(key))
+					funcs = append(funcs, name)
+					c.cases[name] = f
 				}
-			}
 
-			var list []string
-			for i, a := range e {
-				var f func(context, Exp, []string) ([]byte, error)
-				if i == 0 {
-					f = func(c context, e Exp, vars []string) ([]byte, error) {
-						return Compile(c, e, true, vars)
+				fmt.Fprintf(w, "func() Exp {\n")
+				mapname := fmt.Sprintf("map_%d", len(c.cases))
+				{
+					g := new(bytes.Buffer)
+					// TODO: move map "m" to global and just reference it here, not re-create it
+					fmt.Fprintf(g, "var %s =make( map[string]func(%s Exp) Exp)\n", mapname, strings.Join(vars, ","))
+					fmt.Fprintf(g, "func init() {\n")
+					fmt.Fprintf(g, " %s = map[string]func(%s Exp) Exp {\n", mapname, strings.Join(vars, ","))
+					for i, n := range names {
+						fmt.Fprintf(g, "%q: %s,\n", n, funcs[i])
 					}
-				} else {
-					f = CompileLazy
+					fmt.Fprintf(g, "}}\n")
+					c.cases[mapname] = g.String()
 				}
-				sub, err := f(c, a, vars)
+				t, err := Compile(c, cadr(e[len(e)-1]), false, vars)
 				if err != nil {
 					return nil, err
 				}
-				list = append(list, string(sub))
+				fmt.Fprintf(w, `if f,ok := %[4]s[String(%[1]s)]; ok {
+return f(%[2]s)
+}
+return %[3]s
+`,
+					op,
+					strings.Join(vars, ","),
+					string(t),
+					mapname,
+				)
+				fmt.Fprintf(w, "}()\n")
+			} else {
+
+				var list []string
+				for i, a := range e {
+					var f func(context, Exp, []string) ([]byte, error)
+					if i == 0 {
+						f = func(c context, e Exp, vars []string) ([]byte, error) {
+							return Compile(c, e, true, vars)
+						}
+					} else {
+						f = CompileLazy
+					}
+					sub, err := f(c, a, vars)
+					if err != nil {
+						return nil, err
+					}
+					list = append(list, string(sub))
+				}
+				emit(list)
 			}
-			emit(list)
 
 		case ExpToBool(eq(caar(e), "lambda")):
 			if err := lambda(e, "lambda"); err != nil {
@@ -435,11 +473,12 @@ return %[3]s
 	return w.Bytes(), nil
 }
 
-func isMaplikeCond(e []Exp) bool {
+func isMaplikeCond(e []Exp) (string, bool) {
 	out := true
 	if len(e) < 11 {
 		out = false
 	}
+	ops := make(map[string]bool)
 	for i, a := range e {
 		if i == 0 {
 			continue
@@ -457,15 +496,24 @@ func isMaplikeCond(e []Exp) bool {
 			if String(first) != "eq" {
 				out = false
 			}
-			if _, ok := second.(string); !ok {
+			op, ok := second.(string)
+			if !ok {
 				out = false
 			}
+			ops[op] = true
 			if String(car(third)) != "quote" {
 				out = false
 			}
 		}
 	}
-	return out
+	if len(ops) != 1 {
+		out = false
+	}
+	var op string
+	for k := range ops {
+		op = k
+	}
+	return op, out
 }
 
 func LabelExpr(defun Exp) (Exp, error) {
