@@ -10,4 +10,5 @@ type Config struct {
 	Delete         bool
 	Debug          bool
 	Lisp           string
+	Profile        string // name of profile output, if any
 }

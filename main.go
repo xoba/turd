@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"runtime/pprof"
 	"sort"
 	"strings"
 	"sync"
@@ -38,7 +39,19 @@ func main() {
 	flag.IntVar(&c.Seed, "s", 0, "if not zero, the random seed")
 	flag.BoolVar(&c.Delete, "d", false, "whether to delete something in a test")
 	flag.BoolVar(&c.Debug, "debug", false, "whether to debug")
+	flag.StringVar(&c.Profile, "profile", "", "name of profile file, if any")
 	flag.Parse()
+	if len(c.Profile) > 0 {
+		f, err := os.Create(c.Profile)
+		if err != nil {
+			log.Fatal("could not create CPU profile: ", err)
+		}
+		defer f.Close()
+		if err := pprof.StartCPUProfile(f); err != nil {
+			log.Fatal("could not start CPU profile: ", err)
+		}
+		defer pprof.StopCPUProfile()
+	}
 	if err := Run(c); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

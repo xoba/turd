@@ -213,9 +213,17 @@ func (s *stack) pop() []Exp {
 }
 
 // from the go spec
-func GoIdentifiers() (list []string) {
+func GoIdentifiers(dir bool) map[string]string {
+	m := make(map[string]string)
 	add := func(category, words string) {
-		list = append(list, strings.Fields(words)...)
+		for _, w := range strings.Fields(words) {
+			sanitized := w + "_go_sanitized"
+			if dir {
+				m[w] = sanitized
+			} else {
+				m[sanitized] = w
+			}
+		}
 	}
 
 	add("keywords", `break        default      func         interface    select
@@ -236,7 +244,7 @@ continue     for          import       return       var
        int int8 int16 int32 int64 rune string
        uint uint8 uint16 uint32 uint64 uintptr
 `)
-	return
+	return m
 }
 
 func sanitize(s string) string {
@@ -244,24 +252,19 @@ func sanitize(s string) string {
 }
 
 func UnsanitizeGo(e Exp) Exp {
-	for _, x := range GoIdentifiers() {
-		e = translateAtoms(e, sanitize(x), x)
-	}
-	return e
+	return translateAtoms(e, GoIdentifiers(false))
 }
 
 func SanitizeGo(e Exp) Exp {
-	for _, x := range GoIdentifiers() {
-		e = translateAtoms(e, x, sanitize(x))
-	}
-	return e
+	return translateAtoms(e, GoIdentifiers(true))
 }
 
-func translateAtoms(e Exp, from, to string) Exp {
+func translateAtoms(e Exp, m map[string]string) Exp {
 	switch t := e.(type) {
 	case string:
-		if t == from {
-			return to
+		x, ok := m[t]
+		if ok {
+			return x
 		}
 		return t
 	case *big.Int, []byte:
@@ -269,7 +272,7 @@ func translateAtoms(e Exp, from, to string) Exp {
 	case []Exp:
 		var out []Exp
 		for _, c := range t {
-			out = append(out, translateAtoms(c, from, to))
+			out = append(out, translateAtoms(c, m))
 		}
 		return out
 	case error:

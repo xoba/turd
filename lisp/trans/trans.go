@@ -384,6 +384,7 @@ func Run(cnfg.Config) error {
 	difficulty := Difficulty(MaxHash(32), big.NewInt(30))
 
 	var allRounds []int
+	var times, times2 []time.Duration
 
 	start := time.Now()
 	for time.Since(start) < 5*time.Minute {
@@ -433,7 +434,9 @@ func Run(cnfg.Config) error {
 					if err != nil {
 						return err
 					}
+					t0 := time.Now()
 					res := lisp.Eval(e)
+					times2 = append(times2, time.Since(t0))
 					switch t := res.(type) {
 					case string:
 						buf, err := base64.RawStdEncoding.DecodeString(t)
@@ -452,6 +455,9 @@ func Run(cnfg.Config) error {
 					inc(o.Address, o.Quantity)
 				}
 			}
+
+			times = append(times, time.Since(start))
+
 			fmt.Printf("%v / transaction (%d)\n", time.Since(start)/time.Duration(len(trans)), len(trans))
 			fmt.Printf("balances: %s\n", balances)
 			fmt.Printf("final hash = %s\n", marshal(bhash))
@@ -470,6 +476,16 @@ func Run(cnfg.Config) error {
 		)
 	}
 	fmt.Println(allRounds)
+
+	sort.Slice(times, func(i, j int) bool {
+		return times[i] < times[j]
+	})
+	sort.Slice(times2, func(i, j int) bool {
+		return times2[i] < times2[j]
+	})
+	fmt.Printf("median time: %v (%d)\n", times[len(times)/2], len(times))
+	fmt.Printf("median time2: %v (%d)\n", times2[len(times2)/2], len(times2))
+
 	return nil
 }
 
