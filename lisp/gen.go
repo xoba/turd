@@ -643,6 +643,12 @@ var try_label = parse_env("(label try (lambda (t e a) (cond ((atom e) (assoc e a
 
 var xlist_label = parse_env("(label xlist (lambda x x))")
 
+//
+// y (interpreted)
+//
+
+var y_label = parse_env("(label y (lambda (f) ((lambda (x) (f (x x))) (lambda (x) (f (x x))))))")
+
 // cases:
 
 func F_0_60a3caf220a5e9e8d986965c79b20f11(x, first, rest Exp) Exp {
@@ -832,5 +838,6 @@ func init() {
 		L("test4", test4_label),
 		L("try", try_label),
 		L("xlist", xlist_label),
+		L("y", y_label),
 	)
 }
