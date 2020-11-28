@@ -437,26 +437,3 @@ func Run(c cnfg.Config) error {
 
 	return nil
 }
-
-func checkargs(args []Exp) error {
-	for _, a := range args {
-		if e, ok := a.(error); ok {
-			return e
-		}
-	}
-	return nil
-}
-
-func apply(f Func, args ...Exp) Exp {
-	if err := checkargs(args); err != nil {
-		return err
-	}
-	return f(args...)
-}
-
-func boolToExp(v bool) Exp {
-	if v {
-		return True
-	}
-	return False
-}

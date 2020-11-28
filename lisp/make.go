@@ -15,7 +15,10 @@ import (
 	"github.com/xoba/turd/cnfg"
 )
 
-const pkg = "lisp"
+const (
+	optimize = true
+	pkg      = "lisp"
+)
 
 func CompileDefuns(cnfg.Config) error {
 	if err := os.MkdirAll(pkg, os.ModePerm); err != nil {
@@ -29,9 +32,6 @@ func CompileDefuns(cnfg.Config) error {
 	f, err := os.Create(file)
 	if err != nil {
 		return err
-	}
-	auto := func() {
-		fmt.Fprintf(f, "\n\n// %s\n\n", autogen)
 	}
 	fmt.Fprintf(f, `// %[1]s
 
@@ -104,6 +104,7 @@ return e
 	})
 
 	c := context{
+		cases: make(map[string]string),
 		funcs: make(map[string]string),
 	}
 	for _, def := range defs {
@@ -129,19 +130,11 @@ return e
 		if def.compiled {
 			fmt.Fprint(f, string(code))
 		}
-		if false {
-			auto()
-		}
 		def.name = name
 	}
 
-	if false {
-		fmt.Printf("emitting %d funcs\n", len(c.funcs))
-		for k, v := range c.funcs {
-			fmt.Fprintf(f, `// %s
-%s
-`, k, v)
-		}
+	if true {
+		fmt.Fprintln(f, c.emit())
 	}
 
 	fmt.Fprintf(f, "\n\nfunc init() { env = L(\n")
@@ -174,19 +167,16 @@ func DefunCode(c context, defun Exp) (string, []byte, error) {
 	w := new(bytes.Buffer)
 
 	fmt.Fprintf(w, "func %[1]s(args ... Exp) Exp {\n", name)
-	if false {
-		fmt.Fprintf(w, `if err:= checklen(%d,args); err != nil {
-return err
-}
-`, len(args))
-	}
+	var vars []string
 	for i, a := range args {
 		if !isString(a) {
 			return name, nil, fmt.Errorf("not a string: %s", a)
 		}
-		fmt.Fprintf(w, "%s := args[%d];\n", String(a), i)
+		v := String(a)
+		fmt.Fprintf(w, "%s := args[%d];\n", v, i)
+		vars = append(vars, v)
 	}
-	code, err := Compile(c, body, true)
+	code, err := Compile(c, body, true, vars)
 	if err != nil {
 		return name, nil, err
 	}
@@ -204,10 +194,41 @@ func isString(e Exp) bool {
 }
 
 type context struct {
+	cases map[string]string
 	funcs map[string]string
 }
 
-func CompileLazy(c context, e Exp) ([]byte, error) {
+func (c context) emit() string {
+	w := new(bytes.Buffer)
+
+	f := func(name string, m map[string]string) {
+		var list []string
+		for k := range m {
+			list = append(list, k)
+		}
+		sort.Strings(list)
+		for _, k := range list {
+			fmt.Fprintf(w, `// %s
+%s
+`, name, m[k])
+		}
+	}
+	f("cases", c.cases)
+	//f("funcs", c.funcs)
+
+	return w.String()
+}
+
+func funcName(p, s string) string {
+	h := md5.New()
+	h.Write([]byte(s))
+	if p == "" {
+		return fmt.Sprintf("F%x", h.Sum(nil))
+	}
+	return fmt.Sprintf("%s_%x", p, h.Sum(nil))
+}
+
+func CompileLazy(c context, e Exp, vars []string) ([]byte, error) {
 	w := new(bytes.Buffer)
 	list, ok := e.([]Exp)
 	if !ok {
@@ -217,9 +238,7 @@ func CompileLazy(c context, e Exp) ([]byte, error) {
 		return nil, fmt.Errorf("malformed cond with %d parts: %s", len(list), e)
 	}
 	f := func(s string) string {
-		h := md5.New()
-		h.Write([]byte(s))
-		name := fmt.Sprintf("F%x", h.Sum(nil))
+		name := funcName("", s)
 		c.funcs[name] = fmt.Sprintf(`func %s(...Exp) Exp {
 return %s
 }
@@ -237,10 +256,10 @@ return %s
 			case len(t) == 0:
 				return "Nil", nil
 			case len(t) == 2 && String(t[0]) == "quote":
-				return compileQuote(c, t[1])
+				return compileQuote(c, t[1], vars)
 			}
 		}
-		pb, err := Compile(c, e, false)
+		pb, err := Compile(c, e, false, vars)
 		if err != nil {
 			return "", err
 		}
@@ -261,12 +280,12 @@ return %s
 	return w.Bytes(), nil
 }
 
-func compileQuote(c context, x Exp) (string, error) {
+func compileQuote(c context, x Exp, vars []string) (string, error) {
 	switch t := x.(type) {
 	case string:
 		return fmt.Sprintf("%q", t), nil
 	default:
-		compiled, err := Compile(c, t, false)
+		compiled, err := Compile(c, t, false, vars)
 		if err != nil {
 			return "", err
 		}
@@ -274,7 +293,7 @@ func compileQuote(c context, x Exp) (string, error) {
 	}
 }
 
-func Compile(c context, e Exp, indent bool) ([]byte, error) {
+func Compile(c context, e Exp, indent bool, vars []string) ([]byte, error) {
 	w := new(bytes.Buffer)
 	emit := func(list []string) {
 		if indent {
@@ -284,17 +303,13 @@ func Compile(c context, e Exp, indent bool) ([]byte, error) {
 		}
 	}
 	lambda := func(e Exp, name string) error {
-		body, err := Compile(c, caddar(e), false)
-		if err != nil {
-			return err
-		}
 		var args []string
 		for _, e := range cadar(e).([]Exp) {
 			args = append(args, String(e))
 		}
 		var arglist []string
 		for _, x := range cdr(e).([]Exp) {
-			arg, err := Compile(c, x, false)
+			arg, err := Compile(c, x, false, vars)
 			if err != nil {
 				return err
 			}
@@ -306,17 +321,14 @@ var %[1]s func(... Exp) Exp
 `,
 			name,
 		)
-
-		if false {
-			fmt.Fprintf(w, `	if err := checklen(%d, args); err != nil {
-		return err
-	}
-`, len(args))
-		}
 		for i, a := range args {
 			fmt.Fprintf(w, "%s := args[%d]\n", a, i)
+			vars = append(vars, a)
 		}
-
+		body, err := Compile(c, caddar(e), false, vars)
+		if err != nil {
+			return err
+		}
 		fmt.Fprintf(w, `return %[2]s
 }
 return %[1]s(%[3]s)
@@ -335,46 +347,80 @@ return %[1]s(%[3]s)
 	case []Exp:
 		n := len(e)
 		switch {
+
 		case n == 0:
 			fmt.Fprintf(w, "Nil")
-		case Bool(eq(car(e), "quote")):
-			q, err := compileQuote(c, e[1])
+
+		case ExpToBool(eq(car(e), "quote")):
+			q, err := compileQuote(c, e[1], vars)
 			if err != nil {
 				return nil, err
 			}
 			fmt.Fprint(w, q)
 
-		case Bool(eq(caar(e), "lambda")):
-			if err := lambda(e, "lambda"); err != nil {
-				return nil, err
+		case ExpToBool(eq(car(e), "cond")):
+
+			if optimize && isMaplikeCond(e) {
+				for i, a := range e {
+					if i == 0 {
+						continue
+					}
+					if i == len(e)-1 {
+						continue
+					}
+					eq := car(a)
+					key := car(cdr(car(cdr(cdr(eq)))))
+					fmt.Printf("%d: %q\n", i, String(key))
+					sub, err := Compile(c, cadr(a), false, vars)
+					if err != nil {
+						return nil, err
+					}
+					name := funcName(String(key), string(sub))
+					w := new(bytes.Buffer)
+					fmt.Fprintf(w, `func %[1]s(%[2]s Exp) Exp {
+return %[3]s
+}`,
+						name,
+						strings.Join(vars, ","),
+						string(sub),
+					)
+					c.cases[name] = w.String()
+				}
 			}
-		case Bool(eq(caar(e), "label")):
-			expr := cons(car(cdr(cdr(car(e)))), cdr(e))
-			if err := lambda(expr, String(cadar(e))); err != nil {
-				return nil, err
-			}
-		case Bool(eq(car(e), "cond")):
+
 			var list []string
 			for i, a := range e {
-				var f func(context, Exp) ([]byte, error)
+				var f func(context, Exp, []string) ([]byte, error)
 				if i == 0 {
-					f = func(c context, e Exp) ([]byte, error) {
-						return Compile(c, e, true)
+					f = func(c context, e Exp, vars []string) ([]byte, error) {
+						return Compile(c, e, true, vars)
 					}
 				} else {
 					f = CompileLazy
 				}
-				sub, err := f(c, a)
+				sub, err := f(c, a, vars)
 				if err != nil {
 					return nil, err
 				}
 				list = append(list, string(sub))
 			}
 			emit(list)
+
+		case ExpToBool(eq(caar(e), "lambda")):
+			if err := lambda(e, "lambda"); err != nil {
+				return nil, err
+			}
+
+		case ExpToBool(eq(caar(e), "label")):
+			expr := cons(car(cdr(cdr(car(e)))), cdr(e))
+			if err := lambda(expr, String(cadar(e))); err != nil {
+				return nil, err
+			}
+
 		default:
 			var list []string
 			for _, a := range e {
-				sub, err := Compile(c, a, indent)
+				sub, err := Compile(c, a, indent, vars)
 				if err != nil {
 					return nil, err
 				}
@@ -382,8 +428,44 @@ return %[1]s(%[3]s)
 			}
 			emit(list)
 		}
+
+	default:
+		return nil, fmt.Errorf("can't compile %T", e)
 	}
 	return w.Bytes(), nil
+}
+
+func isMaplikeCond(e []Exp) bool {
+	out := true
+	if len(e) < 11 {
+		out = false
+	}
+	for i, a := range e {
+		if i == 0 {
+			continue
+		}
+		test := car(a)
+		if i == len(e)-1 {
+			if String(test) != "'t" {
+				out = false
+			}
+		} else {
+			first := car(test)
+			second := cadr(test)
+			third := caddr(test)
+			// need pattern (eq atom quote); i.e., atom==quote
+			if String(first) != "eq" {
+				out = false
+			}
+			if _, ok := second.(string); !ok {
+				out = false
+			}
+			if String(car(third)) != "quote" {
+				out = false
+			}
+		}
+	}
+	return out
 }
 
 func LabelExpr(defun Exp) (Exp, error) {

@@ -12,7 +12,7 @@ import (
 	"github.com/xoba/turd/tnet"
 )
 
-// valid types: string, *big.Int, []byte, *time.Time, []Exp, Func, or error
+// valid types: string, *big.Int, []byte, time.Time, []Exp, Func, or error
 type Exp interface{}
 
 type Func func(...Exp) Exp
@@ -24,13 +24,20 @@ var (
 	False Exp = Nil
 )
 
-func Bool(e Exp) bool {
+func ExpToBool(e Exp) bool {
 	switch t := e.(type) {
-	case string, *big.Int:
+	case string:
 		return t == "t"
 	default:
 		return false
 	}
+}
+
+func BoolToExp(v bool) Exp {
+	if v {
+		return True
+	}
+	return False
 }
 
 func String(e Exp) string {
@@ -82,6 +89,22 @@ func three(args ...Exp) (Exp, Exp, Exp) {
 	return manifest(x), manifest(y), manifest(z)
 }
 
+func checkargs(args []Exp) error {
+	for _, a := range args {
+		if e, ok := a.(error); ok {
+			return e
+		}
+	}
+	return nil
+}
+
+func apply(f Func, args ...Exp) Exp {
+	if err := checkargs(args); err != nil {
+		return err
+	}
+	return f(args...)
+}
+
 // ----------------------------------------------------------------------
 // AXIOMS
 // ----------------------------------------------------------------------
@@ -95,7 +118,7 @@ func atom(args ...Exp) Exp {
 	case string, *big.Int, time.Time:
 		return True
 	case []Exp:
-		return boolToExp(len(t) == 0)
+		return BoolToExp(len(t) == 0)
 	default:
 		return fmt.Errorf("illegal atom call: %T %v", t, t)
 	}
@@ -107,7 +130,7 @@ func eq(args ...Exp) Exp {
 	case []Exp:
 		switch y := y.(type) {
 		case []Exp: // both lists:
-			return boolToExp(len(x) == 0 && len(y) == 0)
+			return BoolToExp(len(x) == 0 && len(y) == 0)
 		default:
 			return False
 		}
@@ -116,7 +139,7 @@ func eq(args ...Exp) Exp {
 		case []Exp:
 			return False
 		default: // both not lists:
-			return boolToExp(String(x) == String(y))
+			return BoolToExp(String(x) == String(y))
 		}
 	}
 }
@@ -170,7 +193,7 @@ func cond(args ...Exp) Exp {
 	for _, a := range args {
 		switch t := a.(type) {
 		case []Exp:
-			if Bool(manifest(t[0])) {
+			if ExpToBool(manifest(t[0])) {
 				return manifest(t[1])
 			}
 		default:

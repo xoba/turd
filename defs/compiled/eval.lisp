@@ -54,7 +54,11 @@
 	('t (eval (cons (assoc op a)
 			(cdr e))
 		  a))))
-     (car e) (cadr e) (caddr e) (cadddr e)))
+     (car e)    ;; op
+     (cadr e)   ;; first
+     (caddr e)  ;; second
+     (cadddr e) ;; third
+     )) 
    
    ;; initial macro concept, note the two evals:
    ((eq (caar e) 'macro)
