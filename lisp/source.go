@@ -417,6 +417,8 @@ func Run(c cnfg.Config) error {
 
 	test("checklen", "(cdr '(1 2 3) 'x)", "")
 
+	file("y.lisp", "")
+
 	return nil
 
 	fmt.Printf("factorial bench = %v\n", benchmark("(factorial '10)"))
