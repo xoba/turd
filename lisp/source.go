@@ -102,14 +102,14 @@ func Run(c cnfg.Config) error {
 			log.Fatal(err)
 		}
 		tests[String(in)]++
-		log.Printf("%3d. %-13s %-10s %-20s -> %s", len(tests), name, msg+":", String(in), expect)
+		fmt.Printf("%3d. %-13s %-10s %-20s -> %s\n", len(tests), name, msg+":", String(in), expect)
 		res := f(in)
 		if expect == "" {
-			fmt.Printf("got %s\n", String(res))
+			fmt.Printf("%3d. -> %s\n", len(tests), String(res))
 			return
 		}
 		if got := String(res); got != expect {
-			log.Fatalf("expected %q, got %q\n", expect, got)
+			log.Fatalf("%3d. expected %q, got %q\n", len(tests), expect, got)
 		}
 	}
 
@@ -296,7 +296,7 @@ func Run(c cnfg.Config) error {
 
 	test("blobs", "(concat 'YWJj 'eHl6)", "YWJjeHl6")
 
-	test("crypto", `(assoc 'hash '((hash ymWy8GC+4f6xaqTYlciUS0+FBq+zO7XRe46fYtMni5Y) (IgSk3rkEcxbx1f44G5diGvc53pwSi6WjlsZnbWpHgWk MEYCIQC1Fnd+LuN4AFJ7lYWBVjEcjO7SvrTAoUtcUct96za1OQIhAKIYsyE/rroV4GuNuNJNGFIcDMsL27VlZgXNcIZQk81Z)))`, "")
+	test("crypto", `(assoc 'hash '((hash ymWy8GC+4f6xaqTYlciUS0+FBq+zO7XRe46fYtMni5Y) (IgSk3rkEcxbx1f44G5diGvc53pwSi6WjlsZnbWpHgWk MEYCIQC1Fnd+LuN4AFJ7lYWBVjEcjO7SvrTAoUtcUct96za1OQIhAKIYsyE/rroV4GuNuNJNGFIcDMsL27VlZgXNcIZQk81Z)))`, "ymWy8GC+4f6xaqTYlciUS0+FBq+zO7XRe46fYtMni5Y")
 
 	test("lambda", `
 ((lambda (x y)
@@ -312,7 +312,7 @@ func Run(c cnfg.Config) error {
 	file("crypto2.lisp", "/Bmm7Jh2vHGd56htMfK1looDkZfay3hJgLrY+QZRQvM")
 	file("block.lisp", "1000")
 	file("block1.lisp", "2020-11-22T11:16:18.838Z")
-	file("trans.lisp", "")
+	file("trans.lisp", "((cTJq28DsB6r2l2dd0sBD2ZjQ/F+a6+dTaG85aLtxbL0 MEUCIAeBVoHQPo86Qerj/EzdjFV0QwVAwo2m3vVMgy/HiIzjAiEAoNKehjpzam+uO9lRyOHkv0i7WOq2MUir7V+bR4vLJOg) (9lCAMaW3i+knbrdq6GIX0Nt5/ETo3FwTz14j8ynR5io MEUCIQDPaNR9Nt+OHaflycjb2w2pvcA/mEeSpJY/k9eV8cw0ygIgRFPc7XaRW0LE0Sp41IrhtyW1JJd3VGUsqVAoHElYv2o))")
 	file("block2.lisp", "rwSvYFupU7ZH1xqBj/YFOzaHZsyeSye0TGErmVV3mAI")
 
 	test("len", `(length 'x)`, `0`)
@@ -323,6 +323,9 @@ func Run(c cnfg.Config) error {
 
 	// first-order functions
 	test("fof", `((lambda (f) (f '(a))) 'car)`, `a`)
+	test("fof", `((lambda (f) (f '(b c))) '(lambda (x) (cons 'a x)))`, "(a b c)")
+	// a function operating on itself
+	test("fof", `((lambda (f) (f f)) '(lambda (x) (cons 'a x)))`, "(a lambda (x) (cons 'a x))")
 
 	if false {
 		test("iscxr", `(iscxr 'car)`, `()`) // car is axiom
@@ -409,15 +412,26 @@ func Run(c cnfg.Config) error {
 	     (list (list 'eq '(car e) (car list)) (list (car list) '(eval (cadr  e) a)))
 	     (macrotest (cdr list)))))))
  '(atom car cdr))))
-`, "")
+`, "(cond ((eq (car e) atom) (atom (eval (cadr e) a))))")
 
 	test("macro", `((macro test (list)
 	(cons (car list) (cdr list)))
- (list 'b 'c))`, ``)
+ (list 'b 'c))`, `(b c)`)
 
-	test("checklen", "(cdr '(1 2 3) 'x)", "")
+	test("checklen", "(cdr '(1 2 3) 'x)", "(2 3)")
 
-	//file("y.lisp", "")
+	test("fof", "((lambda (x) x) '5)", "5")
+
+	test("fof", `((lambda (f x) (f f x))
+ '(lambda (f x) (list f x)) '5)
+`, "")
+	test("fof", `(s
+ '(lambda (f x) (list f x)) '5)
+`, "")
+
+	test("fof", "(s '(lambda (x) x) '5)", "")
+
+	file("stest.lisp", "")
 
 	return nil
 

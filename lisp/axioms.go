@@ -64,7 +64,7 @@ func String(e Exp) string {
 	case error:
 		return fmt.Sprintf("error: %v", t)
 	default:
-		panic(fmt.Errorf("can't stringify type %T %v", t, t))
+		panic(fmt.Errorf(`[can't stringify type %T (%v)]`, t, t))
 	}
 }
 
@@ -200,7 +200,7 @@ func cond(args ...Exp) Exp {
 			return fmt.Errorf("illegal cond arg type %T: %v", t, t)
 		}
 	}
-	return fmt.Errorf("cond fallthrough")
+	return fmt.Errorf("cond fallthrough: %s", String(args))
 }
 
 func display(args ...Exp) Exp {

@@ -320,7 +320,7 @@ func cdddar(args ...Exp) Exp {
 // eval (compiled)
 //
 
-var eval_label = parse_env("(label eval (lambda (e a) (cond ((atom e) (assoc e a)) ((atom (car e)) ((lambda (op first second third) (cond ((eq op 'test1) (test1 (eval first a))) ((eq op 'test2) (test2 (eval first a))) ((eq op 'quote) (cadr e)) ((eq op 'atom) (atom (eval first a))) ((eq op 'eq) (eq (eval first a) (eval second a))) ((eq op 'car) (car (eval first a))) ((eq op 'cdr) (cdr (eval first a))) ((eq op 'cons) (cons (eval first a) (eval second a))) ((eq op 'cond) (evcon (cdr e) a)) ((eq op 'plus) (plus (eval first a) (eval second a))) ((eq op 'inc) (plus (eval first a) '1)) ((eq op 'minus) (minus (eval first a) (eval second a))) ((eq op 'mult) (mult (eval first a) (eval second a))) ((eq op 'exp) (exp (eval first a) (eval second a) (eval third a))) ((eq op 'after) (after (eval first a) (eval second a))) ((eq op 'concat) (concat (eval first a) (eval second a))) ((eq op 'hash) (hash (eval first a))) ((eq op 'newkey) (newkey)) ((eq op 'pub) (pub (eval first a))) ((eq op 'sign) (sign (eval first a) (eval second a))) ((eq op 'verify) (verify (eval first a) (eval second a) (eval third a))) ((eq op 'display) (display (eval first a))) ((eq op 'runes) (runes (eval (cadr e) a))) ((eq op 'err) (err (eval (cadr e) a))) ((eq op 'list) (evlis (cdr e) a)) ('t (eval (cons (assoc op a) (cdr e)) a)))) (car e) (cadr e) (caddr e) (cadddr e))) ((eq (caar e) 'macro) (eval (display (eval (cadddar e) (pair (caddar e) (cdr e)))) a)) ((eq (caar e) 'label) (eval (cons (caddar e) (cdr e)) (cons (list (cadar e) (car e)) a))) ((eq (caar e) 'lambda) (cond ((atom (cadar e)) (eval (caddar e) (cons (list (cadar e) (evlis (cdr e) a)) a))) ('t (eval (caddar e) (append_go_sanitized (pair (cadar e) (evlis (cdr e) a)) a))))))))")
+var eval_label = parse_env("(label eval (lambda (e a) (cond ((atom e) (assoc e a)) ((atom (car e)) ((lambda (op first second third) (cond ((eq op 'test1) (test1 (eval first a))) ((eq op 'test2) (test2 (eval first a))) ((eq op 'quote) (cadr e)) ((eq op 'atom) (atom (eval first a))) ((eq op 'eq) (eq (eval first a) (eval second a))) ((eq op 'car) (car (eval first a))) ((eq op 'cdr) (cdr (eval first a))) ((eq op 'cons) (cons (eval first a) (eval second a))) ((eq op 'cond) (evcon (cdr e) a)) ((eq op 'plus) (plus (eval first a) (eval second a))) ((eq op 'inc) (plus (eval first a) '1)) ((eq op 'minus) (minus (eval first a) (eval second a))) ((eq op 'mult) (mult (eval first a) (eval second a))) ((eq op 'exp) (exp (eval first a) (eval second a) (eval third a))) ((eq op 'after) (after (eval first a) (eval second a))) ((eq op 'concat) (concat (eval first a) (eval second a))) ((eq op 'hash) (hash (eval first a))) ((eq op 'newkey) (newkey)) ((eq op 'pub) (pub (eval first a))) ((eq op 'sign) (sign (eval first a) (eval second a))) ((eq op 'verify) (verify (eval first a) (eval second a) (eval third a))) ((eq op 'display) (display (eval first a))) ((eq op 'runes) (runes (eval (cadr e) a))) ((eq op 'err) (err (eval (cadr e) a))) ((eq op 'list) (evlis (cdr e) a)) ('t (eval (cons (assoc op a) (cdr e)) a)))) (car e) (cadr e) (caddr e) (cadddr e))) ((eq (caar e) 'macro) (eval (eval (cadddar e) (pair (caddar e) (cdr e))) a)) ((eq (caar e) 'label) (eval (cons (caddar e) (cdr e)) (cons (list (cadar e) (car e)) a))) ((eq (caar e) 'lambda) (cond ((atom (cadar e)) (eval (caddar e) (cons (list (cadar e) (evlis (cdr e) a)) a))) ('t (eval (caddar e) (append_go_sanitized (pair (cadar e) (evlis (cdr e) a)) a))))))))")
 
 func eval(args ...Exp) Exp {
 	e := args[0]
@@ -365,7 +365,7 @@ func eval(args ...Exp) Exp {
 				return A(eq, A(caar, e), "macro")
 			}),
 			Func(func(...Exp) Exp {
-				return A(eval, A(display, A(eval, A(cadddar, e), A(pair, A(caddar, e), A(cdr, e)))), a)
+				return A(eval, A(eval, A(cadddar, e), A(pair, A(caddar, e), A(cdr, e))), a)
 			}),
 		),
 		L(
@@ -546,6 +546,12 @@ func pair(args ...Exp) Exp {
 		),
 	)
 }
+
+//
+// s (interpreted)
+//
+
+var s_label = parse_env("(label s (lambda (f x) (f f x)))")
 
 //
 // subst (interpreted)
@@ -830,6 +836,7 @@ func init() {
 		L("not", not_label),
 		L("null", null_label),
 		L("pair", pair_label),
+		L("s", s_label),
 		L("subst", subst_label),
 		L("tassoc", tassoc_label),
 		L("test1", test1_label),

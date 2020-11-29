@@ -62,7 +62,7 @@
    
    ;; initial macro concept, note the two evals:
    ((eq (caar e) 'macro)
-    (eval (display (eval (cadddar e) (pair (caddar e) (cdr e)))) a))
+    (eval (eval (cadddar e) (pair (caddar e) (cdr e))) a))
    
    ((eq (caar e) 'label)
     (eval (cons (caddar e) (cdr e))
