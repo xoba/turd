@@ -246,21 +246,21 @@ func Run(c cnfg.Config) error {
 		test("printf", "(printf 'a)", "()")
 	}
 
-	test("arith", "(plus '1 '2)", "3")
-	test("arith", "(plus '1 '-2)", "-1")
+	test("arith", "(add '1 '2)", "3")
+	test("arith", "(add '1 '-2)", "-1")
 	test("arith", "(inc '4)", "5")
 	test("arith", "(inc '5)", "6")
-	test("arith", "(minus '1 '2)", "-1")
-	test("arith", "(minus '1 '-2)", "3")
-	test("arith", "(mult '4 '5)", "20")
-	test("arith", "(mult '4 '-2)", "-8")
-	test("arith", "(mult '234862342873462784637846 '104380123947329857341285)",
+	test("arith", "(sub '1 '2)", "-1")
+	test("arith", "(sub '1 '-2)", "3")
+	test("arith", "(mul '4 '5)", "20")
+	test("arith", "(mul '4 '-2)", "-8")
+	test("arith", "(mul '234862342873462784637846 '104380123947329857341285)",
 		"24514960459692328665578339488420194423149272110",
 	)
 	test("arith", "(exp '2 '4 '1000)", "16")
 	test("arith", "(exp '2 '4 '10)", "6")
-	test("arith", "(eq '0 (minus '5 '5))", "t")
-	test("arith", "(eq '1 (minus '5 '5))", "()")
+	test("arith", "(eq '0 (sub '5 '5))", "t")
+	test("arith", "(eq '1 (sub '5 '5))", "()")
 
 	test("factorial", "(factorial '0)", "1")
 	test("factorial", "(factorial '1)", "1")
@@ -300,7 +300,7 @@ func Run(c cnfg.Config) error {
 
 	test("lambda", `
 ((lambda (x y)
-   ((lambda (z) (plus z x)) y))
+   ((lambda (z) (add z x)) y))
  '3 '4)
 `, "7")
 
@@ -395,7 +395,7 @@ func Run(c cnfg.Config) error {
 	test("macro", `
 ((macro test (x y z)
 	(list (car x) (car y) (car z)))
- (mult 1 2 3) ('5 a b c) ('6 x))
+ (mul 1 2 3) ('5 a b c) ('6 x))
 `,
 		"30")
 

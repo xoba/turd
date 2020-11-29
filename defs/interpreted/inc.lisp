@@ -1,2 +1,2 @@
 (defun inc (x)
-  (plus '1 x))
+  (add '1 x))

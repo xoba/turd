@@ -249,19 +249,19 @@ func exp(args ...Exp) Exp {
 	})
 }
 
-func mult(args ...Exp) Exp {
+func mul(args ...Exp) Exp {
 	return compute(args, func(args ...*big.Int) *big.Int {
 		return big.NewInt(0).Mul(args[0], args[1])
 	})
 }
 
-func plus(args ...Exp) Exp {
+func add(args ...Exp) Exp {
 	return compute(args, func(args ...*big.Int) *big.Int {
 		return big.NewInt(0).Add(args[0], args[1])
 	})
 }
 
-func minus(args ...Exp) Exp {
+func sub(args ...Exp) Exp {
 	return compute(args, func(args ...*big.Int) *big.Int {
 		return big.NewInt(0).Sub(args[0], args[1])
 	})

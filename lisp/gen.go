@@ -320,7 +320,7 @@ func cdddar(args ...Exp) Exp {
 // eval (compiled)
 //
 
-var eval_label = parse_env("(label eval (lambda (e a) (cond ((atom e) (assoc e a)) ((atom (car e)) ((lambda (op first second third) (cond ((eq op 'test1) (test1 (eval first a))) ((eq op 'test2) (test2 (eval first a))) ((eq op 'quote) (cadr e)) ((eq op 'atom) (atom (eval first a))) ((eq op 'eq) (eq (eval first a) (eval second a))) ((eq op 'car) (car (eval first a))) ((eq op 'cdr) (cdr (eval first a))) ((eq op 'cons) (cons (eval first a) (eval second a))) ((eq op 'cond) (evcon (cdr e) a)) ((eq op 'plus) (plus (eval first a) (eval second a))) ((eq op 'inc) (plus (eval first a) '1)) ((eq op 'minus) (minus (eval first a) (eval second a))) ((eq op 'mult) (mult (eval first a) (eval second a))) ((eq op 'exp) (exp (eval first a) (eval second a) (eval third a))) ((eq op 'after) (after (eval first a) (eval second a))) ((eq op 'concat) (concat (eval first a) (eval second a))) ((eq op 'hash) (hash (eval first a))) ((eq op 'newkey) (newkey)) ((eq op 'pub) (pub (eval first a))) ((eq op 'sign) (sign (eval first a) (eval second a))) ((eq op 'verify) (verify (eval first a) (eval second a) (eval third a))) ((eq op 'display) (display (eval first a))) ((eq op 'runes) (runes (eval (cadr e) a))) ((eq op 'err) (err (eval (cadr e) a))) ((eq op 'list) (evlis (cdr e) a)) ('t (eval (cons (assoc op a) (cdr e)) a)))) (car e) (cadr e) (caddr e) (cadddr e))) ((eq (caar e) 'macro) (eval (eval (cadddar e) (pair (caddar e) (cdr e))) a)) ((eq (caar e) 'label) (eval (cons (caddar e) (cdr e)) (cons (list (cadar e) (car e)) a))) ((eq (caar e) 'lambda) (cond ((atom (cadar e)) (eval (caddar e) (cons (list (cadar e) (evlis (cdr e) a)) a))) ('t (eval (caddar e) (append_go_sanitized (pair (cadar e) (evlis (cdr e) a)) a))))))))")
+var eval_label = parse_env("(label eval (lambda (e a) (cond ((atom e) (assoc e a)) ((atom (car e)) ((lambda (op first second third) (cond ((eq op 'test1) (test1 (eval first a))) ((eq op 'test2) (test2 (eval first a))) ((eq op 'quote) (cadr e)) ((eq op 'atom) (atom (eval first a))) ((eq op 'eq) (eq (eval first a) (eval second a))) ((eq op 'car) (car (eval first a))) ((eq op 'cdr) (cdr (eval first a))) ((eq op 'cons) (cons (eval first a) (eval second a))) ((eq op 'cond) (evcon (cdr e) a)) ((eq op 'add) (add (eval first a) (eval second a))) ((eq op 'inc) (plus (eval first a) '1)) ((eq op 'sub) (sub (eval first a) (eval second a))) ((eq op 'mul) (mul (eval first a) (eval second a))) ((eq op 'exp) (exp (eval first a) (eval second a) (eval third a))) ((eq op 'after) (after (eval first a) (eval second a))) ((eq op 'concat) (concat (eval first a) (eval second a))) ((eq op 'hash) (hash (eval first a))) ((eq op 'newkey) (newkey)) ((eq op 'pub) (pub (eval first a))) ((eq op 'sign) (sign (eval first a) (eval second a))) ((eq op 'verify) (verify (eval first a) (eval second a) (eval third a))) ((eq op 'display) (display (eval first a))) ((eq op 'runes) (runes (eval (cadr e) a))) ((eq op 'err) (err (eval (cadr e) a))) ((eq op 'list) (evlis (cdr e) a)) ('t (eval (cons (assoc op a) (cdr e)) a)))) (car e) (cadr e) (caddr e) (cadddr e))) ((eq (caar e) 'macro) (eval (eval (cadddar e) (pair (caddar e) (cdr e))) a)) ((eq (caar e) 'label) (eval (cons (caddar e) (cdr e)) (cons (list (cadar e) (car e)) a))) ((eq (caar e) 'lambda) (cond ((atom (cadar e)) (eval (caddar e) (cons (list (cadar e) (evlis (cdr e) a)) a))) ('t (eval (caddar e) (append_go_sanitized (pair (cadar e) (evlis (cdr e) a)) a))))))))")
 
 func eval(args ...Exp) Exp {
 	e := args[0]
@@ -457,13 +457,13 @@ func evlis(args ...Exp) Exp {
 // factorial (interpreted)
 //
 
-var factorial_label = parse_env("(label factorial (lambda (n) (cond ((eq '0 n) '1) ('t (mult n (factorial (minus n '1)))))))")
+var factorial_label = parse_env("(label factorial (lambda (n) (cond ((eq '0 n) '1) ('t (mul n (factorial (sub n '1)))))))")
 
 //
 // inc (interpreted)
 //
 
-var inc_label = parse_env("(label inc (lambda (x) (plus '1 x)))")
+var inc_label = parse_env("(label inc (lambda (x) (add '1 x)))")
 
 //
 // lambdatest (interpreted)
@@ -475,7 +475,7 @@ var lambdatest_label = parse_env("(label lambdatest (lambda (x) (list (car x) (c
 // length (interpreted)
 //
 
-var length_label = parse_env("(label length (lambda (x) (cond ((atom x) '0) ('t (plus '1 (length (cdr x)))))))")
+var length_label = parse_env("(label length (lambda (x) (cond ((atom x) '0) ('t (add '1 (length (cdr x)))))))")
 
 //
 // next (interpreted)
@@ -609,7 +609,7 @@ func test2(args ...Exp) Exp {
 // test3 (compiled)
 //
 
-var test3_label = parse_env("(label test3 (lambda (x) ((label fx (lambda (first rest) (cond ((eq first '0) (list first rest)) ('t (fx (minus first '1) rest))))) (car x) (cdr x))))")
+var test3_label = parse_env("(label test3 (lambda (x) ((label fx (lambda (first rest) (cond ((eq first '0) (list first rest)) ('t (fx (sub first '1) rest))))) (car x) (cdr x))))")
 
 func test3(args ...Exp) Exp {
 	x := args[0]
@@ -622,7 +622,7 @@ func test3(args ...Exp) Exp {
 				if f, ok := map_27[String(first)]; ok {
 					return f(x, first, rest)
 				}
-				return A(fx, A(minus, first, "1"), rest)
+				return A(fx, A(sub, first, "1"), rest)
 			}()
 
 		}
@@ -635,7 +635,7 @@ func test3(args ...Exp) Exp {
 // test4 (interpreted)
 //
 
-var test4_label = parse_env("(label test4 (lambda (x) ((label f (lambda (first rest) (cond ((eq first '0) (list first rest)) ('t (f (minus first '1) rest))))) (car x) (cdr x))))")
+var test4_label = parse_env("(label test4 (lambda (x) ((label f (lambda (first rest) (cond ((eq first '0) (list first rest)) ('t (f (sub first '1) rest))))) (car x) (cdr x))))")
 
 //
 // try (interpreted)
@@ -659,6 +659,10 @@ var y_label = parse_env("(label y (lambda (f) ((lambda (x) (f (x x))) (lambda (x
 
 func F_0_60a3caf220a5e9e8d986965c79b20f11(x, first, rest Exp) Exp {
 	return A(list, first, rest)
+}
+
+func F_add_cb8e93847499008be09106dc15141a43(e, a, op, first, second, third Exp) Exp {
+	return A(add, A(eval, first, a), A(eval, second, a))
 }
 
 func F_after_515cbbd8f947c37b7d1dc2951e924a4d(e, a, op, first, second, third Exp) Exp {
@@ -717,20 +721,12 @@ func F_list_69bc1c031779ce3278497999af69288e(e, a, op, first, second, third Exp)
 	return A(evlis, A(cdr, e), a)
 }
 
-func F_minus_354cdf993884320912b9b8ab41de16b3(e, a, op, first, second, third Exp) Exp {
-	return A(minus, A(eval, first, a), A(eval, second, a))
-}
-
-func F_mult_ea1e11a9012b0dfa54c5423616a4f0c4(e, a, op, first, second, third Exp) Exp {
-	return A(mult, A(eval, first, a), A(eval, second, a))
+func F_mul_71b5055f1965765adf59dc035730df6b(e, a, op, first, second, third Exp) Exp {
+	return A(mul, A(eval, first, a), A(eval, second, a))
 }
 
 func F_newkey_eb320fe7889a92ac8dbdacd07152a23e(e, a, op, first, second, third Exp) Exp {
 	return A(newkey)
-}
-
-func F_plus_c4ef2e3805a01fa6bc94b68f29bc7208(e, a, op, first, second, third Exp) Exp {
-	return A(plus, A(eval, first, a), A(eval, second, a))
 }
 
 func F_pub_48401e110dae546272407c5eff0a4a24(e, a, op, first, second, third Exp) Exp {
@@ -747,6 +743,10 @@ func F_runes_9497265e8a0baaf9c7e9ac783fd5c02b(e, a, op, first, second, third Exp
 
 func F_sign_5a1e6f12da842fac062579e3ff554e4b(e, a, op, first, second, third Exp) Exp {
 	return A(sign, A(eval, first, a), A(eval, second, a))
+}
+
+func F_sub_c810a170d3009592f391f345d73c221a(e, a, op, first, second, third Exp) Exp {
+	return A(sub, A(eval, first, a), A(eval, second, a))
 }
 
 func F_test1_1bdc61bba4f3c7d50dc11a03e1c223bb(e, a, op, first, second, third Exp) Exp {
@@ -774,10 +774,10 @@ func init() {
 		"cdr":     F_cdr_07b8b4fee0b4a65b5f5e3e5580aaa311,
 		"cons":    F_cons_e5efa02a9e5b367e867a09002212f851,
 		"cond":    F_cond_7b60153e8c9796298806c07f80f3c12e,
-		"plus":    F_plus_c4ef2e3805a01fa6bc94b68f29bc7208,
+		"add":     F_add_cb8e93847499008be09106dc15141a43,
 		"inc":     F_inc_c7587605642eb29d0d026da3b2833f89,
-		"minus":   F_minus_354cdf993884320912b9b8ab41de16b3,
-		"mult":    F_mult_ea1e11a9012b0dfa54c5423616a4f0c4,
+		"sub":     F_sub_c810a170d3009592f391f345d73c221a,
+		"mul":     F_mul_71b5055f1965765adf59dc035730df6b,
 		"exp":     F_exp_af5bcba2f722aebdc27bbc820ffab22f,
 		"after":   F_after_515cbbd8f947c37b7d1dc2951e924a4d,
 		"concat":  F_concat_51c24458711a1d6106cab433642d0c9c,
