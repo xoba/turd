@@ -21,7 +21,7 @@
 
 	((eq op 'add)     (add     (eval first a)
 				   (eval second a)))
-	((eq op 'inc)     (plus    (eval first a) '1))
+	((eq op 'inc)     (add     (eval first a) '1))
 	((eq op 'sub)     (sub     (eval first a)
 				   (eval second a)))
 	((eq op 'mul)     (mul     (eval first a)
