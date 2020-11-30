@@ -410,7 +410,7 @@ func eval(args ...Exp) Exp {
 								third := args[1]
 								return func() Exp {
 									if f, ok := map_5f43310a59[String(op)]; ok {
-										return f(e, a, op, first, rest, second, third)
+										return f(a, e, first, op, rest, second, third)
 									}
 									return A(eval, A(cons, A(assoc, op, a), A(cdr, e)), a)
 								}()
@@ -711,7 +711,7 @@ func test3(args ...Exp) Exp {
 			rest := args[1]
 			return func() Exp {
 				if f, ok := map_405e36fa33[String(first)]; ok {
-					return f(x, first, rest)
+					return f(first, rest, x)
 				}
 				return A(fx, A(sub, first, "1"), rest)
 			}()
@@ -748,142 +748,142 @@ var y_label = parse_env("(label y (lambda (f) ((lambda (x) (f (x x))) (lambda (x
 
 // cases:
 
-func F_0_94ffb94c37(x, first, rest Exp) Exp {
+func F_0_94ffb94c37(first, rest, x Exp) Exp {
 	return A(list, first, rest)
 }
 
-func F_add_c697c7bfbf(e, a, op, first, rest, second, third Exp) Exp {
+func F_add_c697c7bfbf(a, e, first, op, rest, second, third Exp) Exp {
 	return A(add, A(eval, first, a), A(eval, second, a))
 }
 
-func F_after_d1d1801dce(e, a, op, first, rest, second, third Exp) Exp {
+func F_after_d1d1801dce(a, e, first, op, rest, second, third Exp) Exp {
 	return A(after, A(eval, first, a), A(eval, second, a))
 }
 
-func F_atom_57e6d5c9b3(e, a, op, first, rest, second, third Exp) Exp {
+func F_atom_57e6d5c9b3(a, e, first, op, rest, second, third Exp) Exp {
 	return A(atom, A(eval, first, a))
 }
 
-func F_car_6e7ecda3ef(e, a, op, first, rest, second, third Exp) Exp {
+func F_car_6e7ecda3ef(a, e, first, op, rest, second, third Exp) Exp {
 	return A(car, A(eval, first, a))
 }
 
-func F_cdr_6772863567(e, a, op, first, rest, second, third Exp) Exp {
+func F_cdr_6772863567(a, e, first, op, rest, second, third Exp) Exp {
 	return A(cdr, A(eval, first, a))
 }
 
-func F_concat_832e46a008(e, a, op, first, rest, second, third Exp) Exp {
+func F_concat_832e46a008(a, e, first, op, rest, second, third Exp) Exp {
 	return A(concat, A(eval, first, a), A(eval, second, a))
 }
 
-func F_cond_26e96b4be1(e, a, op, first, rest, second, third Exp) Exp {
+func F_cond_26e96b4be1(a, e, first, op, rest, second, third Exp) Exp {
 	return A(evcon, A(cdr, e), a)
 }
 
-func F_cons_d4b73be861(e, a, op, first, rest, second, third Exp) Exp {
+func F_cons_d4b73be861(a, e, first, op, rest, second, third Exp) Exp {
 	return A(cons, A(eval, first, a), A(eval, second, a))
 }
 
-func F_display_f82db8af96(e, a, op, first, rest, second, third Exp) Exp {
+func F_display_f82db8af96(a, e, first, op, rest, second, third Exp) Exp {
 	return A(display, A(eval, first, a))
 }
 
-func F_eq_9d693d8748(e, a, op, first, rest, second, third Exp) Exp {
+func F_eq_9d693d8748(a, e, first, op, rest, second, third Exp) Exp {
 	return A(eq, A(eval, first, a), A(eval, second, a))
 }
 
-func F_err_660a05fbfc(e, a, op, first, rest, second, third Exp) Exp {
+func F_err_660a05fbfc(a, e, first, op, rest, second, third Exp) Exp {
 	return A(err, A(eval, A(cadr, e), a))
 }
 
-func F_exp_0cf8749970(e, a, op, first, rest, second, third Exp) Exp {
+func F_exp_0cf8749970(a, e, first, op, rest, second, third Exp) Exp {
 	return A(exp, A(eval, first, a), A(eval, second, a), A(eval, third, a))
 }
 
-func F_funcall_38c9a26765(e, a, op, first, rest, second, third Exp) Exp {
+func F_funcall_38c9a26765(a, e, first, op, rest, second, third Exp) Exp {
 	return A(eval, A(cons, A(eval, first, a), rest), a)
 }
 
-func F_hash_890341d522(e, a, op, first, rest, second, third Exp) Exp {
+func F_hash_890341d522(a, e, first, op, rest, second, third Exp) Exp {
 	return A(hash, A(eval, first, a))
 }
 
-func F_inc_d3b89dc297(e, a, op, first, rest, second, third Exp) Exp {
+func F_inc_d3b89dc297(a, e, first, op, rest, second, third Exp) Exp {
 	return A(add, A(eval, first, a), "1")
 }
 
-func F_list_4d554d264a(e, a, op, first, rest, second, third Exp) Exp {
+func F_list_4d554d264a(a, e, first, op, rest, second, third Exp) Exp {
 	return A(evlis, A(cdr, e), a)
 }
 
-func F_mul_3841a9b191(e, a, op, first, rest, second, third Exp) Exp {
+func F_mul_3841a9b191(a, e, first, op, rest, second, third Exp) Exp {
 	return A(mul, A(eval, first, a), A(eval, second, a))
 }
 
-func F_newkey_623d29c094(e, a, op, first, rest, second, third Exp) Exp {
+func F_newkey_623d29c094(a, e, first, op, rest, second, third Exp) Exp {
 	return A(newkey)
 }
 
-func F_pub_fd1fdb63c7(e, a, op, first, rest, second, third Exp) Exp {
+func F_pub_fd1fdb63c7(a, e, first, op, rest, second, third Exp) Exp {
 	return A(pub, A(eval, first, a))
 }
 
-func F_quote_a7f3dfeaaf(e, a, op, first, rest, second, third Exp) Exp {
+func F_quote_a7f3dfeaaf(a, e, first, op, rest, second, third Exp) Exp {
 	return A(cadr, e)
 }
 
-func F_runes_941e743c8a(e, a, op, first, rest, second, third Exp) Exp {
+func F_runes_941e743c8a(a, e, first, op, rest, second, third Exp) Exp {
 	return A(runes, A(eval, A(cadr, e), a))
 }
 
-func F_sign_11c1de489d(e, a, op, first, rest, second, third Exp) Exp {
+func F_sign_11c1de489d(a, e, first, op, rest, second, third Exp) Exp {
 	return A(sign, A(eval, first, a), A(eval, second, a))
 }
 
-func F_sub_246a160bc3(e, a, op, first, rest, second, third Exp) Exp {
+func F_sub_246a160bc3(a, e, first, op, rest, second, third Exp) Exp {
 	return A(sub, A(eval, first, a), A(eval, second, a))
 }
 
-func F_test1_b2a90c1647(e, a, op, first, rest, second, third Exp) Exp {
+func F_test1_b2a90c1647(a, e, first, op, rest, second, third Exp) Exp {
 	return A(test1, A(eval, first, a))
 }
 
-func F_test2_97cace0d47(e, a, op, first, rest, second, third Exp) Exp {
+func F_test2_97cace0d47(a, e, first, op, rest, second, third Exp) Exp {
 	return A(test2, A(eval, first, a))
 }
 
-func F_test3_54e98f673d(e, a, op, first, rest, second, third Exp) Exp {
+func F_test3_54e98f673d(a, e, first, op, rest, second, third Exp) Exp {
 	return A(test3, A(eval, first, a))
 }
 
-func F_verify_5199556588(e, a, op, first, rest, second, third Exp) Exp {
+func F_verify_5199556588(a, e, first, op, rest, second, third Exp) Exp {
 	return A(verify, A(eval, first, a), A(eval, second, a), A(eval, third, a))
 }
 
-func F_ππ_7069b7d1ee(op, args Exp) Exp {
+func F_ππ_7069b7d1ee(args, op Exp) Exp {
 	return Nil
 }
 
-var map_283c6e3b83 = make(map[string]func(op, args Exp) Exp)
+var map_283c6e3b83 = make(map[string]func(args, op Exp) Exp)
 
 func init() {
-	map_283c6e3b83 = map[string]func(op, args Exp) Exp{
+	map_283c6e3b83 = map[string]func(args, op Exp) Exp{
 		"()": F_ππ_7069b7d1ee,
 	}
 }
 
-var map_405e36fa33 = make(map[string]func(x, first, rest Exp) Exp)
+var map_405e36fa33 = make(map[string]func(first, rest, x Exp) Exp)
 
 func init() {
-	map_405e36fa33 = map[string]func(x, first, rest Exp) Exp{
+	map_405e36fa33 = map[string]func(first, rest, x Exp) Exp{
 		"0": F_0_94ffb94c37,
 	}
 }
 
-var map_5f43310a59 = make(map[string]func(e, a, op, first, rest, second, third Exp) Exp)
+var map_5f43310a59 = make(map[string]func(a, e, first, op, rest, second, third Exp) Exp)
 
 func init() {
-	map_5f43310a59 = map[string]func(e, a, op, first, rest, second, third Exp) Exp{
+	map_5f43310a59 = map[string]func(a, e, first, op, rest, second, third Exp) Exp{
 		"funcall": F_funcall_38c9a26765,
 		"quote":   F_quote_a7f3dfeaaf,
 		"atom":    F_atom_57e6d5c9b3,

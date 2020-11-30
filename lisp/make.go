@@ -178,7 +178,7 @@ func DefunCode(c context, defun Exp) (string, []byte, error) {
 		fmt.Fprintf(w, "%s := args[%d];\n", v, i)
 		vars = append(vars, v)
 	}
-	code, err := Compile(c, body, true, vars)
+	code, err := Compile(c, body, true, dedup(vars))
 	if err != nil {
 		return name, nil, err
 	}
@@ -343,6 +343,7 @@ var %[1]s func(... Exp) Exp
 			fmt.Fprintf(w, "%s := args[%d]\n", a, i)
 			vars = append(vars, a)
 		}
+		vars = dedup(vars)
 		body, err := Compile(c, caddar(e), false, vars)
 		if err != nil {
 			return err
@@ -489,6 +490,18 @@ return %[3]s
 		return nil, fmt.Errorf("can't compile %T", e)
 	}
 	return w.Bytes(), nil
+}
+
+func dedup(vars []string) (out []string) {
+	m := make(map[string]bool)
+	for _, v := range vars {
+		m[v] = true
+	}
+	for k := range m {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return
 }
 
 func isMaplikeCond(e []Exp) (string, bool) {
