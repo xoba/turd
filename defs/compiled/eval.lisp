@@ -17,7 +17,12 @@
 	((eq op 'cons)    (cons    (eval first a)
 				   (eval second a)))
 	((eq op 'cond)    (evcon   (cdr e) a))
+	((eq op 'list)    (evlis   (cdr e) a))
 
+	;; time:
+	((eq op 'after)   (after   (eval first a)
+				   (eval second a)))
+	;; arithmetic
 	((eq op 'add)     (add     (eval first a)
 				   (eval second a)))
 	((eq op 'inc)     (add     (eval first a) '1))
@@ -28,9 +33,6 @@
 	((eq op 'exp)     (exp     (eval first  a)
 				   (eval second  a)
 				   (eval third a)))
-	;; time:
-	((eq op 'after)   (after   (eval first a)
-				   (eval second a)))
 	;; crypto:
 	((eq op 'concat)  (concat  (eval first a)
 				   (eval second a)))
@@ -42,12 +44,11 @@
 	((eq op 'verify)  (verify  (eval first  a)
 				   (eval second  a)
 				   (eval third a)))
-	;; debug:
+	;; debuggin:
 	((eq op 'display) (display (eval first a)))
 	((eq op 'runes)   (runes (eval (cadr e) a)))
 	((eq op 'err)     (err (eval (cadr e) a)))
-	
-	((eq op 'list)    (evlis   (cdr e) a))
+		
 	((eq op 'test1)   (test1   (eval first a)))
 	((eq op 'test2)   (test2   (eval first a)))
 	((eq op 'test3)   (test3   (eval first a)))
