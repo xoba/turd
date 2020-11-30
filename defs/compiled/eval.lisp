@@ -5,14 +5,11 @@
     ((lambda (op first rest) 
        ((lambda (second third)
 	  (cond
+	   
 	   ((eq op 'funcall) (eval (cons
 				    (eval first a) ;; the function
 				    rest)      ;; the args
-				   a))
-
-	   ;;((eq op 'mapcar) (mapcar (eval first a)
-	;;			    (eval second a)))
-	   
+				   a))	   
 	   ;; axioms:
 	   ((eq op 'quote)   (cadr e))
 	   ((eq op 'atom)    (atom    (eval first  a)))
