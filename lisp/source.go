@@ -185,6 +185,7 @@ func Run(c cnfg.Config) error {
 	test("cond", "(cond ((eq 'a 'a) 'first) ((atom 'a) 'second))", "first")
 
 	test("lambda", "((lambda (x) (cons x '(b))) 'a)", "(a b)")
+	test("lambda", "((λ (x) (cons x '(b))) 'a)", "(a b)")
 
 	test("label", `(
  (label subst 
@@ -444,6 +445,14 @@ func Run(c cnfg.Config) error {
 	test("mapcar", "(mapcar 'car '((1 2 3)))", "(1)")
 	test("mapcar", "(mapcar 'car '((1 2 3) (4 5 6) (7 8 9)))", "(1 4 7)")
 	test("mapcar", "(mapcar 'not '(t () t () t ()))", "(() t () t () t)")
+
+	{
+		e := func(s string) string {
+			return fmt.Sprintf("(%s (x y z) (list x y z))", s)
+		}
+		e3 := "(cons 'lambda (cons (cadar '(" + e("λ") + ")) (cddar '(" + e("λ") + "))))"
+		test("λ", e3, e("lambda"))
+	}
 
 	// file("ytest.lisp", "")
 

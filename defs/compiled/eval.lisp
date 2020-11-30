@@ -74,7 +74,9 @@
     (eval (cons (caddar e) (cdr e))
 	  (cons (list (cadar e) (car e)) a)))
    
-   ((eq (caar e) 'lambda)
+   ((or
+     (eq (caar e) 'lambda)
+     (eq (caar e) 'λ))
     (cond
      ((atom (cadar e)) ; lexpr
       (eval (caddar e)

@@ -314,6 +314,26 @@ func cadr(args ...Exp) Exp {
 var cdar_label = parse_env("(label cdar (lambda (x) (cdr (car x))))")
 
 //
+// cddar (compiled)
+//
+
+var cddar_label = parse_env("(label cddar (lambda (x) (cdr (cdr (car x)))))")
+
+func cddar(args ...Exp) Exp {
+	x := args[0]
+	return A(
+		cdr,
+		A(
+			cdr,
+			A(
+				car,
+				x,
+			),
+		),
+	)
+}
+
+//
 // cdddar (compiled)
 //
 
@@ -357,7 +377,7 @@ func cddr(args ...Exp) Exp {
 // eval (compiled)
 //
 
-var eval_label = parse_env("(label eval (lambda (e a) (cond ((atom e) (assoc e a)) ((atom (car e)) ((lambda (op first rest) ((lambda (second third) (cond ((eq op 'funcall) (eval (cons (eval first a) rest) a)) ((eq op 'quote) (cadr e)) ((eq op 'atom) (atom (eval first a))) ((eq op 'eq) (eq (eval first a) (eval second a))) ((eq op 'car) (car (eval first a))) ((eq op 'cdr) (cdr (eval first a))) ((eq op 'cons) (cons (eval first a) (eval second a))) ((eq op 'cond) (evcon (cdr e) a)) ((eq op 'list) (evlis (cdr e) a)) ((eq op 'after) (after (eval first a) (eval second a))) ((eq op 'add) (add (eval first a) (eval second a))) ((eq op 'inc) (add (eval first a) '1)) ((eq op 'sub) (sub (eval first a) (eval second a))) ((eq op 'mul) (mul (eval first a) (eval second a))) ((eq op 'exp) (exp (eval first a) (eval second a) (eval third a))) ((eq op 'concat) (concat (eval first a) (eval second a))) ((eq op 'hash) (hash (eval first a))) ((eq op 'newkey) (newkey)) ((eq op 'pub) (pub (eval first a))) ((eq op 'sign) (sign (eval first a) (eval second a))) ((eq op 'verify) (verify (eval first a) (eval second a) (eval third a))) ((eq op 'display) (display (eval first a))) ((eq op 'runes) (runes (eval (cadr e) a))) ((eq op 'err) (err (eval (cadr e) a))) ((eq op 'test1) (test1 (eval first a))) ((eq op 'test2) (test2 (eval first a))) ((eq op 'test3) (test3 (eval first a))) ('t (eval (cons (assoc op a) (cdr e)) a)))) (car rest) (cadr rest))) (car e) (cadr e) (cddr e))) ((eq (caar e) 'macro) (eval (eval (cadddar e) (pair (caddar e) (cdr e))) a)) ((eq (caar e) 'label) (eval (cons (caddar e) (cdr e)) (cons (list (cadar e) (car e)) a))) ((eq (caar e) 'lambda) (cond ((atom (cadar e)) (eval (caddar e) (cons (list (cadar e) (evlis (cdr e) a)) a))) ('t (eval (caddar e) (append_go_sanitized (pair (cadar e) (evlis (cdr e) a)) a))))))))")
+var eval_label = parse_env("(label eval (lambda (e a) (cond ((atom e) (assoc e a)) ((atom (car e)) ((lambda (op first rest) ((lambda (second third) (cond ((eq op 'funcall) (eval (cons (eval first a) rest) a)) ((eq op 'quote) (cadr e)) ((eq op 'atom) (atom (eval first a))) ((eq op 'eq) (eq (eval first a) (eval second a))) ((eq op 'car) (car (eval first a))) ((eq op 'cdr) (cdr (eval first a))) ((eq op 'cons) (cons (eval first a) (eval second a))) ((eq op 'cond) (evcon (cdr e) a)) ((eq op 'list) (evlis (cdr e) a)) ((eq op 'after) (after (eval first a) (eval second a))) ((eq op 'add) (add (eval first a) (eval second a))) ((eq op 'inc) (add (eval first a) '1)) ((eq op 'sub) (sub (eval first a) (eval second a))) ((eq op 'mul) (mul (eval first a) (eval second a))) ((eq op 'exp) (exp (eval first a) (eval second a) (eval third a))) ((eq op 'concat) (concat (eval first a) (eval second a))) ((eq op 'hash) (hash (eval first a))) ((eq op 'newkey) (newkey)) ((eq op 'pub) (pub (eval first a))) ((eq op 'sign) (sign (eval first a) (eval second a))) ((eq op 'verify) (verify (eval first a) (eval second a) (eval third a))) ((eq op 'display) (display (eval first a))) ((eq op 'runes) (runes (eval (cadr e) a))) ((eq op 'err) (err (eval (cadr e) a))) ((eq op 'test1) (test1 (eval first a))) ((eq op 'test2) (test2 (eval first a))) ((eq op 'test3) (test3 (eval first a))) ('t (eval (cons (assoc op a) (cdr e)) a)))) (car rest) (cadr rest))) (car e) (cadr e) (cddr e))) ((eq (caar e) 'macro) (eval (eval (cadddar e) (pair (caddar e) (cdr e))) a)) ((eq (caar e) 'label) (eval (cons (caddar e) (cdr e)) (cons (list (cadar e) (car e)) a))) ((or (eq (caar e) 'lambda) (eq (caar e) 'λ)) (cond ((atom (cadar e)) (eval (caddar e) (cons (list (cadar e) (evlis (cdr e) a)) a))) ('t (eval (caddar e) (append_go_sanitized (pair (cadar e) (evlis (cdr e) a)) a))))))))")
 
 func eval(args ...Exp) Exp {
 	e := args[0]
@@ -423,7 +443,7 @@ func eval(args ...Exp) Exp {
 		),
 		L(
 			Func(func(...Exp) Exp {
-				return A(eq, A(caar, e), "lambda")
+				return A(or, A(eq, A(caar, e), "lambda"), A(eq, A(caar, e), "λ"))
 			}),
 			Func(func(...Exp) Exp {
 				return A(cond, L(
@@ -561,6 +581,32 @@ func null(args ...Exp) Exp {
 		eq,
 		x,
 		Nil,
+	)
+}
+
+//
+// or (compiled)
+//
+
+var or_label = parse_env("(label or (lambda (x y) (cond (x 't) (y 't) ('t '()))))")
+
+func or(args ...Exp) Exp {
+	x := args[0]
+	y := args[1]
+	return A(
+		cond,
+		L(
+			x,
+			"t",
+		),
+		L(
+			y,
+			"t",
+		),
+		L(
+			"t",
+			Nil,
+		),
 	)
 }
 
@@ -884,6 +930,7 @@ func init() {
 		L("caddr", caddr_label),
 		L("cadr", cadr_label),
 		L("cdar", cdar_label),
+		L("cddar", cddar_label),
 		L("cdddar", cdddar_label),
 		L("cddr", cddr_label),
 		L("eval", eval_label),
@@ -896,6 +943,7 @@ func init() {
 		L("next", next_label),
 		L("not", not_label),
 		L("null", null_label),
+		L("or", or_label),
 		L("pair", pair_label),
 		L("s", s_label),
 		L("subst", subst_label),
