@@ -430,8 +430,6 @@ func Run(c cnfg.Config) error {
  '(lambda (f x) (list f x)) '5)
 `, "")
 
-	test("fof", "(s '(lambda (x) x) '5)", "")
-
 	file("stest.lisp", "5040")
 
 	test("funcall", "(funcall 'cdr '(1 2 3))", "(2 3)")
@@ -453,6 +451,8 @@ func Run(c cnfg.Config) error {
 		e3 := "(cons 'lambda (cons (cadar '(" + e("λ") + ")) (cddar '(" + e("λ") + "))))"
 		test("λ", e3, e("lambda"))
 	}
+
+	//test("fof", "(s '(lambda (x) x) '5)", "")
 
 	// file("ytest.lisp", "")
 

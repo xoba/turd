@@ -37,6 +37,9 @@ vice-versa for de-scaling.
 
 should have a script language for transaction processing.
 
+trie is a stand-in for state of blockchain. thus, to check
+a block, miners must simply arrive at the same state hash.
+
 problems:
 
 how does depreciation work within lattice joins? for off-chain
