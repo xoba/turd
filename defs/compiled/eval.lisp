@@ -2,8 +2,8 @@
   (cond
    ((atom e) (assoc e a))
    ((atom (car e))
-    ((lambda (op first rest) 
-       ((lambda (second third)
+    ((λ (op first rest) 
+       ((λ (second third)
 	  (cond
 	   
 	   ((eq op 'funcall) (eval (cons

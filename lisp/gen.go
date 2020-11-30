@@ -377,7 +377,7 @@ func cddr(args ...Exp) Exp {
 // eval (compiled)
 //
 
-var eval_label = parse_env("(label eval (lambda (e a) (cond ((atom e) (assoc e a)) ((atom (car e)) ((lambda (op first rest) ((lambda (second third) (cond ((eq op 'funcall) (eval (cons (eval first a) rest) a)) ((eq op 'quote) (cadr e)) ((eq op 'atom) (atom (eval first a))) ((eq op 'eq) (eq (eval first a) (eval second a))) ((eq op 'car) (car (eval first a))) ((eq op 'cdr) (cdr (eval first a))) ((eq op 'cons) (cons (eval first a) (eval second a))) ((eq op 'cond) (evcon (cdr e) a)) ((eq op 'list) (evlis (cdr e) a)) ((eq op 'after) (after (eval first a) (eval second a))) ((eq op 'add) (add (eval first a) (eval second a))) ((eq op 'inc) (add (eval first a) '1)) ((eq op 'sub) (sub (eval first a) (eval second a))) ((eq op 'mul) (mul (eval first a) (eval second a))) ((eq op 'exp) (exp (eval first a) (eval second a) (eval third a))) ((eq op 'concat) (concat (eval first a) (eval second a))) ((eq op 'hash) (hash (eval first a))) ((eq op 'newkey) (newkey)) ((eq op 'pub) (pub (eval first a))) ((eq op 'sign) (sign (eval first a) (eval second a))) ((eq op 'verify) (verify (eval first a) (eval second a) (eval third a))) ((eq op 'display) (display (eval first a))) ((eq op 'runes) (runes (eval (cadr e) a))) ((eq op 'err) (err (eval (cadr e) a))) ((eq op 'test1) (test1 (eval first a))) ((eq op 'test2) (test2 (eval first a))) ((eq op 'test3) (test3 (eval first a))) ('t (eval (cons (assoc op a) (cdr e)) a)))) (car rest) (cadr rest))) (car e) (cadr e) (cddr e))) ((eq (caar e) 'macro) (eval (eval (cadddar e) (pair (caddar e) (cdr e))) a)) ((eq (caar e) 'label) (eval (cons (caddar e) (cdr e)) (cons (list (cadar e) (car e)) a))) ((or (eq (caar e) 'lambda) (eq (caar e) 'λ)) (cond ((atom (cadar e)) (eval (caddar e) (cons (list (cadar e) (evlis (cdr e) a)) a))) ('t (eval (caddar e) (append_go_sanitized (pair (cadar e) (evlis (cdr e) a)) a))))))))")
+var eval_label = parse_env("(label eval (lambda (e a) (cond ((atom e) (assoc e a)) ((atom (car e)) ((λ (op first rest) ((λ (second third) (cond ((eq op 'funcall) (eval (cons (eval first a) rest) a)) ((eq op 'quote) (cadr e)) ((eq op 'atom) (atom (eval first a))) ((eq op 'eq) (eq (eval first a) (eval second a))) ((eq op 'car) (car (eval first a))) ((eq op 'cdr) (cdr (eval first a))) ((eq op 'cons) (cons (eval first a) (eval second a))) ((eq op 'cond) (evcon (cdr e) a)) ((eq op 'list) (evlis (cdr e) a)) ((eq op 'after) (after (eval first a) (eval second a))) ((eq op 'add) (add (eval first a) (eval second a))) ((eq op 'inc) (add (eval first a) '1)) ((eq op 'sub) (sub (eval first a) (eval second a))) ((eq op 'mul) (mul (eval first a) (eval second a))) ((eq op 'exp) (exp (eval first a) (eval second a) (eval third a))) ((eq op 'concat) (concat (eval first a) (eval second a))) ((eq op 'hash) (hash (eval first a))) ((eq op 'newkey) (newkey)) ((eq op 'pub) (pub (eval first a))) ((eq op 'sign) (sign (eval first a) (eval second a))) ((eq op 'verify) (verify (eval first a) (eval second a) (eval third a))) ((eq op 'display) (display (eval first a))) ((eq op 'runes) (runes (eval (cadr e) a))) ((eq op 'err) (err (eval (cadr e) a))) ((eq op 'test1) (test1 (eval first a))) ((eq op 'test2) (test2 (eval first a))) ((eq op 'test3) (test3 (eval first a))) ('t (eval (cons (assoc op a) (cdr e)) a)))) (car rest) (cadr rest))) (car e) (cadr e) (cddr e))) ((eq (caar e) 'macro) (eval (eval (cadddar e) (pair (caddar e) (cdr e))) a)) ((eq (caar e) 'label) (eval (cons (caddar e) (cdr e)) (cons (list (cadar e) (car e)) a))) ((or (eq (caar e) 'lambda) (eq (caar e) 'λ)) (cond ((atom (cadar e)) (eval (caddar e) (cons (list (cadar e) (evlis (cdr e) a)) a))) ('t (eval (caddar e) (append_go_sanitized (pair (cadar e) (evlis (cdr e) a)) a))))))))")
 
 func eval(args ...Exp) Exp {
 	e := args[0]
@@ -398,14 +398,14 @@ func eval(args ...Exp) Exp {
 			}),
 			Func(func(...Exp) Exp {
 				return func() Exp {
-					var lambda func(...Exp) Exp
-					lambda = func(args ...Exp) Exp {
+					var λ func(...Exp) Exp
+					λ = func(args ...Exp) Exp {
 						op := args[0]
 						first := args[1]
 						rest := args[2]
 						return func() Exp {
-							var lambda func(...Exp) Exp
-							lambda = func(args ...Exp) Exp {
+							var λ func(...Exp) Exp
+							λ = func(args ...Exp) Exp {
 								second := args[0]
 								third := args[1]
 								return func() Exp {
@@ -416,11 +416,11 @@ func eval(args ...Exp) Exp {
 								}()
 
 							}
-							return lambda(A(car, rest), A(cadr, rest))
+							return λ(A(car, rest), A(cadr, rest))
 						}()
 
 					}
-					return lambda(A(car, e), A(cadr, e), A(cddr, e))
+					return λ(A(car, e), A(cadr, e), A(cddr, e))
 				}()
 
 			}),
@@ -665,13 +665,13 @@ var test1_label = parse_env("(label test1 (lambda (x) ((lambda (first rest) (lis
 func test1(args ...Exp) Exp {
 	x := args[0]
 	return func() Exp {
-		var lambda func(...Exp) Exp
-		lambda = func(args ...Exp) Exp {
+		var λ func(...Exp) Exp
+		λ = func(args ...Exp) Exp {
 			first := args[0]
 			rest := args[1]
 			return A(list, first, rest)
 		}
-		return lambda(A(car, x), A(cdr, x))
+		return λ(A(car, x), A(cdr, x))
 	}()
 
 }
