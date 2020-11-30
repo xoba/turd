@@ -497,32 +497,6 @@ func evlis(args ...Exp) Exp {
 var factorial_label = parse_env("(label factorial (lambda (n) (cond ((eq '0 n) '1) ('t (mul n (factorial (sub n '1)))))))")
 
 //
-// lambdapattern (compiled)
-//
-
-var lambdapattern_label = parse_env("(label lambdapattern (lambda (first expressions) (cond ((atom expressions) first) ('t (list first (car expressions) (cdr expressions))))))")
-
-func lambdapattern(args ...Exp) Exp {
-	first := args[0]
-	expressions := args[1]
-	return A(
-		cond,
-		L(
-			Func(func(...Exp) Exp {
-				return A(atom, expressions)
-			}),
-			first,
-		),
-		L(
-			"t",
-			Func(func(...Exp) Exp {
-				return A(list, first, A(car, expressions), A(cdr, expressions))
-			}),
-		),
-	)
-}
-
-//
 // lambdatest (interpreted)
 //
 
@@ -898,7 +872,6 @@ func init() {
 		L("evcon", evcon_label),
 		L("evlis", evlis_label),
 		L("factorial", factorial_label),
-		L("lambdapattern", lambdapattern_label),
 		L("lambdatest", lambdatest_label),
 		L("length", length_label),
 		L("next", next_label),

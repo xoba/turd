@@ -441,8 +441,6 @@ func Run(c cnfg.Config) error {
 	file("ff.lisp", "(lambda (y) (cons '5 y))")
 	file("ff1.lisp", "(5 1 2 3)")
 
-	test("lp", "(cons '1 '(2 3 4))", "")
-
 	// file("ytest.lisp", "")
 
 	return nil

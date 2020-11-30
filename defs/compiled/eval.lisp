@@ -4,13 +4,11 @@
    ((atom (car e))
     ((lambda (op first second third)
        (cond
-
-	((eq op 'funcall) (eval
-			   (cons
-			    (eval (cadr e) a) ;; the function
-			    (cddr e))         ;; the args
-			   a))
 	
+	((eq op 'funcall) (eval (cons
+				 (eval (cadr e) a) ;; the function
+				 (cddr e))         ;; the args
+				a))
 	;; axioms:
 	((eq op 'quote)   (cadr e))
 	((eq op 'atom)    (atom    (eval first a)))
