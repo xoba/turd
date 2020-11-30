@@ -462,8 +462,8 @@ return %[3]s
 				emit(list)
 			}
 
-		case ExpToBool(eq(caar(e), "lambda")):
-			if err := lambda(e, "lambda"); err != nil {
+		case ExpToBool(eq(caar(e), λ)):
+			if err := lambda(e, λ); err != nil {
 				return nil, err
 			}
 
@@ -551,13 +551,15 @@ func LabelExpr(defun Exp) (Exp, error) {
 		q("label"),
 		name,
 		nl(
-			q("lambda"),
+			q(λ),
 			args,
 			body,
 		),
 	)
 	return e, nil
 }
+
+const λ = "lambda" //λ"
 
 func Gofmt(file string) error {
 	w := new(bytes.Buffer)
