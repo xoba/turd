@@ -431,7 +431,14 @@ func Run(c cnfg.Config) error {
 
 	test("fof", "(s '(lambda (x) x) '5)", "")
 
-	file("stest.lisp", "")
+	file("stest.lisp", "5040")
+
+	test("funcall", "(funcall 'cdr '(1 2 3))", "(2 3)")
+
+	file("ff.lisp", "(lambda (y) (cons '5 y))")
+	file("ff1.lisp", "(5 1 2 3)")
+
+	// file("ytest.lisp", "")
 
 	return nil
 

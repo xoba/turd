@@ -1,1 +1,2 @@
-(defun cadddar (x) (car (cdr (cdr (cdr (car x))))))
+(defun cadddar (x)
+  (car (cdr (cdr (cdr (car x))))))

@@ -1,0 +1,8 @@
+(((lambda (r)
+    ((lambda (f) (f f))
+     (lambda (f) (r (lambda (x) ((f f) x))))))
+  '(lambda (s)
+     (lambda (a)
+       (cond ((eq '0 'a) '1)
+	     ('t (mul a (a (sub a '1))))))))
+ '0)

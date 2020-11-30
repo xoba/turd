@@ -5,6 +5,16 @@
     ((lambda (op first second third)
        (cond
 
+	((eq op 'funcall)   (eval (funcall e a) a))
+
+;;	((eq op 'funcall) (display (list (caadr e)) (cddr e)))
+;;	((eq op 'funcall) (eval (display (cdr e)) a))
+;;	((eq op 'funcall) (display (list (cadr e))))
+;;	((eq op 'funcall) (eval (cadr e) a)) ;; the lambda
+;;	((eq op 'funcall) (caddr e)) ;; first arg
+;;	((eq op 'funcall) (append (list (cadr e)) (cddr e))) ;; lambda and args
+
+	
 	((eq op 'test1)   (test1   (eval first a)))
 	((eq op 'test2)   (test2   (eval first a)))
 	

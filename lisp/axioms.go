@@ -495,3 +495,19 @@ func cxr(args ...Exp) Exp {
 	}
 	return e
 }
+
+func funcall(args ...Exp) Exp {
+	e := args[0]
+	a := args[1]
+	lambda := cadr(e)
+	args2 := cddr(e)
+	var out []Exp
+	add := func(e Exp) {
+		out = append(out, e)
+	}
+	add(eval(lambda, a))
+	for _, e := range args2.([]Exp) {
+		add(e)
+	}
+	return out
+}
