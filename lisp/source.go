@@ -434,6 +434,8 @@ func Run(c cnfg.Config) error {
 	file("stest.lisp", "5040")
 
 	test("funcall", "(funcall 'cdr '(1 2 3))", "(2 3)")
+	test("funcall", "(funcall 'add '3 '4)", "7")
+	test("funcall", "(funcall 'mul '3 '4)", "12")
 
 	file("ff.lisp", "(lambda (y) (cons '5 y))")
 	file("ff1.lisp", "(5 1 2 3)")

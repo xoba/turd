@@ -44,7 +44,7 @@
 	((eq op 'verify)  (verify  (eval first  a)
 				   (eval second  a)
 				   (eval third a)))
-	;; debuggin:
+	;; debugging:
 	((eq op 'display) (display (eval first a)))
 	((eq op 'runes)   (runes (eval (cadr e) a)))
 	((eq op 'err)     (err (eval (cadr e) a)))
