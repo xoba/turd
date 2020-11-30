@@ -495,24 +495,3 @@ func cxr(args ...Exp) Exp {
 	}
 	return e
 }
-
-// TODO: should be able to implement this in eval.lisp instead;
-// the tough part is converting a list into a sequence of args:
-func funcall(args ...Exp) Exp {
-	e, a := two(args...)
-	var out []Exp
-	add := func(list ...Exp) {
-		for _, e := range list {
-			out = append(out, e)
-		}
-	}
-	lambda := cadr(e)
-	args2 := cddr(e)
-	add(eval(lambda, a))
-	if list, ok := args2.([]Exp); !ok {
-		return fmt.Errorf("funcall needs list")
-	} else {
-		add(list...)
-	}
-	return out
-}
