@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"unicode"
 
 	"github.com/xoba/turd/cnfg"
 	"github.com/xoba/turd/thash"
@@ -227,10 +228,22 @@ func smallHash(s string) string {
 }
 
 func funcName(p, s string) string {
-	if p == "" {
-		return fmt.Sprintf("F%s", smallHash(s))
+	clean := func(x string) string {
+		w := new(bytes.Buffer)
+		for _, r := range x {
+			switch {
+			case unicode.IsDigit(r), unicode.IsLetter(r):
+				w.WriteRune(r)
+			default:
+				w.WriteRune('π')
+			}
+		}
+		return w.String()
 	}
-	return fmt.Sprintf("F_%s_%s", p, smallHash(s))
+	if p == "" {
+		return fmt.Sprintf("F_%s", smallHash(s))
+	}
+	return fmt.Sprintf("F_%s_%s", clean(p), smallHash(s))
 }
 
 func CompileLazy(c context, e Exp, vars []string) ([]byte, error) {

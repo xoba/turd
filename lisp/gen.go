@@ -517,6 +517,12 @@ var lambdatest_label = parse_env("(label lambdatest (lambda (x) (list (car x) (c
 var length_label = parse_env("(label length (lambda (x) (cond ((atom x) '0) ('t (add '1 (length (cdr x)))))))")
 
 //
+// mapcar (interpreted)
+//
+
+var mapcar_label = parse_env("(label mapcar (lambda (op args) (cond ((eq args '()) ()) ('t (cons (funcall op (car args)) (mapcar op (cdr args)))))))")
+
+//
 // next (interpreted)
 //
 
@@ -808,6 +814,18 @@ func F_verify_5199556588(e, a, op, first, rest, second, third Exp) Exp {
 	return A(verify, A(eval, first, a), A(eval, second, a), A(eval, third, a))
 }
 
+func F_ππ_7069b7d1ee(op, args Exp) Exp {
+	return Nil
+}
+
+var map_283c6e3b83 = make(map[string]func(op, args Exp) Exp)
+
+func init() {
+	map_283c6e3b83 = map[string]func(op, args Exp) Exp{
+		"()": F_ππ_7069b7d1ee,
+	}
+}
+
 var map_405e36fa33 = make(map[string]func(x, first, rest Exp) Exp)
 
 func init() {
@@ -874,6 +892,7 @@ func init() {
 		L("factorial", factorial_label),
 		L("lambdatest", lambdatest_label),
 		L("length", length_label),
+		L("mapcar", mapcar_label),
 		L("next", next_label),
 		L("not", not_label),
 		L("null", null_label),

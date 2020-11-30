@@ -9,6 +9,10 @@
 				    (eval first a) ;; the function
 				    rest)      ;; the args
 				   a))
+
+	   ;;((eq op 'mapcar) (mapcar (eval first a)
+	;;			    (eval second a)))
+	   
 	   ;; axioms:
 	   ((eq op 'quote)   (cadr e))
 	   ((eq op 'atom)    (atom    (eval first  a)))

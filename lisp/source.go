@@ -441,6 +441,10 @@ func Run(c cnfg.Config) error {
 	file("ff.lisp", "(lambda (y) (cons '5 y))")
 	file("ff1.lisp", "(5 1 2 3)")
 
+	test("mapcar", "(mapcar 'car '((1 2 3)))", "(1)")
+	test("mapcar", "(mapcar 'car '((1 2 3) (4 5 6) (7 8 9)))", "(1 4 7)")
+	test("mapcar", "(mapcar 'not '(t () t () t ()))", "(() t () t () t)")
+
 	// file("ytest.lisp", "")
 
 	return nil
