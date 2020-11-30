@@ -496,6 +496,7 @@ func cxr(args ...Exp) Exp {
 	return e
 }
 
+// TODO: should be able to implement this in eval.lisp instead
 func funcall(args ...Exp) Exp {
 	e := args[0]
 	a := args[1]
