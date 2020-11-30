@@ -1,3 +1,4 @@
+;; testing compilation of lambda
 (defun test1 (x)
   ((lambda (first rest) 
      (list first rest))

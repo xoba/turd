@@ -1,3 +1,4 @@
+;; test compilation of recursive labels
 (defun test3 (x)
   ((label fx (lambda (first rest)
 	      (cond

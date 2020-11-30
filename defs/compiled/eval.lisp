@@ -6,10 +6,7 @@
        (cond
 
 	((eq op 'funcall) (eval (funcall e a) a))
-	
-	((eq op 'test1)   (test1   (eval first a)))
-	((eq op 'test2)   (test2   (eval first a)))
-	
+		
 	;; axioms:
 	((eq op 'quote)   (cadr e))
 	((eq op 'atom)    (atom    (eval first a)))
@@ -51,6 +48,9 @@
 	((eq op 'err)     (err (eval (cadr e) a)))
 	
 	((eq op 'list)    (evlis   (cdr e) a))
+	((eq op 'test1)   (test1   (eval first a)))
+	((eq op 'test2)   (test2   (eval first a)))
+	((eq op 'test3)   (test3   (eval first a)))
 
 	;; resolve an unknown op:
 	('t (eval (cons (assoc op a)

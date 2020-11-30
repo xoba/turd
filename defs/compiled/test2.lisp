@@ -1,3 +1,4 @@
+;; testing compilation of label
 (defun test2 (x)
   ((label f
 	  (lambda (first rest) 
