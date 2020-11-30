@@ -2,7 +2,7 @@ package lisp
 
 import (
 	"bytes"
-	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/xoba/turd/cnfg"
+	"github.com/xoba/turd/thash"
 )
 
 const (
@@ -220,13 +221,16 @@ func (c context) emit() string {
 	return w.String()
 }
 
+// non-negligible chance of collision, but maybe worth it for brevity:
+func smallHash(s string) string {
+	return hex.EncodeToString(thash.Hash([]byte(s)))[:10]
+}
+
 func funcName(p, s string) string {
-	h := md5.New()
-	h.Write([]byte(s))
 	if p == "" {
-		return fmt.Sprintf("F%x", h.Sum(nil))
+		return fmt.Sprintf("F%s", smallHash(s))
 	}
-	return fmt.Sprintf("F_%s_%x", p, h.Sum(nil))
+	return fmt.Sprintf("F_%s_%s", p, smallHash(s))
 }
 
 func CompileLazy(c context, e Exp, vars []string) ([]byte, error) {
@@ -394,16 +398,18 @@ return %[3]s
 				}
 
 				fmt.Fprintf(w, "func() Exp {\n")
-				mapname := fmt.Sprintf("map_%d", len(c.cases))
+				kv := new(bytes.Buffer)
+				for i, n := range names {
+					fmt.Fprintf(kv, "%q: %s,\n", n, funcs[i])
+				}
+				mapname := fmt.Sprintf("map_%s", smallHash(kv.String()))
 				{
 					g := new(bytes.Buffer)
 					// TODO: move map "m" to global and just reference it here, not re-create it
 					fmt.Fprintf(g, "var %s =make( map[string]func(%s Exp) Exp)\n", mapname, strings.Join(vars, ","))
 					fmt.Fprintf(g, "func init() {\n")
 					fmt.Fprintf(g, " %s = map[string]func(%s Exp) Exp {\n", mapname, strings.Join(vars, ","))
-					for i, n := range names {
-						fmt.Fprintf(g, "%q: %s,\n", n, funcs[i])
-					}
+					fmt.Fprint(g, kv)
 					fmt.Fprintf(g, "}}\n")
 					c.cases[mapname] = g.String()
 				}
