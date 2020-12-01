@@ -40,6 +40,7 @@
 	   ((eq op 'concat)  (concat  (eval first  a)
 				      (eval second a)))
 	   ((eq op 'hash)    (hash    (eval first  a)))
+	   ((eq op 'hashed)  (hashed  (eval first  a)))
 	   ((eq op 'newkey)  (newkey))
 	   ((eq op 'pub)     (pub     (eval first   a)))
 	   ((eq op 'sign)    (sign    (eval first   a)

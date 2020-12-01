@@ -279,7 +279,11 @@ func Run(c cnfg.Config) error {
 
 	test("crypto", "(eq (hash 'RSrYRpagDHgCuQ) 'ChUPiFeRkYRliIqlN8CB4Vfjce4/zHoEN9wBRKr2MKY)", "t")
 	test("crypto", "(eq (hash 'RSrYRpagDHgCuQ) '0000iFeRkYRliIqlN8CB4Vfjce4/zHoEN9wBRKr2MKY)", "()")
+
 	test("crypto", "(hash (newkey))", "")
+	test("crypto", "(hashed 'dGVzdGluZzEK)", "()")
+	test("crypto", "(hashed (concat 'dGVzdGluZzEK (hash 'dGVzdGluZzEK)))", "t")
+
 	test("crypto", `((lambda (priv content)
    (verify (pub priv) (hash content) (sign priv (hash content)))
     ) (newkey) 'c2RmZgo)
@@ -327,30 +331,6 @@ func Run(c cnfg.Config) error {
 	test("fof", `((lambda (f) (f '(b c))) '(lambda (x) (cons 'a x)))`, "(a b c)")
 	// a function operating on itself
 	test("fof", `((lambda (f) (f f)) '(lambda (x) (cons 'a x)))`, "(a lambda (x) (cons 'a x))")
-
-	if false {
-		test("iscxr", `(iscxr 'car)`, `()`) // car is axiom
-		test("iscxr", `(iscxr 'cdr)`, `()`) // cdr is axiom
-		test("iscxr", `(iscxr 'caar)`, `t`)
-		test("iscxr", `(iscxr 'cadr)`, `t`)
-		test("iscxr", `(iscxr 'cdar)`, `t`)
-		test("iscxr", `(iscxr 'cddr)`, `t`)
-		test("iscxr", `(iscxr 'caaar)`, `t`)
-		test("iscxr", `(iscxr 'caaaar)`, `t`)
-		test("iscxr", `(iscxr 'dfdf)`, `()`)
-		test("iscxr", `(iscxr '123)`, `()`)
-		test("iscxr", `(iscxr 'caxr)`, `()`)
-		test("iscxr", `(iscxr 'cxdr)`, `()`)
-		test("iscxr", `(iscxr 'cdxr)`, `()`)
-		test("iscxr", `(iscxr 'caxaar)`, `()`)
-		test("iscxr", `(iscxr 'a)`, `()`)
-		test("iscxr", `(iscxr 'd)`, `()`)
-		test("iscxr", `(iscxr 'c)`, `()`)
-		test("iscxr", `(iscxr 'r)`, `()`)
-		test("iscxr", `(iscxr 'ar)`, `()`)
-		test("iscxr", `(iscxr 'dr)`, `()`)
-		test("iscxr", `(iscxr 'cr)`, `()`)
-	}
 
 	test("runes", `(runes 'abc)`, "(a b c)")
 	test("runes", `(runes 'caddr)`, "(c a d d r)")

@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"math/big"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -267,18 +266,14 @@ func translateAtoms(e Exp, m map[string]string) Exp {
 			return x
 		}
 		return t
-	case *big.Int, []byte:
-		return t
 	case []Exp:
 		var out []Exp
 		for _, c := range t {
 			out = append(out, translateAtoms(c, m))
 		}
 		return out
-	case error:
-		return t
 	default:
-		return fmt.Errorf("can't translate %T %v", t, t)
+		return t
 	}
 	return e
 }

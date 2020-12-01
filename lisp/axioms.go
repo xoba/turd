@@ -12,7 +12,13 @@ import (
 	"github.com/xoba/turd/tnet"
 )
 
-// valid types: string, *big.Int, []byte, time.Time, []Exp, Func, or error
+// Blob is like []byte, but carries memory of being hashed (i.e., truested security)
+type Blob struct {
+	Content []byte
+	Hashed  bool // whether the content is related to output of a crypto hash function
+}
+
+// valid types: string, *big.Int, []byte, *Blob, time.Time, []Exp, Func, or error
 type Exp interface{}
 
 type Func func(...Exp) Exp
@@ -44,8 +50,10 @@ func String(e Exp) string {
 	switch t := e.(type) {
 	case string:
 		return t
-	case []byte:
+	case *Blob:
 		return marshal(t)
+	case []byte:
+		return marshal(&Blob{Content: t})
 	case *big.Int:
 		return t.String()
 	case time.Time:
@@ -267,15 +275,21 @@ func sub(args ...Exp) Exp {
 	})
 }
 
-func marshal(buf []byte) string {
-	return base64.RawStdEncoding.EncodeToString(buf)
+func marshal(buf *Blob) string {
+	return base64.RawStdEncoding.EncodeToString(buf.Content)
 }
 
-func unmarshal(e Exp) ([]byte, error) {
+func unmarshal(e Exp) (*Blob, error) {
 	switch t := e.(type) {
 	case string:
-		return base64.RawStdEncoding.DecodeString(t)
+		buf, err := base64.RawStdEncoding.DecodeString(t)
+		if err != nil {
+			return nil, err
+		}
+		return &Blob{Content: buf}, nil
 	case []byte:
+		return &Blob{Content: t}, nil
+	case *Blob:
 		return t, nil
 	default:
 		return nil, fmt.Errorf("can't unmarshal %T", t)
@@ -284,11 +298,21 @@ func unmarshal(e Exp) ([]byte, error) {
 
 // hashes content
 func hash(args ...Exp) Exp {
-	buf, err := unmarshal(one(args...))
+	blob, err := unmarshal(one(args...))
 	if err != nil {
 		return err
 	}
-	return thash.Hash(buf)
+	blob.Hashed = true
+	blob.Content = thash.Hash(blob.Content)
+	return blob
+}
+
+func hashed(args ...Exp) Exp {
+	blob, err := unmarshal(one(args...))
+	if err != nil {
+		return err
+	}
+	return BoolToExp(blob.Hashed)
 }
 
 // concats two blobs
@@ -302,10 +326,13 @@ func concat(args ...Exp) Exp {
 	if err != nil {
 		return err
 	}
-	var out []byte
-	out = append(out, xb...)
-	out = append(out, yb...)
-	return out
+	var out Blob
+	if xb.Hashed || yb.Hashed {
+		out.Hashed = true
+	}
+	out.Content = append(out.Content, xb.Content...)
+	out.Content = append(out.Content, yb.Content...)
+	return &out
 }
 
 // creates a new private key
@@ -318,7 +345,7 @@ func newkey(args ...Exp) Exp {
 	if err != nil {
 		return err
 	}
-	return buf
+	return &Blob{Content: buf}
 }
 
 // derives public from private key
@@ -329,14 +356,14 @@ func pub(args ...Exp) Exp {
 		return err
 	}
 	var private tnet.PrivateKey
-	if err := private.UnmarshalBinary(buf); err != nil {
+	if err := private.UnmarshalBinary(buf.Content); err != nil {
 		return err
 	}
 	public, err := private.Public().MarshalBinary()
 	if err != nil {
 		return err
 	}
-	return public
+	return &Blob{Content: public}
 }
 
 // sign blob with private key
@@ -349,7 +376,7 @@ func sign(args ...Exp) Exp {
 		if err != nil {
 			return err
 		}
-		if err := private.UnmarshalBinary(buf); err != nil {
+		if err := private.UnmarshalBinary(buf.Content); err != nil {
 			return err
 		}
 	}
@@ -357,11 +384,11 @@ func sign(args ...Exp) Exp {
 	if err != nil {
 		return err
 	}
-	sig, err := private.Sign(blob)
+	sig, err := private.Sign(blob.Content)
 	if err != nil {
 		return err
 	}
-	return sig
+	return &Blob{Content: sig}
 }
 
 // verify blob with public key and signature
@@ -374,7 +401,7 @@ func verify(args ...Exp) Exp {
 		if err != nil {
 			return err
 		}
-		if err := public.UnmarshalBinary(buf); err != nil {
+		if err := public.UnmarshalBinary(buf.Content); err != nil {
 			return err
 		}
 	}
@@ -386,7 +413,7 @@ func verify(args ...Exp) Exp {
 	if err != nil {
 		return err
 	}
-	if err := public.Verify(blob, sig); err != nil {
+	if err := public.Verify(blob.Content, sig.Content); err != nil {
 		return False
 	}
 	return True
@@ -442,56 +469,4 @@ func runes(args ...Exp) Exp {
 		out = append(out, string(r))
 	}
 	return out
-}
-
-// return true if it's car, cdr, cadr, cddr, ..., caaar, etc., else false
-func iscxr(args ...Exp) Exp {
-	x := args[0]
-	op, ok := x.(string)
-	if !ok {
-		return fmt.Errorf("not a string")
-	}
-	runes := []rune(op)
-	if len(runes) < 4 {
-		return False
-	}
-	if runes[0] != 'c' {
-		return False
-	}
-	if runes[len(runes)-1] != 'r' {
-		return False
-	}
-	for _, r := range runes[1 : len(runes)-1] {
-		switch r {
-		case 'a', 'd':
-		default:
-			return False
-		}
-	}
-	return True
-}
-
-func cxr(args ...Exp) Exp {
-	x, y := args[0], args[1]
-	op, ok := x.(string)
-	if !ok {
-		return fmt.Errorf("not a string")
-	}
-	runes := []rune(op)
-	n := len(runes)
-	if len(runes) < 3 || runes[0] != 'c' || runes[n-1] != 'r' {
-		return fmt.Errorf("not a cxr: %q", op)
-	}
-	e := y
-	for i := 0; i < n-2; i++ {
-		switch runes[n-i-2] {
-		case 'a':
-			e = car(e)
-		case 'd':
-			e = cdr(e)
-		default:
-			return fmt.Errorf("not a cxr: %q", op)
-		}
-	}
-	return e
 }

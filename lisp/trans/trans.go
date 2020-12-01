@@ -462,6 +462,9 @@ func Run(cnfg.Config) error {
 
 			// block hash to be chained through all inputs of all transactions
 			if err := timing("proc", func() error {
+				// TODO: output of each transaction is a "receipt"
+				// for data it updates in trie.
+				// also check that output of transaction is hashed!
 				for i, t := range trans {
 					if err := timing("trans", func() error {
 						if err := t.Validate(); err != nil {
@@ -484,6 +487,7 @@ func Run(cnfg.Config) error {
 							}); err != nil {
 								return err
 							}
+							var hashed bool
 							switch t := res.(type) {
 							case string:
 								buf, err := base64.RawStdEncoding.DecodeString(t)
@@ -493,8 +497,14 @@ func Run(cnfg.Config) error {
 								bhash = buf
 							case []byte:
 								bhash = t
+							case *lisp.Blob:
+								hashed = t.Hashed
+								bhash = t.Content
 							default:
 								return fmt.Errorf("%d. bad result: %s\n", i, lisp.String(res))
+							}
+							if !hashed {
+								return fmt.Errorf("transaction output not hashed: %s", lisp.String(res))
 							}
 							dec(input.Address(), input.Quantity)
 						}
