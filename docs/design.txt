@@ -40,6 +40,9 @@ should have a script language for transaction processing.
 trie is a stand-in for state of blockchain. thus, to check
 a block, miners must simply arrive at the same state hash.
 
+in trie, register a receipt from transaction output,
+to enforce processing
+
 problems:
 
 how does depreciation work within lattice joins? for off-chain
