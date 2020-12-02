@@ -1,6 +1,7 @@
 package trans
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -54,6 +55,7 @@ type Storage struct {
 	db trie.Database
 }
 
+// TODO: obviously having 32-deep trie's all the time is not space-efficient
 func NewStorage() (*Storage, error) {
 	db, err := trie.New()
 	if err != nil {
@@ -70,7 +72,16 @@ func (s *Storage) Reset(copy *Storage) {
 	s.db = copy.db
 }
 
+// balances are at path prefix "/b/"
+func balanceKey(key []byte) []byte {
+	w := new(bytes.Buffer)
+	w.WriteString("/b/")
+	w.Write(key)
+	return w.Bytes()
+}
+
 func (s *Storage) IncBalance(address []byte, amount *big.Int) error {
+	address = balanceKey(address)
 	var balance Balance
 	buf, err := s.db.Get(address)
 	switch {
@@ -97,6 +108,7 @@ func (s *Storage) IncBalance(address []byte, amount *big.Int) error {
 }
 
 func (s *Storage) GetBalance(address []byte) (*big.Int, error) {
+	address = balanceKey(address)
 	buf, err := s.db.Get(address)
 	switch {
 	case err == trie.NotFound:
