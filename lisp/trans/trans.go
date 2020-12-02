@@ -313,6 +313,8 @@ func replace(s string, m map[string]string) (string, error) {
 
 func Run(cnfg.Config) error {
 
+	return Trie()
+
 	key1, err := tnet.NewKey()
 	if err != nil {
 		return err
