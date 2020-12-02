@@ -2,13 +2,18 @@ package trans
 
 import (
 	"bytes"
+	"encoding/asn1"
 	"encoding/json"
 	"fmt"
 	"math/big"
 	"math/rand"
+	"path"
 	"time"
 
 	"github.com/skratchdot/open-golang/open"
+	"github.com/xoba/turd/lisp"
+	"github.com/xoba/turd/thash"
+	"github.com/xoba/turd/tnet"
 	"github.com/xoba/turd/trie"
 )
 
@@ -51,6 +56,17 @@ func Trie() error {
 	return open.Run("trie.svg")
 }
 
+func Inflate(b *Balance, height *big.Int) (*Balance, error) {
+	if height.Cmp(b.Height) < 0 {
+		return nil, fmt.Errorf("negative inflation is illegal")
+	}
+	return &Balance{
+		Owner:    b.Owner,
+		Height:   height,
+		Quantity: b.Quantity, // TODO: no inflation for now
+	}, nil
+}
+
 type Storage struct {
 	db trie.Database
 }
@@ -75,12 +91,117 @@ func (s *Storage) Reset(copy *Storage) {
 // balances are at path prefix "/b/"
 func balanceKey(key []byte) []byte {
 	w := new(bytes.Buffer)
-	w.WriteString("/b/")
+	w.WriteString("/")
+	w.WriteRune('b')
+	w.WriteString("/")
 	w.Write(key)
 	return w.Bytes()
 }
 
-func (s *Storage) IncBalance(address []byte, amount *big.Int) error {
+// content are at path prefix "/c/"
+func contentKey(p string) []byte {
+	return []byte(path.Clean("/c/" + p))
+}
+
+type Content struct {
+	Path        string
+	Payload     []byte `json:",omitempty"` // generally should be empty, stored somewhere else
+	Length      *big.Int
+	ContentType string `json:",omitempty"` // like a mime header
+	Owner       []byte
+	Hash        []byte `json:",omitempty"` // hash of the actual content
+	Signature   []byte `json:",omitempty"`
+}
+
+func (i Content) Lisp() lisp.Exp {
+	var self LispList
+	add := func(name string, e Lisper) {
+		self = append(self, []lisp.Exp{
+			name,
+			e.Lisp(),
+		})
+	}
+	add("path", LispAtom(i.Path))
+	add("length", LispInt(*i.Length))
+	add("type", LispAtom(i.ContentType))
+	add("owner", LispBlob(i.Owner))
+	add("payload", LispBlob(i.Payload))
+	add("hash", LispBlob(i.Hash))
+	add("signature", LispBlob(i.Signature))
+	return self.Lisp()
+}
+
+func (c *Content) Sign(key *tnet.PrivateKey) error {
+	c.Hash = nil
+	c.Signature = nil
+	buf, err := asn1.Marshal(*c)
+	if err != nil {
+		return err
+	}
+	c.Hash = thash.Hash(buf)
+	sig, err := key.Sign(c.Hash)
+	if err != nil {
+		return err
+	}
+	c.Signature = sig
+	return nil
+}
+
+func (c Content) Verify() error {
+	hash := c.Hash
+	sig := c.Signature
+	c.Hash = nil
+	c.Signature = nil
+	buf, err := asn1.Marshal(c)
+	if err != nil {
+		return err
+	}
+	if !bytes.Equal(hash, thash.Hash(buf)) {
+		return fmt.Errorf("hash mismatch")
+	}
+	var key tnet.PublicKey
+	if err := key.UnmarshalBinary(c.Owner); err != nil {
+		return err
+	}
+	if err := key.Verify(hash, sig); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Storage) SetContent(c Content) error {
+	var found Content
+	fmt.Printf("%s -> %s\n", c.Path, path.Clean(c.Path))
+	if p := path.Clean(c.Path); p != c.Path {
+		return fmt.Errorf("path not clean: %q", c.Path)
+	}
+	buf, err := s.db.Get(contentKey(c.Path))
+	switch {
+	case err == nil:
+		if err := json.Unmarshal(buf, &found); err != nil {
+			return err
+		}
+	case err == trie.NotFound:
+		found = c
+	default:
+		return err
+	}
+	if !bytes.Equal(c.Owner, found.Owner) {
+		return fmt.Errorf("owner can't modify others' content")
+	}
+	if buf2, err := json.Marshal(found); err != nil {
+		return err
+	} else {
+		cp, err := s.db.Set(contentKey(c.Path), buf2)
+		if err != nil {
+			return err
+		}
+		s.db = cp
+	}
+	return nil
+}
+
+func (s *Storage) IncBalance(address []byte, byAmount *big.Int) error {
 	address = balanceKey(address)
 	var balance Balance
 	buf, err := s.db.Get(address)
@@ -94,7 +215,7 @@ func (s *Storage) IncBalance(address []byte, amount *big.Int) error {
 	default:
 		return err
 	}
-	balance.Quantity.Add(balance.Quantity, amount)
+	balance.Quantity.Add(balance.Quantity, byAmount)
 	buf, err = json.Marshal(balance)
 	if err != nil {
 		return err
@@ -126,5 +247,7 @@ func (s *Storage) GetBalance(address []byte) (*big.Int, error) {
 
 // to be serialized in trie node corresponding to the address containing a balance
 type Balance struct {
+	Owner    []byte   // address of owner of this balance
+	Height   *big.Int // blockchain height this balance was established
 	Quantity *big.Int `json:"q,omitempty"`
 }

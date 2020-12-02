@@ -153,21 +153,6 @@ func (x LispString) Lisp() lisp.Exp {
 	return e
 }
 
-func (i Content) Lisp() lisp.Exp {
-	var self LispList
-	add := func(name string, e Lisper) {
-		self = append(self, []lisp.Exp{
-			name,
-			e.Lisp(),
-		})
-	}
-	add("key", LispBlob(i.Key))
-	add("hash", LispBlob(i.Hash))
-	add("value", LispBlob(i.Value))
-	add("length", LispInt(*i.Length))
-	return self.Lisp()
-}
-
 type Lisper interface {
 	Lisp() lisp.Exp
 }
@@ -181,6 +166,25 @@ func (t *Transaction) NewOutput(n int64, key *tnet.PublicKey, nonce string, afte
 		Quantity: big.NewInt(n),
 		Address:  thash.Hash([]byte(script)),
 	})
+	return nil
+}
+
+func (t *Transaction) NewContent(key *tnet.PrivateKey, path string, content []byte) error {
+	buf, err := key.Public().MarshalBinary()
+	if err != nil {
+		return err
+	}
+	c := Content{
+		Path:    path,
+		Owner:   buf,
+		Payload: content,
+		Length:  big.NewInt(int64(len(content))),
+		Hash:    thash.Hash(content),
+	}
+	if err := c.Sign(key); err != nil {
+		return err
+	}
+	t.Content = append(t.Content, c)
 	return nil
 }
 
@@ -266,7 +270,7 @@ requirement, then block is valid. otherwise, repeat this procedure.
 type Hash []byte
 
 // content, compatible with a trie's KeyValue
-type Content struct {
+type xContent struct {
 	Key    []byte   `asn1:"omitempty" json:",omitempty"`
 	Hash   []byte   `asn1:"omitempty" json:",omitempty"` // hash of key and value
 	Value  []byte   `asn1:"omitempty" json:",omitempty"`
@@ -367,6 +371,9 @@ func Run(cnfg.Config) error {
 			return err
 		}
 		if err := t.NewOutput(7, key2.Public(), "key2", after); err != nil {
+			return err
+		}
+		if err := t.NewContent(key1, "/mykey", []byte("abc")); err != nil {
 			return err
 		}
 		if err := t.Sign(key1, key3); err != nil {
@@ -543,6 +550,14 @@ func Run(cnfg.Config) error {
 						}
 						for _, o := range t.Outputs {
 							inc(o.Address, o.Quantity)
+						}
+						for _, c := range t.Content {
+							if err := c.Verify(); err != nil {
+								return err
+							}
+							if err := state.SetContent(c); err != nil {
+								return err
+							}
 						}
 						return nil
 					}); err != nil {
