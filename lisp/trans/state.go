@@ -2,9 +2,11 @@ package trans
 
 import (
 	"encoding/json"
+	"fmt"
 	"math/big"
 	"math/rand"
 	"strings"
+	"time"
 
 	"github.com/skratchdot/open-golang/open"
 	"github.com/xoba/turd/trie"
@@ -23,15 +25,18 @@ func Trie() error {
 		return err
 	}
 
-	keys := strings.Split("1,11,2,3,345,4,fhsdjkfhsfdk", ",")
+	keys := strings.Split("1,11,2,3,345,4,fhsdjdk", ",")
 
-	for x := 0; x < 1000; x++ {
+	const n = 10000
+	start := time.Now()
+	for x := 0; x < n; x++ {
 		key := keys[r.Intn(len(keys))]
 		i := big.NewInt(1)
 		if err := s.UpdateBalance([]byte(key), i); err != nil {
 			return err
 		}
 	}
+	fmt.Printf("%v/op\n", time.Since(start)/time.Duration(n))
 
 	if err := s.db.ToGviz("trie.svg", "state"); err != nil {
 		return err
