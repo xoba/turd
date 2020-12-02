@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math/big"
 	"math/rand"
-	"strings"
 	"time"
 
 	"github.com/skratchdot/open-golang/open"
@@ -21,18 +20,24 @@ func Trie() error {
 
 	r := rand.New(rand.NewSource(0))
 
-	if err := s.UpdateBalance([]byte("abc"), big.NewInt(3)); err != nil {
+	if err := s.IncBalance([]byte("abc"), big.NewInt(3)); err != nil {
 		return err
 	}
 
-	keys := strings.Split("1,11,2,3,345,4,fhsdjdk", ",")
+	var keys [][]byte
+
+	for i := 0; i < 10; i++ {
+		buf := make([]byte, 7)
+		r.Read(buf)
+		keys = append(keys, buf)
+	}
 
 	const n = 10000
 	start := time.Now()
 	for x := 0; x < n; x++ {
 		key := keys[r.Intn(len(keys))]
 		i := big.NewInt(1)
-		if err := s.UpdateBalance([]byte(key), i); err != nil {
+		if err := s.IncBalance(key, i); err != nil {
 			return err
 		}
 	}
@@ -65,7 +70,7 @@ func (s *Storage) Reset(copy *Storage) {
 	s.db = copy.db
 }
 
-func (s *Storage) UpdateBalance(address []byte, amount *big.Int) error {
+func (s *Storage) IncBalance(address []byte, amount *big.Int) error {
 	var balance Balance
 	buf, err := s.db.Get(address)
 	switch {
@@ -89,6 +94,22 @@ func (s *Storage) UpdateBalance(address []byte, amount *big.Int) error {
 	}
 	s.db = db
 	return nil
+}
+
+func (s *Storage) GetBalance(address []byte) (*big.Int, error) {
+	buf, err := s.db.Get(address)
+	switch {
+	case err == trie.NotFound:
+		return big.NewInt(0), nil
+	case err != nil:
+		return nil, err
+	default:
+		var b Balance
+		if err := json.Unmarshal(buf, &b); err != nil {
+			return nil, err
+		}
+		return b.Quantity, nil
+	}
 }
 
 // to be serialized in trie node corresponding to the address containing a balance

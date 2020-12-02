@@ -8,15 +8,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"math/big"
 	"sort"
 	"text/template"
 	"time"
 
+	"github.com/skratchdot/open-golang/open"
 	"github.com/xoba/turd/cnfg"
 	"github.com/xoba/turd/lisp"
 	"github.com/xoba/turd/thash"
 	"github.com/xoba/turd/tnet"
+	"github.com/xoba/turd/trie"
 )
 
 // script output: either a blob or empty list.
@@ -313,7 +316,7 @@ func replace(s string, m map[string]string) (string, error) {
 
 func Run(cnfg.Config) error {
 
-	return Trie()
+	//return Trie()
 
 	key1, err := tnet.NewKey()
 	if err != nil {
@@ -415,20 +418,48 @@ func Run(cnfg.Config) error {
 		for {
 			rounds++
 
-			balances := make(map[string]*big.Int)
+			state, err := NewStorage()
+			if err != nil {
+				return err
+			}
+
+			key := func(addr []byte) []byte {
+				return []byte(fmt.Sprintf("%x", addr)[:4])
+			}
+
+			balances := func() string {
+				m := make(map[string]*big.Int)
+				kv, err := state.db.Search(func(kv *trie.KeyValue) bool {
+					fmt.Println(kv)
+					return false
+				})
+				if err == trie.NotFound {
+				} else if err != nil {
+					log.Fatal(err)
+				}
+				if kv != nil {
+					fmt.Printf("found %v\n", kv)
+				}
+				buf, err := json.Marshal(m)
+				if err != nil {
+					log.Fatal(err)
+				}
+				return string(buf)
+			}
 
 			balance := func(addr []byte) *big.Int {
-				key := marshal(addr)[:6]
-				i, ok := balances[key]
-				if !ok {
-					i = big.NewInt(0)
-					balances[key] = i
+				i, err := state.GetBalance(key(addr))
+				if err != nil {
+					log.Fatal(err)
 				}
 				return i
 			}
+
 			inc := func(addr []byte, o *big.Int) {
-				i := balance(addr)
-				i.Add(i, o)
+				if err := state.IncBalance(key(addr), o); err != nil {
+					log.Fatal(err)
+
+				}
 			}
 			dec := func(addr []byte, o *big.Int) {
 				inc(addr, big.NewInt(0).Neg(o))
@@ -523,11 +554,18 @@ func Run(cnfg.Config) error {
 				return err
 			}
 
-			fmt.Printf("balances: %s\n", balances)
+			fmt.Printf("balances: %s\n", balances())
 			fmt.Printf("final hash = %s\n", marshal(bhash))
 
 			x := big.NewInt(0).SetBytes(bhash)
 			if x.Cmp(difficulty) < 0 {
+
+				if err := state.db.ToGviz("trie.svg", "state"); err != nil {
+					return err
+				}
+
+				return open.Run("trie.svg")
+
 				break
 			}
 		}
