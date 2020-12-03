@@ -1,6 +1,6 @@
-(defun mapcar (op args)
+(defun mapcar (op arglist)
   (cond
-   ((eq args '()) ())
+   ((eq arglist '()) ())
    ('t (cons
-	(funcall op (car args))
-	(mapcar op (cdr args))))))
+	(funcall op (car arglist))
+	(mapcar op (cdr arglist))))))

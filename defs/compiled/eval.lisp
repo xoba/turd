@@ -5,17 +5,17 @@
    ((atom (car e))
     ((λ (op first rest)
        ((λ (second third)
-	  (cond
+	  (cond ;; TODO: can we compile funcall instead?
 	   ((eq op 'funcall) (eval (cons
 				    (eval first a) ;; the function
 				    rest)          ;; the args
 				   a))
-
+	   
 	   ((eq op 'quote)   (cadr e))
 	   ((eq op 'cond)    (evcon   (cdr e) a))
 	   ((eq op 'list)    (evlis   (cdr e) a))
-
-;; manual: "add" with 2 args
+	   
+	   ;; manual: "add" with 2 args
 ((eq op 'add) (add (eval first  a) (eval second a)))
 
 ;; manual: "after" with 2 args
@@ -51,6 +51,9 @@
 ;; loaded: "caddddar" with 1 args
 ((eq op 'caddddar) (caddddar (eval first a)))
 
+;; loaded: "caddddr" with 1 args
+((eq op 'caddddr) (caddddr (eval first a)))
+
 ;; loaded: "cadddr" with 1 args
 ((eq op 'cadddr) (cadddr (eval first a)))
 
@@ -62,6 +65,9 @@
 
 ;; axiom: "car" with 1 args
 ((eq op 'car) (car (eval first a)))
+
+;; loaded: "cdar" with 1 args
+((eq op 'cdar) (cdar (eval first a)))
 
 ;; loaded: "cddar" with 1 args
 ((eq op 'cddar) (cddar (eval first a)))
@@ -111,6 +117,9 @@
 ;; loaded: "inc" with 1 args
 ((eq op 'inc) (inc (eval first a)))
 
+;; loaded: "length" with 1 args
+((eq op 'length) (length (eval first a)))
+
 ;; manual: "mul" with 2 args
 ((eq op 'mul) (mul (eval first  a) (eval second a)))
 
@@ -157,11 +166,12 @@
 ((eq op 'verify) (verify (eval first  a) (eval second a) (eval third  a)))
 
 
-	  
+	   
 	   ;; resolve an unknown op:
 	   ('t (eval (cons (assoc op a)
 			   (cdr e))
 		     a))))
+	
 	(car  rest)   ;; second
 	(cadr rest))) ;; third
      (car e)    ;; op
@@ -176,15 +186,15 @@
     (eval (cons (caddar e) (cdr e))
 	  (cons (list (cadar e) (car e)) a)))
    
-   ((or
+   ((or ;; two different notations for lambda
      (eq (caar e) 'lambda)
      (eq (caar e) 'λ))
-    (cond
-     ((atom (cadar e)) ; lexpr
+    (cond ;; two different forms for lambda
+     ((atom (cadar e)) ; lexpr form (lambda x ...)
       (eval (caddar e)
 	    (cons (list (cadar e) (evlis (cdr e) a))
 		  a)))
-     ('t ; traditional lambda
+     ('t ; traditional form (lambda (x...) ...)
       (eval (caddar e)
 	    (append (pair (cadar e) (evlis (cdr e) a))
 		    a)))))))
