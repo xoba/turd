@@ -113,6 +113,9 @@
 ;; "exp" with 3 args (manual)
 ((eq op 'exp) (exp (teval t2 first a) (teval t2 second a) (teval t2 third a)))
 
+;; "factorial" with 1 args (loaded)
+((eq op 'factorial) (factorial (teval t2 first a)))
+
 ;; "hash" with 1 args (manual)
 ((eq op 'hash) (hash (teval t2 first a)))
 

@@ -113,6 +113,9 @@
 ;; "exp" with 3 args (manual)
 ((eq op 'exp) (exp (eval first a) (eval second a) (eval third a)))
 
+;; "factorial" with 1 args (loaded)
+((eq op 'factorial) (factorial (eval first a)))
+
 ;; "hash" with 1 args (manual)
 ((eq op 'hash) (hash (eval first a)))
 
