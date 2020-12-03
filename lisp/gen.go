@@ -377,7 +377,7 @@ func cddr(args ...Exp) Exp {
 // eval (compiled)
 //
 
-var eval_label = parse_env("(label eval (lambda (e a) (cond ((atom e) (assoc e a)) ((atom (car e)) ((λ (op first rest) ((λ (second third) (cond ((eq op 'funcall) (eval (cons (eval first a) rest) a)) ((eq op 'quote) (cadr e)) ((eq op 'atom) (atom (eval first a))) ((eq op 'eq) (eq (eval first a) (eval second a))) ((eq op 'car) (car (eval first a))) ((eq op 'cdr) (cdr (eval first a))) ((eq op 'cons) (cons (eval first a) (eval second a))) ((eq op 'cond) (evcon (cdr e) a)) ((eq op 'list) (evlis (cdr e) a)) ((eq op 'after) (after (eval first a) (eval second a))) ((eq op 'add) (add (eval first a) (eval second a))) ((eq op 'inc) (inc (eval first a))) ((eq op 'sub) (sub (eval first a) (eval second a))) ((eq op 'mul) (mul (eval first a) (eval second a))) ((eq op 'exp) (exp (eval first a) (eval second a) (eval third a))) ((eq op 'concat) (concat (eval first a) (eval second a))) ((eq op 'hash) (hash (eval first a))) ((eq op 'hashed) (hashed (eval first a))) ((eq op 'newkey) (newkey)) ((eq op 'pub) (pub (eval first a))) ((eq op 'sign) (sign (eval first a) (eval second a))) ((eq op 'verify) (verify (eval first a) (eval second a) (eval third a))) ((eq op 'display) (display (eval first a))) ((eq op 'runes) (runes (eval (cadr e) a))) ((eq op 'err) (err (eval (cadr e) a))) ((eq op 'test1) (test1 (eval first a))) ((eq op 'test2) (test2 (eval first a))) ((eq op 'test3) (test3 (eval first a))) ('t (eval (cons (assoc op a) (cdr e)) a)))) (car rest) (cadr rest))) (car e) (cadr e) (cddr e))) ((eq (caar e) 'macro) (eval (eval (cadddar e) (pair (caddar e) (cdr e))) a)) ((eq (caar e) 'label) (eval (cons (caddar e) (cdr e)) (cons (list (cadar e) (car e)) a))) ((or (eq (caar e) 'lambda) (eq (caar e) 'λ)) (cond ((atom (cadar e)) (eval (caddar e) (cons (list (cadar e) (evlis (cdr e) a)) a))) ('t (eval (caddar e) (append_go_sanitized (pair (cadar e) (evlis (cdr e) a)) a))))))))")
+var eval_label = parse_env("(label eval (lambda (e a) (cond ((atom e) (assoc e a)) ((atom (car e)) ((λ (op first rest) ((λ (second third) (cond ((eq op 'funcall) (eval (cons (eval first a) rest) a)) ((eq op 'caadr) (caadr (eval first a))) ((eq op 'caar) (caar (eval first a))) ((eq op 'cadar) (cadar (eval first a))) ((eq op 'caddar) (caddar (eval first a))) ((eq op 'cadddar) (cadddar (eval first a))) ((eq op 'caddddar) (caddddar (eval first a))) ((eq op 'cadddr) (cadddr (eval first a))) ((eq op 'caddr) (caddr (eval first a))) ((eq op 'cadr) (cadr (eval first a))) ((eq op 'cddar) (cddar (eval first a))) ((eq op 'cdddar) (cdddar (eval first a))) ((eq op 'cddr) (cddr (eval first a))) ((eq op 'quote) (cadr e)) ((eq op 'atom) (atom (eval first a))) ((eq op 'eq) (eq (eval first a) (eval second a))) ((eq op 'car) (car (eval first a))) ((eq op 'cdr) (cdr (eval first a))) ((eq op 'cons) (cons (eval first a) (eval second a))) ((eq op 'cond) (evcon (cdr e) a)) ((eq op 'list) (evlis (cdr e) a)) ((eq op 'after) (after (eval first a) (eval second a))) ((eq op 'add) (add (eval first a) (eval second a))) ((eq op 'inc) (inc (eval first a))) ((eq op 'sub) (sub (eval first a) (eval second a))) ((eq op 'mul) (mul (eval first a) (eval second a))) ((eq op 'exp) (exp (eval first a) (eval second a) (eval third a))) ((eq op 'concat) (concat (eval first a) (eval second a))) ((eq op 'hash) (hash (eval first a))) ((eq op 'hashed) (hashed (eval first a))) ((eq op 'newkey) (newkey)) ((eq op 'pub) (pub (eval first a))) ((eq op 'sign) (sign (eval first a) (eval second a))) ((eq op 'verify) (verify (eval first a) (eval second a) (eval third a))) ((eq op 'display) (display (eval first a))) ((eq op 'runes) (runes (eval (cadr e) a))) ((eq op 'err) (err (eval (cadr e) a))) ((eq op 'test1) (test1 (eval first a))) ((eq op 'test2) (test2 (eval first a))) ((eq op 'test3) (test3 (eval first a))) ('t (eval (cons (assoc op a) (cdr e)) a)))) (car rest) (cadr rest))) (car e) (cadr e) (cddr e))) ((eq (caar e) 'macro) (eval (eval (cadddar e) (pair (caddar e) (cdr e))) a)) ((eq (caar e) 'label) (eval (cons (caddar e) (cdr e)) (cons (list (cadar e) (car e)) a))) ((or (eq (caar e) 'lambda) (eq (caar e) 'λ)) (cond ((atom (cadar e)) (eval (caddar e) (cons (list (cadar e) (evlis (cdr e) a)) a))) ('t (eval (caddar e) (append_go_sanitized (pair (cadar e) (evlis (cdr e) a)) a))))))))")
 
 func eval(args ...Exp) Exp {
 	e := args[0]
@@ -409,7 +409,7 @@ func eval(args ...Exp) Exp {
 								second := args[0]
 								third := args[1]
 								return func() Exp {
-									if f, ok := map_d7ac191947[String(op)]; ok {
+									if f, ok := map_5de2f2176d[String(op)]; ok {
 										return f(a, e, first, op, rest, second, third)
 									}
 									return A(eval, A(cons, A(assoc, op, a), A(cdr, e)), a)
@@ -805,8 +805,56 @@ func F_atom_57e6d5c9b3(a, e, first, op, rest, second, third Exp) Exp {
 	return A(atom, A(eval, first, a))
 }
 
+func F_caadr_9a51460d6b(a, e, first, op, rest, second, third Exp) Exp {
+	return A(caadr, A(eval, first, a))
+}
+
+func F_caar_18f57ec7ac(a, e, first, op, rest, second, third Exp) Exp {
+	return A(caar, A(eval, first, a))
+}
+
+func F_cadar_08bb39827e(a, e, first, op, rest, second, third Exp) Exp {
+	return A(cadar, A(eval, first, a))
+}
+
+func F_caddar_bb34829244(a, e, first, op, rest, second, third Exp) Exp {
+	return A(caddar, A(eval, first, a))
+}
+
+func F_cadddar_26ece2d994(a, e, first, op, rest, second, third Exp) Exp {
+	return A(cadddar, A(eval, first, a))
+}
+
+func F_caddddar_4b02e05a2f(a, e, first, op, rest, second, third Exp) Exp {
+	return A(caddddar, A(eval, first, a))
+}
+
+func F_cadddr_b15fa6eba5(a, e, first, op, rest, second, third Exp) Exp {
+	return A(cadddr, A(eval, first, a))
+}
+
+func F_caddr_54b1e7324a(a, e, first, op, rest, second, third Exp) Exp {
+	return A(caddr, A(eval, first, a))
+}
+
+func F_cadr_aa1c6639fb(a, e, first, op, rest, second, third Exp) Exp {
+	return A(cadr, A(eval, first, a))
+}
+
 func F_car_6e7ecda3ef(a, e, first, op, rest, second, third Exp) Exp {
 	return A(car, A(eval, first, a))
+}
+
+func F_cddar_d9b0da6fb9(a, e, first, op, rest, second, third Exp) Exp {
+	return A(cddar, A(eval, first, a))
+}
+
+func F_cdddar_89f98ebd5c(a, e, first, op, rest, second, third Exp) Exp {
+	return A(cdddar, A(eval, first, a))
+}
+
+func F_cddr_b3ffda7668(a, e, first, op, rest, second, third Exp) Exp {
+	return A(cddr, A(eval, first, a))
 }
 
 func F_cdr_6772863567(a, e, first, op, rest, second, third Exp) Exp {
@@ -925,38 +973,50 @@ func init() {
 	}
 }
 
-var map_d7ac191947 = make(map[string]func(a, e, first, op, rest, second, third Exp) Exp)
+var map_5de2f2176d = make(map[string]func(a, e, first, op, rest, second, third Exp) Exp)
 
 func init() {
-	map_d7ac191947 = map[string]func(a, e, first, op, rest, second, third Exp) Exp{
-		"funcall": F_funcall_38c9a26765,
-		"quote":   F_quote_a7f3dfeaaf,
-		"atom":    F_atom_57e6d5c9b3,
-		"eq":      F_eq_9d693d8748,
-		"car":     F_car_6e7ecda3ef,
-		"cdr":     F_cdr_6772863567,
-		"cons":    F_cons_d4b73be861,
-		"cond":    F_cond_26e96b4be1,
-		"list":    F_list_4d554d264a,
-		"after":   F_after_d1d1801dce,
-		"add":     F_add_c697c7bfbf,
-		"inc":     F_inc_878d5d4d19,
-		"sub":     F_sub_246a160bc3,
-		"mul":     F_mul_3841a9b191,
-		"exp":     F_exp_0cf8749970,
-		"concat":  F_concat_832e46a008,
-		"hash":    F_hash_890341d522,
-		"hashed":  F_hashed_2106668384,
-		"newkey":  F_newkey_623d29c094,
-		"pub":     F_pub_fd1fdb63c7,
-		"sign":    F_sign_11c1de489d,
-		"verify":  F_verify_5199556588,
-		"display": F_display_f82db8af96,
-		"runes":   F_runes_941e743c8a,
-		"err":     F_err_660a05fbfc,
-		"test1":   F_test1_b2a90c1647,
-		"test2":   F_test2_97cace0d47,
-		"test3":   F_test3_54e98f673d,
+	map_5de2f2176d = map[string]func(a, e, first, op, rest, second, third Exp) Exp{
+		"funcall":  F_funcall_38c9a26765,
+		"caadr":    F_caadr_9a51460d6b,
+		"caar":     F_caar_18f57ec7ac,
+		"cadar":    F_cadar_08bb39827e,
+		"caddar":   F_caddar_bb34829244,
+		"cadddar":  F_cadddar_26ece2d994,
+		"caddddar": F_caddddar_4b02e05a2f,
+		"cadddr":   F_cadddr_b15fa6eba5,
+		"caddr":    F_caddr_54b1e7324a,
+		"cadr":     F_cadr_aa1c6639fb,
+		"cddar":    F_cddar_d9b0da6fb9,
+		"cdddar":   F_cdddar_89f98ebd5c,
+		"cddr":     F_cddr_b3ffda7668,
+		"quote":    F_quote_a7f3dfeaaf,
+		"atom":     F_atom_57e6d5c9b3,
+		"eq":       F_eq_9d693d8748,
+		"car":      F_car_6e7ecda3ef,
+		"cdr":      F_cdr_6772863567,
+		"cons":     F_cons_d4b73be861,
+		"cond":     F_cond_26e96b4be1,
+		"list":     F_list_4d554d264a,
+		"after":    F_after_d1d1801dce,
+		"add":      F_add_c697c7bfbf,
+		"inc":      F_inc_878d5d4d19,
+		"sub":      F_sub_246a160bc3,
+		"mul":      F_mul_3841a9b191,
+		"exp":      F_exp_0cf8749970,
+		"concat":   F_concat_832e46a008,
+		"hash":     F_hash_890341d522,
+		"hashed":   F_hashed_2106668384,
+		"newkey":   F_newkey_623d29c094,
+		"pub":      F_pub_fd1fdb63c7,
+		"sign":     F_sign_11c1de489d,
+		"verify":   F_verify_5199556588,
+		"display":  F_display_f82db8af96,
+		"runes":    F_runes_941e743c8a,
+		"err":      F_err_660a05fbfc,
+		"test1":    F_test1_b2a90c1647,
+		"test2":    F_test2_97cace0d47,
+		"test3":    F_test3_54e98f673d,
 	}
 }
 

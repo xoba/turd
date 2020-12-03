@@ -8,7 +8,22 @@
 	   ((eq op 'funcall) (eval (cons
 				    (eval first a) ;; the function
 				    rest)          ;; the args
-				   a))	   
+				   a))
+
+	   ;; compiled:
+	   ((eq op 'caadr)    (caadr    (eval first  a)))
+	   ((eq op 'caar)     (caar     (eval first  a)))
+	   ((eq op 'cadar)    (cadar    (eval first  a)))
+	   ((eq op 'caddar)   (caddar   (eval first  a)))
+	   ((eq op 'cadddar)  (cadddar  (eval first  a)))
+	   ((eq op 'caddddar) (caddddar (eval first  a)))
+	   ((eq op 'cadddr)   (cadddr   (eval first  a)))
+	   ((eq op 'caddr)    (caddr    (eval first  a)))
+	   ((eq op 'cadr)     (cadr     (eval first  a)))
+	   ((eq op 'cddar)    (cddar    (eval first  a)))
+	   ((eq op 'cdddar)   (cdddar   (eval first  a)))
+	   ((eq op 'cddr)     (cddr     (eval first  a)))
+	   
 	   ;; axioms:
 	   ((eq op 'quote)   (cadr e))
 	   ((eq op 'atom)    (atom    (eval first  a)))

@@ -22,6 +22,10 @@ const (
 	pkg      = "lisp"
 )
 
+func EvalTemplate(cnfg.Config) error {
+	return nil
+}
+
 func CompileDefuns(cnfg.Config) error {
 	if err := os.MkdirAll(pkg, os.ModePerm); err != nil {
 		return err

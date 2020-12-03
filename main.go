@@ -75,6 +75,7 @@ func Run(c cnfg.Config) error {
 		"poset":       poset.Run,
 		"trans":       trans.Run,
 		"trie":        trie.Run,
+		"eval":        lisp.EvalTemplate,
 	}
 	handler, ok := modes[c.Mode]
 	if !ok {
