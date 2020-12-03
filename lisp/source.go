@@ -344,6 +344,12 @@ func Run(c cnfg.Config) error {
 	test("try", fmt.Sprintf("(try '(10 0) '(cdr '(a b)) '%s)", String(env)), "(b)")
 	test("try", "(try '(10 0) '(blah '(a b)) '())", "error: (max 10)")
 
+	test("teval", "(teval '(10 0) 'x '((x a) (y b)))", "a")
+	test("teval", "(teval '(10 0) '(car '(a b)) '())", "a")
+	test("teval", "(teval '(10 0) '(cdr '(a b)) '())", "(b)")
+	test("teval", fmt.Sprintf("(teval '(10 0) '(cdr '(a b)) '%s)", String(env)), "(b)")
+	test("teval", "(teval '(10 0) '(blah '(a b)) '())", "error: (max 10)")
+
 	test("next", `(next '(10 6))`, `(10 7)`)
 	test("next", `(next '(10 10))`, `error: (max 10)`)
 

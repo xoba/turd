@@ -37,7 +37,6 @@ func EvalTemplate(cnfg.Config) error {
 	}); err != nil {
 		return err
 	}
-	//return nil
 	if err := GenEval("defs/compiled/teval.lisp", map[string]string{
 		"defun":   "teval",
 		"args":    "(t e a)",
