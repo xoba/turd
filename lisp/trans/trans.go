@@ -218,6 +218,7 @@ func (t *Transaction) NewInput(n int64, key *tnet.PublicKey, nonce string, after
 	t.Inputs = append(t.Inputs, Input{
 		Quantity: big.NewInt(n),
 		Script:   script,
+		Max:      big.NewInt(20),
 	})
 	return nil
 }
@@ -282,7 +283,8 @@ type xContent struct {
 // and has output. if output is false (nil or '()), transaction failed.
 type Input struct {
 	Quantity *big.Int
-	Script   string `asn1:"utf8"`
+	Script   string   `asn1:"utf8"`
+	Max      *big.Int // claimed max eval depth (like a "time")
 }
 
 type Output struct {
@@ -474,6 +476,7 @@ func Run(cnfg.Config) error {
 			type compiled struct {
 				transaction lisp.Exp
 				inputs      []lisp.Exp
+				lengths     []*big.Int
 			}
 
 			var compiledTrans []compiled
@@ -485,11 +488,15 @@ func Run(cnfg.Config) error {
 					transaction: t.Lisp(),
 				}
 				for _, input := range t.Inputs {
-					input, err := lisp.Parse(input.Script)
+					x, err := lisp.Parse(input.Script)
 					if err != nil {
 						return err
 					}
-					c.inputs = append(c.inputs, input)
+					c.inputs = append(c.inputs, x)
+					if input.Max == nil || input.Max.Cmp(big.NewInt(0)) <= 0 {
+						return fmt.Errorf("script max %v", input.Max)
+					}
+					c.lengths = append(c.lengths, input.Max)
 				}
 				compiledTrans = append(compiledTrans, c)
 			}
@@ -521,7 +528,7 @@ func Run(cnfg.Config) error {
 							}
 							var res lisp.Exp
 							if err := timing("eval", func() error {
-								res = lisp.Eval(e)
+								res = lisp.Try(e, compiledTrans[i].lengths[j])
 								return nil
 							}); err != nil {
 								return err

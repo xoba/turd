@@ -18,6 +18,10 @@ func Eval(e Exp) Exp {
 	return CompiledEval(e)
 }
 
+func Try(e Exp, max *big.Int) Exp {
+	return CompiledTry(e, max)
+}
+
 func CompiledEval(e Exp) Exp {
 	return UnsanitizeGo(eval([]Exp{SanitizeGo(e), env}...))
 }
