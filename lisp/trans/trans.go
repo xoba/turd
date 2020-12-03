@@ -568,8 +568,10 @@ func Run(cnfg.Config) error {
 				return err
 			}
 
-			fmt.Printf("balances: %s\n", balances())
-			fmt.Printf("final hash = %s\n", marshal(bhash))
+			if false {
+				fmt.Printf("balances: %s\n", balances())
+				fmt.Printf("final hash = %s\n", marshal(bhash))
+			}
 
 			x := big.NewInt(0).SetBytes(bhash)
 			if x.Cmp(difficulty) < 0 {

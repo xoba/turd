@@ -26,6 +26,29 @@ const (
 
 // autogenerate an eval func, TODO also "try"
 func EvalTemplate(cnfg.Config) error {
+	if err := GenEval(map[string]string{
+		"eval":    "eval",
+		"defun":   "eval",
+		"assoc":   "assoc",
+		"evlis":   "evlis",
+		"evcon":   "evcon",
+		"comment": autogen,
+	}); err != nil {
+		return err
+	}
+	return nil
+}
+
+func GenEval(args map[string]string) error {
+	addkv := func(k, v string, m map[string]string) map[string]string {
+		out := map[string]string{
+			k: v,
+		}
+		for k, v := range m {
+			out[k] = v
+		}
+		return out
+	}
 	type compiled struct {
 		name  string
 		class string
@@ -107,19 +130,22 @@ func EvalTemplate(cnfg.Config) error {
 	w := new(bytes.Buffer)
 	for _, k := range sorted {
 		c := m[k]
-		fmt.Fprintf(w, ";; %s: %q with %d args\n", c.class, c.name, c.args)
+		fmt.Fprintf(w, ";; %q with %d args (%s)\n", c.name, c.args, c.class)
 		emit := func(s string) {
-			fmt.Fprintf(w, s+"\n\n", c.name, c.name)
+			t := template.Must(template.New("expr").Parse(s + "\n\n"))
+			if err := t.Execute(w, addkv("name", c.name, args)); err != nil {
+				log.Fatal(err)
+			}
 		}
 		switch c.args {
 		case 0:
-			emit(`((eq op '%s) (%s))`)
+			emit(`((eq op '{{.name}}) ({{.name}}))`)
 		case 1:
-			emit(`((eq op '%s) (%s (eval first a)))`)
+			emit(`((eq op '{{.name}}) ({{.name}} ({{.eval}} first a)))`)
 		case 2:
-			emit(`((eq op '%s) (%s (eval first  a) (eval second a)))`)
+			emit(`((eq op '{{.name}}) ({{.name}} ({{.eval}} first a) ({{.eval}} second a)))`)
 		case 3:
-			emit(`((eq op '%s) (%s (eval first  a) (eval second a) (eval third  a)))`)
+			emit(`((eq op '{{.name}}) ({{.name}} ({{.eval}} first a) ({{.eval}} second a) ({{.eval}} third a)))`)
 		default:
 			return fmt.Errorf("illegal args: %d", c.args)
 		}
@@ -134,12 +160,7 @@ func EvalTemplate(cnfg.Config) error {
 		return err
 	}
 	defer f.Close()
-	if err := t.Execute(f, map[string]interface{}{
-		"defun":    "eval",
-		"eval":     "eval",
-		"comment":  ";; " + autogen,
-		"compiled": w.String(),
-	}); err != nil {
+	if err := t.Execute(f, addkv("compiled", w.String(), args)); err != nil {
 		return err
 	}
 	fmt.Printf("compiled: %v\n", counts)

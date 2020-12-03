@@ -15,158 +15,158 @@
 	   ((eq op 'cond)    (evcon   (cdr e) a))
 	   ((eq op 'list)    (evlis   (cdr e) a))
 	   
-	   ;; manual: "add" with 2 args
-((eq op 'add) (add (eval first  a) (eval second a)))
+	   ;; "add" with 2 args (manual)
+((eq op 'add) (add (eval first a) (eval second a)))
 
-;; manual: "after" with 2 args
-((eq op 'after) (after (eval first  a) (eval second a)))
+;; "after" with 2 args (manual)
+((eq op 'after) (after (eval first a) (eval second a)))
 
-;; loaded: "and" with 2 args
-((eq op 'and) (and (eval first  a) (eval second a)))
+;; "and" with 2 args (loaded)
+((eq op 'and) (and (eval first a) (eval second a)))
 
-;; loaded: "append" with 2 args
-((eq op 'append) (append (eval first  a) (eval second a)))
+;; "append" with 2 args (loaded)
+((eq op 'append) (append (eval first a) (eval second a)))
 
-;; loaded: "assoc" with 2 args
-((eq op 'assoc) (assoc (eval first  a) (eval second a)))
+;; "assoc" with 2 args (loaded)
+((eq op 'assoc) (assoc (eval first a) (eval second a)))
 
-;; axiom: "atom" with 1 args
+;; "atom" with 1 args (axiom)
 ((eq op 'atom) (atom (eval first a)))
 
-;; loaded: "caadr" with 1 args
+;; "caadr" with 1 args (loaded)
 ((eq op 'caadr) (caadr (eval first a)))
 
-;; loaded: "caar" with 1 args
+;; "caar" with 1 args (loaded)
 ((eq op 'caar) (caar (eval first a)))
 
-;; loaded: "cadar" with 1 args
+;; "cadar" with 1 args (loaded)
 ((eq op 'cadar) (cadar (eval first a)))
 
-;; loaded: "caddar" with 1 args
+;; "caddar" with 1 args (loaded)
 ((eq op 'caddar) (caddar (eval first a)))
 
-;; loaded: "cadddar" with 1 args
+;; "cadddar" with 1 args (loaded)
 ((eq op 'cadddar) (cadddar (eval first a)))
 
-;; loaded: "caddddar" with 1 args
+;; "caddddar" with 1 args (loaded)
 ((eq op 'caddddar) (caddddar (eval first a)))
 
-;; loaded: "caddddr" with 1 args
+;; "caddddr" with 1 args (loaded)
 ((eq op 'caddddr) (caddddr (eval first a)))
 
-;; loaded: "cadddr" with 1 args
+;; "cadddr" with 1 args (loaded)
 ((eq op 'cadddr) (cadddr (eval first a)))
 
-;; loaded: "caddr" with 1 args
+;; "caddr" with 1 args (loaded)
 ((eq op 'caddr) (caddr (eval first a)))
 
-;; loaded: "cadr" with 1 args
+;; "cadr" with 1 args (loaded)
 ((eq op 'cadr) (cadr (eval first a)))
 
-;; axiom: "car" with 1 args
+;; "car" with 1 args (axiom)
 ((eq op 'car) (car (eval first a)))
 
-;; loaded: "cdar" with 1 args
+;; "cdar" with 1 args (loaded)
 ((eq op 'cdar) (cdar (eval first a)))
 
-;; loaded: "cddar" with 1 args
+;; "cddar" with 1 args (loaded)
 ((eq op 'cddar) (cddar (eval first a)))
 
-;; loaded: "cdddar" with 1 args
+;; "cdddar" with 1 args (loaded)
 ((eq op 'cdddar) (cdddar (eval first a)))
 
-;; loaded: "cddr" with 1 args
+;; "cddr" with 1 args (loaded)
 ((eq op 'cddr) (cddr (eval first a)))
 
-;; axiom: "cdr" with 1 args
+;; "cdr" with 1 args (axiom)
 ((eq op 'cdr) (cdr (eval first a)))
 
-;; manual: "concat" with 2 args
-((eq op 'concat) (concat (eval first  a) (eval second a)))
+;; "concat" with 2 args (manual)
+((eq op 'concat) (concat (eval first a) (eval second a)))
 
-;; axiom: "cons" with 2 args
-((eq op 'cons) (cons (eval first  a) (eval second a)))
+;; "cons" with 2 args (axiom)
+((eq op 'cons) (cons (eval first a) (eval second a)))
 
-;; manual: "display" with 1 args
+;; "display" with 1 args (manual)
 ((eq op 'display) (display (eval first a)))
 
-;; axiom: "eq" with 2 args
-((eq op 'eq) (eq (eval first  a) (eval second a)))
+;; "eq" with 2 args (axiom)
+((eq op 'eq) (eq (eval first a) (eval second a)))
 
-;; manual: "err" with 1 args
+;; "err" with 1 args (manual)
 ((eq op 'err) (err (eval first a)))
 
-;; loaded: "eval" with 2 args
-((eq op 'eval) (eval (eval first  a) (eval second a)))
+;; "eval" with 2 args (loaded)
+((eq op 'eval) (eval (eval first a) (eval second a)))
 
-;; loaded: "evcon" with 2 args
-((eq op 'evcon) (evcon (eval first  a) (eval second a)))
+;; "evcon" with 2 args (loaded)
+((eq op 'evcon) (evcon (eval first a) (eval second a)))
 
-;; loaded: "evlis" with 2 args
-((eq op 'evlis) (evlis (eval first  a) (eval second a)))
+;; "evlis" with 2 args (loaded)
+((eq op 'evlis) (evlis (eval first a) (eval second a)))
 
-;; manual: "exp" with 3 args
-((eq op 'exp) (exp (eval first  a) (eval second a) (eval third  a)))
+;; "exp" with 3 args (manual)
+((eq op 'exp) (exp (eval first a) (eval second a) (eval third a)))
 
-;; manual: "hash" with 1 args
+;; "hash" with 1 args (manual)
 ((eq op 'hash) (hash (eval first a)))
 
-;; manual: "hashed" with 1 args
+;; "hashed" with 1 args (manual)
 ((eq op 'hashed) (hashed (eval first a)))
 
-;; loaded: "inc" with 1 args
+;; "inc" with 1 args (loaded)
 ((eq op 'inc) (inc (eval first a)))
 
-;; loaded: "length" with 1 args
+;; "length" with 1 args (loaded)
 ((eq op 'length) (length (eval first a)))
 
-;; manual: "mul" with 2 args
-((eq op 'mul) (mul (eval first  a) (eval second a)))
+;; "mul" with 2 args (manual)
+((eq op 'mul) (mul (eval first a) (eval second a)))
 
-;; manual: "newkey" with 0 args
+;; "newkey" with 0 args (manual)
 ((eq op 'newkey) (newkey))
 
-;; loaded: "next" with 1 args
+;; "next" with 1 args (loaded)
 ((eq op 'next) (next (eval first a)))
 
-;; loaded: "not" with 1 args
+;; "not" with 1 args (loaded)
 ((eq op 'not) (not (eval first a)))
 
-;; loaded: "null" with 1 args
+;; "null" with 1 args (loaded)
 ((eq op 'null) (null (eval first a)))
 
-;; loaded: "or" with 2 args
-((eq op 'or) (or (eval first  a) (eval second a)))
+;; "or" with 2 args (loaded)
+((eq op 'or) (or (eval first a) (eval second a)))
 
-;; loaded: "pair" with 2 args
-((eq op 'pair) (pair (eval first  a) (eval second a)))
+;; "pair" with 2 args (loaded)
+((eq op 'pair) (pair (eval first a) (eval second a)))
 
-;; manual: "pub" with 1 args
+;; "pub" with 1 args (manual)
 ((eq op 'pub) (pub (eval first a)))
 
-;; manual: "runes" with 1 args
+;; "runes" with 1 args (manual)
 ((eq op 'runes) (runes (eval first a)))
 
-;; manual: "sign" with 2 args
-((eq op 'sign) (sign (eval first  a) (eval second a)))
+;; "sign" with 2 args (manual)
+((eq op 'sign) (sign (eval first a) (eval second a)))
 
-;; manual: "sub" with 2 args
-((eq op 'sub) (sub (eval first  a) (eval second a)))
+;; "sub" with 2 args (manual)
+((eq op 'sub) (sub (eval first a) (eval second a)))
 
-;; loaded: "tassoc" with 3 args
-((eq op 'tassoc) (tassoc (eval first  a) (eval second a) (eval third  a)))
+;; "tassoc" with 3 args (loaded)
+((eq op 'tassoc) (tassoc (eval first a) (eval second a) (eval third a)))
 
-;; loaded: "test1" with 1 args
+;; "test1" with 1 args (loaded)
 ((eq op 'test1) (test1 (eval first a)))
 
-;; loaded: "test2" with 1 args
+;; "test2" with 1 args (loaded)
 ((eq op 'test2) (test2 (eval first a)))
 
-;; loaded: "test3" with 1 args
+;; "test3" with 1 args (loaded)
 ((eq op 'test3) (test3 (eval first a)))
 
-;; manual: "verify" with 3 args
-((eq op 'verify) (verify (eval first  a) (eval second a) (eval third  a)))
+;; "verify" with 3 args (manual)
+((eq op 'verify) (verify (eval first a) (eval second a) (eval third a)))
 
 
 	   

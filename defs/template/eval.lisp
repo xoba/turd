@@ -1,7 +1,7 @@
-{{.comment}}
+;; {{.comment}}
 (defun {{.defun}} (e a) 
   (cond
-   ((atom e) (assoc e a))
+   ((atom e) ({{.assoc}} e a))
    ((atom (car e))
     ((λ (op first rest)
        ((λ (second third)
@@ -12,13 +12,13 @@
 				   a))
 	   
 	   ((eq op 'quote)   (cadr e))
-	   ((eq op 'cond)    (evcon   (cdr e) a))
-	   ((eq op 'list)    (evlis   (cdr e) a))
+	   ((eq op 'cond)    ({{.evcon}}   (cdr e) a))
+	   ((eq op 'list)    ({{.evlis}}   (cdr e) a))
 	   
 	   {{.compiled}}
 	   
 	   ;; resolve an unknown op:
-	   ('t ({{.eval}} (cons (assoc op a)
+	   ('t ({{.eval}} (cons ({{.assoc}} op a)
 			   (cdr e))
 		     a))))
 	
@@ -42,9 +42,9 @@
     (cond ;; two different forms for lambda
      ((atom (cadar e)) ; lexpr form (lambda x ...)
       ({{.eval}} (caddar e)
-	    (cons (list (cadar e) (evlis (cdr e) a))
+	    (cons (list (cadar e) ({{.evlis}} (cdr e) a))
 		  a)))
      ('t ; traditional form (lambda (x...) ...)
       ({{.eval}} (caddar e)
-	    (append (pair (cadar e) (evlis (cdr e) a))
+	    (append (pair (cadar e) ({{.evlis}} (cdr e) a))
 		    a)))))))
