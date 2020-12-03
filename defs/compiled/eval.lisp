@@ -165,6 +165,9 @@
 ;; "test3" with 1 args (loaded)
 ((eq op 'test3) (test3 (eval first a)))
 
+;; "teval" with 3 args (loaded)
+((eq op 'teval) (teval (eval first a) (eval second a) (eval third a)))
+
 ;; "tevcon" with 3 args (loaded)
 ((eq op 'tevcon) (tevcon (eval first a) (eval second a) (eval third a)))
 
