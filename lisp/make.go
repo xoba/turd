@@ -37,7 +37,7 @@ func EvalTemplate(cnfg.Config) error {
 	}); err != nil {
 		return err
 	}
-	return nil
+	//return nil
 	if err := GenEval("defs/compiled/teval.lisp", map[string]string{
 		"defun":   "teval",
 		"args":    "(t e a)",
@@ -389,10 +389,10 @@ func (c context) emit() string {
 
 // non-negligible chance of collision, but maybe worth it for brevity:
 func smallHash(s string) string {
-	return hex.EncodeToString(thash.Hash([]byte(s)))[:10]
+	return hex.EncodeToString(thash.Hash([]byte(s)))[:4]
 }
 
-func funcName(p, s string) string {
+func funcName(name, code string, vars []string) string {
 	clean := func(x string) string {
 		w := new(bytes.Buffer)
 		for _, r := range x {
@@ -405,10 +405,11 @@ func funcName(p, s string) string {
 		}
 		return w.String()
 	}
-	if p == "" {
-		return fmt.Sprintf("F_%s", smallHash(s))
+	args := strings.Join(vars, ",")
+	if name == "" {
+		return fmt.Sprintf("F_%s_%s", smallHash(code), smallHash(args))
 	}
-	return fmt.Sprintf("F_%s_%s", clean(p), smallHash(s))
+	return fmt.Sprintf("F_%s_%s_%s", clean(name), smallHash(code), smallHash(args))
 }
 
 func CompileLazy(c context, e Exp, vars []string) ([]byte, error) {
@@ -421,7 +422,7 @@ func CompileLazy(c context, e Exp, vars []string) ([]byte, error) {
 		return nil, fmt.Errorf("malformed cond with %d parts: %s", len(list), e)
 	}
 	f := func(s string) string {
-		name := funcName("", s)
+		name := funcName("", s, vars)
 		c.funcs[name] = fmt.Sprintf(`func %s(...Exp) Exp {
 return %s
 }
@@ -561,7 +562,7 @@ return %[1]s(%[3]s)
 					if err != nil {
 						return nil, err
 					}
-					name := funcName(String(key), string(sub))
+					name := funcName(String(key), string(sub), vars)
 					w := new(bytes.Buffer)
 					fmt.Fprintf(w, `func %[1]s(%[2]s Exp) Exp {
 return %[3]s
