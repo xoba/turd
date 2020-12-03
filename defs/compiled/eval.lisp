@@ -165,14 +165,11 @@
 ;; "test3" with 1 args (loaded)
 ((eq op 'test3) (test3 (eval first a)))
 
-;; "teval" with 2 args (loaded)
-((eq op 'teval) (teval (eval first a) (eval second a)))
+;; "tevcon" with 3 args (loaded)
+((eq op 'tevcon) (tevcon (eval first a) (eval second a) (eval third a)))
 
-;; "tevcon" with 2 args (loaded)
-((eq op 'tevcon) (tevcon (eval first a) (eval second a)))
-
-;; "tevlis" with 2 args (loaded)
-((eq op 'tevlis) (tevlis (eval first a) (eval second a)))
+;; "tevlis" with 3 args (loaded)
+((eq op 'tevlis) (tevlis (eval first a) (eval second a) (eval third a)))
 
 ;; "verify" with 3 args (manual)
 ((eq op 'verify) (verify (eval first a) (eval second a) (eval third a)))

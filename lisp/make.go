@@ -27,9 +27,9 @@ const (
 // autogenerate an eval func, TODO also "try"
 func EvalTemplate(cnfg.Config) error {
 	if err := GenEval("defs/compiled/eval.lisp", map[string]string{
+		"defun":   "eval",
 		"args":    "(e a)",
 		"eval":    "eval",
-		"defun":   "eval",
 		"assoc":   "assoc",
 		"evlis":   "evlis",
 		"evcon":   "evcon",
@@ -37,13 +37,14 @@ func EvalTemplate(cnfg.Config) error {
 	}); err != nil {
 		return err
 	}
+	return nil
 	if err := GenEval("defs/compiled/teval.lisp", map[string]string{
-		"args":    "(e a)",
-		"eval":    "teval",
 		"defun":   "teval",
-		"assoc":   "tassoc",
-		"evlis":   "tevlis",
-		"evcon":   "tevcon",
+		"args":    "(t e a)",
+		"eval":    "teval (next t)",
+		"assoc":   "tassoc (next t)",
+		"evlis":   "tevlis (next t)",
+		"evcon":   "tevcon (next t)",
 		"comment": autogen,
 	}); err != nil {
 		return err

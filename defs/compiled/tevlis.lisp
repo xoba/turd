@@ -1,4 +1,4 @@
-(defun tevlis (m a) 
+(defun tevlis (t m a) 
   (cond ((null m) '())
-	('t (cons (eval (car m) a)
-		  (tevlis (cdr m) a)))))
+	('t (cons (teval (next t) (car m) a)
+		  (tevlis (next t) (cdr m) a)))))

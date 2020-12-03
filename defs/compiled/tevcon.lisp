@@ -1,4 +1,4 @@
-(defun tevcon (c a) 
-  (cond ((eval (caar c) a)
-	 (eval (cadar c) a))
-	('t (tevcon (cdr c) a))))
+(defun tevcon (t c a) 
+  (cond ((teval (next t) (caar c) a)
+	 (teval (next t) (cadar c) a))
+	('t (tevcon (next t) (cdr c) a))))
