@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"text/template"
 	"unicode"
 
 	"github.com/xoba/turd/cnfg"
@@ -54,7 +55,7 @@ func EvalTemplate(cnfg.Config) error {
 	add("eq", 2)
 	add("car", 1)
 	add("cdr", 1)
-	add("cons", 1)
+	add("cons", 2)
 	add("display", 1)
 	add("exp", 3)
 	add("mul", 2)
@@ -102,11 +103,49 @@ func EvalTemplate(cnfg.Config) error {
 		sorted = append(sorted, k)
 	}
 	sort.Strings(sorted)
+	w := new(bytes.Buffer)
 	for _, k := range sorted {
 		c := m[k]
 		fmt.Printf("%s %s %d\n", c.class, c.name, c.args)
+		emit := func(s string) {
+			fmt.Fprintf(w, s, c.name, c.name)
+
+		}
+		switch c.args {
+		case 0:
+			emit(`((eq op '%s) (%s))
+`)
+		case 1:
+			emit(`((eq op '%s) (%s (eval first a)))
+`)
+		case 2:
+			emit(`((eq op '%s) (%s (eval first  a)
+  (eval second a)))
+`)
+		case 3:
+			emit(`((eq op '%s) (%s (eval first  a)
+  (eval second a)
+  (eval third  a)))
+`)
+		default:
+			return fmt.Errorf("illegal args: %d", c.args)
+		}
 	}
 
+	t, err := template.ParseFiles("defs/template/eval.lisp")
+	if err != nil {
+		return err
+	}
+	f, err := os.Create("defs/compiled/eval.lisp")
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	if err := t.Execute(f, map[string]interface{}{
+		"compiled": w.String(),
+	}); err != nil {
+		return err
+	}
 	return nil
 }
 

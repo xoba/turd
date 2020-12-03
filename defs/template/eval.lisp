@@ -14,7 +14,7 @@
 	   ((eq op 'cond)    (evcon   (cdr e) a))
 	   ((eq op 'list)    (evlis   (cdr e) a))
 
-	   {{.compiled}}
+{{.compiled}}
 	  
 	   ;; resolve an unknown op:
 	   ('t (eval (cons (assoc op a)

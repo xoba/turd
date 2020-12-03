@@ -171,7 +171,6 @@ func (c Content) Verify() error {
 
 func (s *Storage) SetContent(c Content) error {
 	var found Content
-	fmt.Printf("%s -> %s\n", c.Path, path.Clean(c.Path))
 	if p := path.Clean(c.Path); p != c.Path {
 		return fmt.Errorf("path not clean: %q", c.Path)
 	}

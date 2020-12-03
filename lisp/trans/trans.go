@@ -435,9 +435,9 @@ func Run(cnfg.Config) error {
 			}
 
 			balances := func() string {
+				return "n/a"
 				m := make(map[string]*big.Int)
 				kv, err := state.db.Search(func(kv *trie.KeyValue) bool {
-					fmt.Println(kv)
 					return false
 				})
 				if err == trie.NotFound {
@@ -465,7 +465,6 @@ func Run(cnfg.Config) error {
 			inc := func(addr []byte, o *big.Int) {
 				if err := state.IncBalance(key(addr), o); err != nil {
 					log.Fatal(err)
-
 				}
 			}
 			dec := func(addr []byte, o *big.Int) {
@@ -574,13 +573,12 @@ func Run(cnfg.Config) error {
 
 			x := big.NewInt(0).SetBytes(bhash)
 			if x.Cmp(difficulty) < 0 {
-
-				if err := state.db.ToGviz("trie.svg", "state"); err != nil {
-					return err
+				if false {
+					if err := state.db.ToGviz("trie.svg", "state"); err != nil {
+						return err
+					}
+					return open.Run("trie.svg")
 				}
-
-				return open.Run("trie.svg")
-
 				break
 			}
 		}
