@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/big"
 	"path/filepath"
 	"time"
 
@@ -19,6 +20,10 @@ func Eval(e Exp) Exp {
 
 func CompiledEval(e Exp) Exp {
 	return UnsanitizeGo(eval([]Exp{SanitizeGo(e), env}...))
+}
+
+func CompiledTry(e Exp, max *big.Int) Exp {
+	return UnsanitizeGo(teval([]Exp{[]Exp{max, big.NewInt(0)}, SanitizeGo(e), env}...))
 }
 
 func InterpretedEval(e Exp, eval EvalFunc) Exp {
@@ -335,17 +340,11 @@ func Run(c cnfg.Config) error {
 	test("errors", `(err 'abc)`, "error: abc")
 	test("errors", `(err (list 'a 'b 'c))`, "error: (a b c)")
 
-	test("try", "(try '(10 0) 'x '((x a) (y b)))", "a")
-	test("try", "(try '(10 0) '(car '(a b)) '())", "a")
-	test("try", "(try '(10 0) '(cdr '(a b)) '())", "(b)")
-	test("try", fmt.Sprintf("(try '(10 0) '(cdr '(a b)) '%s)", String(env)), "(b)")
-	test("try", "(try '(10 0) '(blah '(a b)) '())", "error: (max 10)")
-
 	test("teval", "(teval '(10 0) 'x '((x a) (y b)))", "a")
 	test("teval", "(teval '(10 0) '(car '(a b)) '())", "a")
 	test("teval", "(teval '(10 0) '(cdr '(a b)) '())", "(b)")
 	test("teval", fmt.Sprintf("(teval '(10 0) '(cdr '(a b)) '%s)", String(env)), "(b)")
-	test("teval", "(teval '(1000 0) '(blah '(a b)) '())", "error: (max 1000)")
+	test("teval", "(teval '(100 0) '(blah '(a b)) '())", "error: (max 100)")
 
 	test("next", `(next '(10 6))`, `(10 7)`)
 	test("next", `(next '(10 10))`, `error: (max 10)`)
