@@ -15,7 +15,8 @@
 	   ((eq op 'cond)    (tevcon (next t)   (cdr e) a))
 	   ((eq op 'list)    (tevlis (next t)   (cdr e) a))
 	   
-	   ;; "add" with 2 args (manual)
+	   
+;; "add" with 2 args (manual)
 ((eq op 'add) (add (teval (next t) first a) (teval (next t) second a)))
 
 ;; "after" with 2 args (manual)

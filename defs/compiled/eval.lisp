@@ -15,7 +15,8 @@
 	   ((eq op 'cond)    (evcon   (cdr e) a))
 	   ((eq op 'list)    (evlis   (cdr e) a))
 	   
-	   ;; "add" with 2 args (manual)
+	   
+;; "add" with 2 args (manual)
 ((eq op 'add) (add (eval first a) (eval second a)))
 
 ;; "after" with 2 args (manual)

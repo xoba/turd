@@ -18,7 +18,11 @@ func Eval(e Exp) Exp {
 }
 
 func CompiledEval(e Exp) Exp {
-	return UnsanitizeGo(eval([]Exp{SanitizeGo(e), env}...))
+	if false {
+		return UnsanitizeGo(teval([]Exp{[]Exp{"0", "1000"}, SanitizeGo(e), env}...))
+	} else {
+		return UnsanitizeGo(eval([]Exp{SanitizeGo(e), env}...))
+	}
 }
 
 func InterpretedEval(e Exp, eval EvalFunc) Exp {

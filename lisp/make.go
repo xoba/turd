@@ -172,7 +172,7 @@ func GenEval(file string, args map[string]string) error {
 		return err
 	}
 	defer f.Close()
-	if err := t.Execute(f, addkv("compiled", w.String(), args)); err != nil {
+	if err := t.Execute(f, addkv("compiled", "\n"+w.String(), args)); err != nil {
 		return err
 	}
 	fmt.Printf("%s compiled: %v\n", filepath.Base(file), counts)
