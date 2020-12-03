@@ -24,6 +24,7 @@ const (
 	pkg      = "lisp"
 )
 
+// autogenerate an eval func, TODO also "try"
 func EvalTemplate(cnfg.Config) error {
 	type compiled struct {
 		name  string
@@ -31,7 +32,12 @@ func EvalTemplate(cnfg.Config) error {
 		args  int
 	}
 	m := make(map[string]compiled)
+	counts := make(map[string]int)
 	set := func(c compiled) {
+		if c.name == "" {
+			return
+		}
+		counts[c.class]++
 		if _, ok := m[c.name]; ok {
 			log.Fatalf("duplicate %q", c.name)
 		}
@@ -41,16 +47,17 @@ func EvalTemplate(cnfg.Config) error {
 		set(compiled{name: name, class: "loaded", args: args})
 	}
 	add := func(name string, args int) {
-		if name == "" {
-			return
-		}
 		set(compiled{name: name, class: "manual", args: args})
 	}
-	add("atom", 1)
-	add("eq", 2)
-	add("car", 1)
-	add("cdr", 1)
-	add("cons", 2)
+	axiom := func(name string, args int) {
+		set(compiled{name: name, class: "axiom", args: args})
+	}
+	axiom("atom", 1)
+	axiom("eq", 2)
+	axiom("car", 1)
+	axiom("cdr", 1)
+	axiom("cons", 2)
+
 	add("display", 1)
 	add("exp", 3)
 	add("mul", 2)
@@ -133,6 +140,7 @@ func EvalTemplate(cnfg.Config) error {
 	}); err != nil {
 		return err
 	}
+	fmt.Printf("compiled: %v\n", counts)
 	return nil
 }
 

@@ -3,7 +3,7 @@
   (cond
    ((atom e) (assoc e a))
    ((atom (car e))
-    ((λ (op first rest) 
+    ((λ (op first rest)
        ((λ (second third)
 	  (cond
 	   ((eq op 'funcall) (eval (cons
@@ -30,7 +30,7 @@
 ;; loaded: "assoc" with 2 args
 ((eq op 'assoc) (assoc (eval first  a) (eval second a)))
 
-;; manual: "atom" with 1 args
+;; axiom: "atom" with 1 args
 ((eq op 'atom) (atom (eval first a)))
 
 ;; loaded: "caadr" with 1 args
@@ -60,7 +60,7 @@
 ;; loaded: "cadr" with 1 args
 ((eq op 'cadr) (cadr (eval first a)))
 
-;; manual: "car" with 1 args
+;; axiom: "car" with 1 args
 ((eq op 'car) (car (eval first a)))
 
 ;; loaded: "cddar" with 1 args
@@ -72,19 +72,19 @@
 ;; loaded: "cddr" with 1 args
 ((eq op 'cddr) (cddr (eval first a)))
 
-;; manual: "cdr" with 1 args
+;; axiom: "cdr" with 1 args
 ((eq op 'cdr) (cdr (eval first a)))
 
 ;; manual: "concat" with 2 args
 ((eq op 'concat) (concat (eval first  a) (eval second a)))
 
-;; manual: "cons" with 2 args
+;; axiom: "cons" with 2 args
 ((eq op 'cons) (cons (eval first  a) (eval second a)))
 
 ;; manual: "display" with 1 args
 ((eq op 'display) (display (eval first a)))
 
-;; manual: "eq" with 2 args
+;; axiom: "eq" with 2 args
 ((eq op 'eq) (eq (eval first  a) (eval second a)))
 
 ;; manual: "err" with 1 args
