@@ -39,10 +39,9 @@ func EvalTemplate(cnfg.Config) error {
 	}); err != nil {
 		return err
 	}
-	return nil
 	if err := GenEval("defs/compiled/teval.lisp", map[string]string{
 		"nextlambda_prefix": "((lambda (t2)",
-		"nextlambda_suffix": "t2))",
+		"nextlambda_suffix": ")\n(next t))",
 		"defun":             "teval",
 		"args":              "(t e a)",
 		"eval":              "teval t2",
@@ -505,7 +504,7 @@ func Compile(c context, e Exp, indent bool, vars []string) ([]byte, error) {
 		}
 		fmt.Fprintf(w, `func() Exp {
 var %[1]s func(... Exp) Exp
-%[1]s = func(_args ... Exp) Exp { /* xx */
+%[1]s = func(_args ... Exp) Exp {
 `,
 			name,
 		)

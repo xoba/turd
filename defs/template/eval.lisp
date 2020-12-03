@@ -1,6 +1,8 @@
 ;; {{.comment}}
 (defun {{.defun}} {{.args}}
-{{.nextlambda_prefix}}
+  
+  {{.nextlambda_prefix}}
+  
   (cond
    ((atom e) ({{.assoc}} e a))
    ((atom (car e))
@@ -45,11 +47,11 @@
     (cond ;; two different forms for lambda
      ((atom (cadar e)) ; lexpr form (lambda x ...)
       ({{.eval}} (caddar e)
-	    (cons (list (cadar e) ({{.evlis}} (cdr e) a))
-		  a)))
+		 (cons (list (cadar e) ({{.evlis}} (cdr e) a))
+		       a)))
      ('t ; traditional form (lambda (x...) ...)
       ({{.eval}} (caddar e)
-	    (append (pair (cadar e) ({{.evlis}} (cdr e) a))
-		    a)))))))
-
-{{.nextlambda_suffix}}
+		 (append (pair (cadar e) ({{.evlis}} (cdr e) a))
+			 a))))))
+  
+  {{.nextlambda_suffix}})
