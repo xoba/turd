@@ -26,7 +26,8 @@ const (
 
 // autogenerate an eval func, TODO also "try"
 func EvalTemplate(cnfg.Config) error {
-	if err := GenEval(map[string]string{
+	if err := GenEval("defs/compiled/eval.lisp", map[string]string{
+		"args":    "(e a)",
 		"eval":    "eval",
 		"defun":   "eval",
 		"assoc":   "assoc",
@@ -36,10 +37,21 @@ func EvalTemplate(cnfg.Config) error {
 	}); err != nil {
 		return err
 	}
+	if err := GenEval("defs/compiled/teval.lisp", map[string]string{
+		"args":    "(e a)",
+		"eval":    "teval",
+		"defun":   "teval",
+		"assoc":   "tassoc",
+		"evlis":   "tevlis",
+		"evcon":   "tevcon",
+		"comment": autogen,
+	}); err != nil {
+		return err
+	}
 	return nil
 }
 
-func GenEval(args map[string]string) error {
+func GenEval(file string, args map[string]string) error {
 	addkv := func(k, v string, m map[string]string) map[string]string {
 		out := map[string]string{
 			k: v,
@@ -155,7 +167,7 @@ func GenEval(args map[string]string) error {
 	if err != nil {
 		return err
 	}
-	f, err := os.Create("defs/compiled/eval.lisp")
+	f, err := os.Create(file)
 	if err != nil {
 		return err
 	}
@@ -163,7 +175,7 @@ func GenEval(args map[string]string) error {
 	if err := t.Execute(f, addkv("compiled", w.String(), args)); err != nil {
 		return err
 	}
-	fmt.Printf("compiled: %v\n", counts)
+	fmt.Printf("%s compiled: %v\n", filepath.Base(file), counts)
 	return nil
 }
 

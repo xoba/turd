@@ -1,5 +1,5 @@
 ;; {{.comment}}
-(defun {{.defun}} (e a) 
+(defun {{.defun}} {{.args}}
   (cond
    ((atom e) ({{.assoc}} e a))
    ((atom (car e))

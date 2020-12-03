@@ -408,7 +408,7 @@ func cddr(args ...Exp) Exp {
 // eval (compiled)
 //
 
-var eval_label = parse_env("(label eval (lambda (e a) (cond ((atom e) (assoc e a)) ((atom (car e)) ((λ (op first rest) ((λ (second third) (cond ((eq op 'funcall) (eval (cons (eval first a) rest) a)) ((eq op 'quote) (cadr e)) ((eq op 'cond) (evcon (cdr e) a)) ((eq op 'list) (evlis (cdr e) a)) ((eq op 'add) (add (eval first a) (eval second a))) ((eq op 'after) (after (eval first a) (eval second a))) ((eq op 'and) (and (eval first a) (eval second a))) ((eq op 'append_go_sanitized) (append_go_sanitized (eval first a) (eval second a))) ((eq op 'assoc) (assoc (eval first a) (eval second a))) ((eq op 'atom) (atom (eval first a))) ((eq op 'caadr) (caadr (eval first a))) ((eq op 'caar) (caar (eval first a))) ((eq op 'cadar) (cadar (eval first a))) ((eq op 'caddar) (caddar (eval first a))) ((eq op 'cadddar) (cadddar (eval first a))) ((eq op 'caddddar) (caddddar (eval first a))) ((eq op 'caddddr) (caddddr (eval first a))) ((eq op 'cadddr) (cadddr (eval first a))) ((eq op 'caddr) (caddr (eval first a))) ((eq op 'cadr) (cadr (eval first a))) ((eq op 'car) (car (eval first a))) ((eq op 'cdar) (cdar (eval first a))) ((eq op 'cddar) (cddar (eval first a))) ((eq op 'cdddar) (cdddar (eval first a))) ((eq op 'cddr) (cddr (eval first a))) ((eq op 'cdr) (cdr (eval first a))) ((eq op 'concat) (concat (eval first a) (eval second a))) ((eq op 'cons) (cons (eval first a) (eval second a))) ((eq op 'display) (display (eval first a))) ((eq op 'eq) (eq (eval first a) (eval second a))) ((eq op 'err) (err (eval first a))) ((eq op 'eval) (eval (eval first a) (eval second a))) ((eq op 'evcon) (evcon (eval first a) (eval second a))) ((eq op 'evlis) (evlis (eval first a) (eval second a))) ((eq op 'exp) (exp (eval first a) (eval second a) (eval third a))) ((eq op 'hash) (hash (eval first a))) ((eq op 'hashed) (hashed (eval first a))) ((eq op 'inc) (inc (eval first a))) ((eq op 'length) (length (eval first a))) ((eq op 'mul) (mul (eval first a) (eval second a))) ((eq op 'newkey) (newkey)) ((eq op 'next) (next (eval first a))) ((eq op 'not) (not (eval first a))) ((eq op 'null) (null (eval first a))) ((eq op 'or) (or (eval first a) (eval second a))) ((eq op 'pair) (pair (eval first a) (eval second a))) ((eq op 'pub) (pub (eval first a))) ((eq op 'runes) (runes (eval first a))) ((eq op 'sign) (sign (eval first a) (eval second a))) ((eq op 'sub) (sub (eval first a) (eval second a))) ((eq op 'tassoc) (tassoc (eval first a) (eval second a) (eval third a))) ((eq op 'test1) (test1 (eval first a))) ((eq op 'test2) (test2 (eval first a))) ((eq op 'test3) (test3 (eval first a))) ((eq op 'verify) (verify (eval first a) (eval second a) (eval third a))) ('t (eval (cons (assoc op a) (cdr e)) a)))) (car rest) (cadr rest))) (car e) (cadr e) (cddr e))) ((eq (caar e) 'macro) (eval (eval (cadddar e) (pair (caddar e) (cdr e))) a)) ((eq (caar e) 'label) (eval (cons (caddar e) (cdr e)) (cons (list (cadar e) (car e)) a))) ((or (eq (caar e) 'lambda) (eq (caar e) 'λ)) (cond ((atom (cadar e)) (eval (caddar e) (cons (list (cadar e) (evlis (cdr e) a)) a))) ('t (eval (caddar e) (append_go_sanitized (pair (cadar e) (evlis (cdr e) a)) a))))))))")
+var eval_label = parse_env("(label eval (lambda (e a) (cond ((atom e) (assoc e a)) ((atom (car e)) ((λ (op first rest) ((λ (second third) (cond ((eq op 'funcall) (eval (cons (eval first a) rest) a)) ((eq op 'quote) (cadr e)) ((eq op 'cond) (evcon (cdr e) a)) ((eq op 'list) (evlis (cdr e) a)) ((eq op 'add) (add (eval first a) (eval second a))) ((eq op 'after) (after (eval first a) (eval second a))) ((eq op 'and) (and (eval first a) (eval second a))) ((eq op 'append_go_sanitized) (append_go_sanitized (eval first a) (eval second a))) ((eq op 'assoc) (assoc (eval first a) (eval second a))) ((eq op 'atom) (atom (eval first a))) ((eq op 'caadr) (caadr (eval first a))) ((eq op 'caar) (caar (eval first a))) ((eq op 'cadar) (cadar (eval first a))) ((eq op 'caddar) (caddar (eval first a))) ((eq op 'cadddar) (cadddar (eval first a))) ((eq op 'caddddar) (caddddar (eval first a))) ((eq op 'caddddr) (caddddr (eval first a))) ((eq op 'cadddr) (cadddr (eval first a))) ((eq op 'caddr) (caddr (eval first a))) ((eq op 'cadr) (cadr (eval first a))) ((eq op 'car) (car (eval first a))) ((eq op 'cdar) (cdar (eval first a))) ((eq op 'cddar) (cddar (eval first a))) ((eq op 'cdddar) (cdddar (eval first a))) ((eq op 'cddr) (cddr (eval first a))) ((eq op 'cdr) (cdr (eval first a))) ((eq op 'concat) (concat (eval first a) (eval second a))) ((eq op 'cons) (cons (eval first a) (eval second a))) ((eq op 'display) (display (eval first a))) ((eq op 'eq) (eq (eval first a) (eval second a))) ((eq op 'err) (err (eval first a))) ((eq op 'eval) (eval (eval first a) (eval second a))) ((eq op 'evcon) (evcon (eval first a) (eval second a))) ((eq op 'evlis) (evlis (eval first a) (eval second a))) ((eq op 'exp) (exp (eval first a) (eval second a) (eval third a))) ((eq op 'hash) (hash (eval first a))) ((eq op 'hashed) (hashed (eval first a))) ((eq op 'inc) (inc (eval first a))) ((eq op 'length) (length (eval first a))) ((eq op 'mul) (mul (eval first a) (eval second a))) ((eq op 'newkey) (newkey)) ((eq op 'next) (next (eval first a))) ((eq op 'not) (not (eval first a))) ((eq op 'null) (null (eval first a))) ((eq op 'or) (or (eval first a) (eval second a))) ((eq op 'pair) (pair (eval first a) (eval second a))) ((eq op 'pub) (pub (eval first a))) ((eq op 'runes) (runes (eval first a))) ((eq op 'sign) (sign (eval first a) (eval second a))) ((eq op 'sub) (sub (eval first a) (eval second a))) ((eq op 'tassoc) (tassoc (eval first a) (eval second a) (eval third a))) ((eq op 'test1) (test1 (eval first a))) ((eq op 'test2) (test2 (eval first a))) ((eq op 'test3) (test3 (eval first a))) ((eq op 'teval) (teval (eval first a) (eval second a))) ((eq op 'tevcon) (tevcon (eval first a) (eval second a))) ((eq op 'tevlis) (tevlis (eval first a) (eval second a))) ((eq op 'verify) (verify (eval first a) (eval second a) (eval third a))) ('t (eval (cons (assoc op a) (cdr e)) a)))) (car rest) (cadr rest))) (car e) (cadr e) (cddr e))) ((eq (caar e) 'macro) (eval (eval (cadddar e) (pair (caddar e) (cdr e))) a)) ((eq (caar e) 'label) (eval (cons (caddar e) (cdr e)) (cons (list (cadar e) (car e)) a))) ((or (eq (caar e) 'lambda) (eq (caar e) 'λ)) (cond ((atom (cadar e)) (eval (caddar e) (cons (list (cadar e) (evlis (cdr e) a)) a))) ('t (eval (caddar e) (append_go_sanitized (pair (cadar e) (evlis (cdr e) a)) a))))))))")
 
 func eval(args ...Exp) Exp {
 	e := args[0]
@@ -440,7 +440,7 @@ func eval(args ...Exp) Exp {
 								second := args[0]
 								third := args[1]
 								return func() Exp {
-									if f, ok := map_2ef5cdf965[String(op)]; ok {
+									if f, ok := map_d224b188fd[String(op)]; ok {
 										return f(a, e, first, op, rest, second, third)
 									}
 									return A(eval, A(cons, A(assoc, op, a), A(cdr, e)), a)
@@ -843,6 +843,151 @@ func test3(args ...Exp) Exp {
 var test4_label = parse_env("(label test4 (lambda (x) ((label f (lambda (first rest) (cond ((eq first '0) (list first rest)) ('t (f (sub first '1) rest))))) (car x) (cdr x))))")
 
 //
+// teval (compiled)
+//
+
+var teval_label = parse_env("(label teval (lambda (e a) (cond ((atom e) (tassoc e a)) ((atom (car e)) ((λ (op first rest) ((λ (second third) (cond ((eq op 'funcall) (teval (cons (teval first a) rest) a)) ((eq op 'quote) (cadr e)) ((eq op 'cond) (tevcon (cdr e) a)) ((eq op 'list) (tevlis (cdr e) a)) ((eq op 'add) (add (teval first a) (teval second a))) ((eq op 'after) (after (teval first a) (teval second a))) ((eq op 'and) (and (teval first a) (teval second a))) ((eq op 'append_go_sanitized) (append_go_sanitized (teval first a) (teval second a))) ((eq op 'assoc) (assoc (teval first a) (teval second a))) ((eq op 'atom) (atom (teval first a))) ((eq op 'caadr) (caadr (teval first a))) ((eq op 'caar) (caar (teval first a))) ((eq op 'cadar) (cadar (teval first a))) ((eq op 'caddar) (caddar (teval first a))) ((eq op 'cadddar) (cadddar (teval first a))) ((eq op 'caddddar) (caddddar (teval first a))) ((eq op 'caddddr) (caddddr (teval first a))) ((eq op 'cadddr) (cadddr (teval first a))) ((eq op 'caddr) (caddr (teval first a))) ((eq op 'cadr) (cadr (teval first a))) ((eq op 'car) (car (teval first a))) ((eq op 'cdar) (cdar (teval first a))) ((eq op 'cddar) (cddar (teval first a))) ((eq op 'cdddar) (cdddar (teval first a))) ((eq op 'cddr) (cddr (teval first a))) ((eq op 'cdr) (cdr (teval first a))) ((eq op 'concat) (concat (teval first a) (teval second a))) ((eq op 'cons) (cons (teval first a) (teval second a))) ((eq op 'display) (display (teval first a))) ((eq op 'eq) (eq (teval first a) (teval second a))) ((eq op 'err) (err (teval first a))) ((eq op 'eval) (eval (teval first a) (teval second a))) ((eq op 'evcon) (evcon (teval first a) (teval second a))) ((eq op 'evlis) (evlis (teval first a) (teval second a))) ((eq op 'exp) (exp (teval first a) (teval second a) (teval third a))) ((eq op 'hash) (hash (teval first a))) ((eq op 'hashed) (hashed (teval first a))) ((eq op 'inc) (inc (teval first a))) ((eq op 'length) (length (teval first a))) ((eq op 'mul) (mul (teval first a) (teval second a))) ((eq op 'newkey) (newkey)) ((eq op 'next) (next (teval first a))) ((eq op 'not) (not (teval first a))) ((eq op 'null) (null (teval first a))) ((eq op 'or) (or (teval first a) (teval second a))) ((eq op 'pair) (pair (teval first a) (teval second a))) ((eq op 'pub) (pub (teval first a))) ((eq op 'runes) (runes (teval first a))) ((eq op 'sign) (sign (teval first a) (teval second a))) ((eq op 'sub) (sub (teval first a) (teval second a))) ((eq op 'tassoc) (tassoc (teval first a) (teval second a) (teval third a))) ((eq op 'test1) (test1 (teval first a))) ((eq op 'test2) (test2 (teval first a))) ((eq op 'test3) (test3 (teval first a))) ((eq op 'teval) (teval (teval first a) (teval second a))) ((eq op 'tevcon) (tevcon (teval first a) (teval second a))) ((eq op 'tevlis) (tevlis (teval first a) (teval second a))) ((eq op 'verify) (verify (teval first a) (teval second a) (teval third a))) ('t (teval (cons (tassoc op a) (cdr e)) a)))) (car rest) (cadr rest))) (car e) (cadr e) (cddr e))) ((eq (caar e) 'macro) (teval (teval (cadddar e) (pair (caddar e) (cdr e))) a)) ((eq (caar e) 'label) (teval (cons (caddar e) (cdr e)) (cons (list (cadar e) (car e)) a))) ((or (eq (caar e) 'lambda) (eq (caar e) 'λ)) (cond ((atom (cadar e)) (teval (caddar e) (cons (list (cadar e) (tevlis (cdr e) a)) a))) ('t (teval (caddar e) (append_go_sanitized (pair (cadar e) (tevlis (cdr e) a)) a))))))))")
+
+func teval(args ...Exp) Exp {
+	e := args[0]
+	a := args[1]
+	return A(
+		cond,
+		L(
+			Func(func(...Exp) Exp {
+				return A(atom, e)
+			}),
+			Func(func(...Exp) Exp {
+				return A(tassoc, e, a)
+			}),
+		),
+		L(
+			Func(func(...Exp) Exp {
+				return A(atom, A(car, e))
+			}),
+			Func(func(...Exp) Exp {
+				return func() Exp {
+					var λ func(...Exp) Exp
+					λ = func(args ...Exp) Exp {
+						op := args[0]
+						first := args[1]
+						rest := args[2]
+						return func() Exp {
+							var λ func(...Exp) Exp
+							λ = func(args ...Exp) Exp {
+								second := args[0]
+								third := args[1]
+								return func() Exp {
+									if f, ok := map_90b0a5dc15[String(op)]; ok {
+										return f(a, e, first, op, rest, second, third)
+									}
+									return A(teval, A(cons, A(tassoc, op, a), A(cdr, e)), a)
+								}()
+
+							}
+							return λ(A(car, rest), A(cadr, rest))
+						}()
+
+					}
+					return λ(A(car, e), A(cadr, e), A(cddr, e))
+				}()
+
+			}),
+		),
+		L(
+			Func(func(...Exp) Exp {
+				return A(eq, A(caar, e), "macro")
+			}),
+			Func(func(...Exp) Exp {
+				return A(teval, A(teval, A(cadddar, e), A(pair, A(caddar, e), A(cdr, e))), a)
+			}),
+		),
+		L(
+			Func(func(...Exp) Exp {
+				return A(eq, A(caar, e), "label")
+			}),
+			Func(func(...Exp) Exp {
+				return A(teval, A(cons, A(caddar, e), A(cdr, e)), A(cons, A(list, A(cadar, e), A(car, e)), a))
+			}),
+		),
+		L(
+			Func(func(...Exp) Exp {
+				return A(or, A(eq, A(caar, e), "lambda"), A(eq, A(caar, e), "λ"))
+			}),
+			Func(func(...Exp) Exp {
+				return A(cond, L(
+					Func(func(...Exp) Exp {
+						return A(atom, A(cadar, e))
+					}),
+					Func(func(...Exp) Exp {
+						return A(teval, A(caddar, e), A(cons, A(list, A(cadar, e), A(tevlis, A(cdr, e), a)), a))
+					}),
+				), L(
+					"t",
+					Func(func(...Exp) Exp {
+						return A(teval, A(caddar, e), A(append_go_sanitized, A(pair, A(cadar, e), A(tevlis, A(cdr, e), a)), a))
+					}),
+				))
+			}),
+		),
+	)
+}
+
+//
+// tevcon (compiled)
+//
+
+var tevcon_label = parse_env("(label tevcon (lambda (c a) (cond ((eval (caar c) a) (eval (cadar c) a)) ('t (tevcon (cdr c) a)))))")
+
+func tevcon(args ...Exp) Exp {
+	c := args[0]
+	a := args[1]
+	return A(
+		cond,
+		L(
+			Func(func(...Exp) Exp {
+				return A(eval, A(caar, c), a)
+			}),
+			Func(func(...Exp) Exp {
+				return A(eval, A(cadar, c), a)
+			}),
+		),
+		L(
+			"t",
+			Func(func(...Exp) Exp {
+				return A(tevcon, A(cdr, c), a)
+			}),
+		),
+	)
+}
+
+//
+// tevlis (compiled)
+//
+
+var tevlis_label = parse_env("(label tevlis (lambda (m a) (cond ((null m) '()) ('t (cons (eval (car m) a) (tevlis (cdr m) a))))))")
+
+func tevlis(args ...Exp) Exp {
+	m := args[0]
+	a := args[1]
+	return A(
+		cond,
+		L(
+			Func(func(...Exp) Exp {
+				return A(null, m)
+			}),
+			Nil,
+		),
+		L(
+			"t",
+			Func(func(...Exp) Exp {
+				return A(cons, A(eval, A(car, m), a), A(tevlis, A(cdr, m), a))
+			}),
+		),
+	)
+}
+
+//
 // try (interpreted)
 //
 
@@ -866,8 +1011,16 @@ func F_0_94ffb94c37(first, rest, x Exp) Exp {
 	return A(list, first, rest)
 }
 
+func F_add_9009d377ca(a, e, first, op, rest, second, third Exp) Exp {
+	return A(add, A(teval, first, a), A(teval, second, a))
+}
+
 func F_add_c697c7bfbf(a, e, first, op, rest, second, third Exp) Exp {
 	return A(add, A(eval, first, a), A(eval, second, a))
+}
+
+func F_after_bef4130e55(a, e, first, op, rest, second, third Exp) Exp {
+	return A(after, A(teval, first, a), A(teval, second, a))
 }
 
 func F_after_d1d1801dce(a, e, first, op, rest, second, third Exp) Exp {
@@ -878,16 +1031,36 @@ func F_and_b62b5eac11(a, e, first, op, rest, second, third Exp) Exp {
 	return A(and, A(eval, first, a), A(eval, second, a))
 }
 
+func F_and_d113777881(a, e, first, op, rest, second, third Exp) Exp {
+	return A(and, A(teval, first, a), A(teval, second, a))
+}
+
 func F_appendπgoπsanitized_5ca651c73e(a, e, first, op, rest, second, third Exp) Exp {
 	return A(append_go_sanitized, A(eval, first, a), A(eval, second, a))
+}
+
+func F_appendπgoπsanitized_8df69e0808(a, e, first, op, rest, second, third Exp) Exp {
+	return A(append_go_sanitized, A(teval, first, a), A(teval, second, a))
+}
+
+func F_assoc_3de2c39cd4(a, e, first, op, rest, second, third Exp) Exp {
+	return A(assoc, A(teval, first, a), A(teval, second, a))
 }
 
 func F_assoc_58df95b48f(a, e, first, op, rest, second, third Exp) Exp {
 	return A(assoc, A(eval, first, a), A(eval, second, a))
 }
 
+func F_atom_3af6273f9e(a, e, first, op, rest, second, third Exp) Exp {
+	return A(atom, A(teval, first, a))
+}
+
 func F_atom_57e6d5c9b3(a, e, first, op, rest, second, third Exp) Exp {
 	return A(atom, A(eval, first, a))
+}
+
+func F_caadr_76dd1b7365(a, e, first, op, rest, second, third Exp) Exp {
+	return A(caadr, A(teval, first, a))
 }
 
 func F_caadr_9a51460d6b(a, e, first, op, rest, second, third Exp) Exp {
@@ -898,16 +1071,36 @@ func F_caar_18f57ec7ac(a, e, first, op, rest, second, third Exp) Exp {
 	return A(caar, A(eval, first, a))
 }
 
+func F_caar_b3b1da7362(a, e, first, op, rest, second, third Exp) Exp {
+	return A(caar, A(teval, first, a))
+}
+
 func F_cadar_08bb39827e(a, e, first, op, rest, second, third Exp) Exp {
 	return A(cadar, A(eval, first, a))
+}
+
+func F_cadar_8c7d17fb09(a, e, first, op, rest, second, third Exp) Exp {
+	return A(cadar, A(teval, first, a))
 }
 
 func F_caddar_bb34829244(a, e, first, op, rest, second, third Exp) Exp {
 	return A(caddar, A(eval, first, a))
 }
 
+func F_caddar_c32f907d16(a, e, first, op, rest, second, third Exp) Exp {
+	return A(caddar, A(teval, first, a))
+}
+
+func F_cadddar_20377d3b71(a, e, first, op, rest, second, third Exp) Exp {
+	return A(cadddar, A(teval, first, a))
+}
+
 func F_cadddar_26ece2d994(a, e, first, op, rest, second, third Exp) Exp {
 	return A(cadddar, A(eval, first, a))
+}
+
+func F_caddddar_3a72c76487(a, e, first, op, rest, second, third Exp) Exp {
+	return A(caddddar, A(teval, first, a))
 }
 
 func F_caddddar_4b02e05a2f(a, e, first, op, rest, second, third Exp) Exp {
@@ -918,12 +1111,28 @@ func F_caddddr_d7840de5c0(a, e, first, op, rest, second, third Exp) Exp {
 	return A(caddddr, A(eval, first, a))
 }
 
+func F_caddddr_fc076bba5c(a, e, first, op, rest, second, third Exp) Exp {
+	return A(caddddr, A(teval, first, a))
+}
+
+func F_cadddr_45e6d154e2(a, e, first, op, rest, second, third Exp) Exp {
+	return A(cadddr, A(teval, first, a))
+}
+
 func F_cadddr_b15fa6eba5(a, e, first, op, rest, second, third Exp) Exp {
 	return A(cadddr, A(eval, first, a))
 }
 
 func F_caddr_54b1e7324a(a, e, first, op, rest, second, third Exp) Exp {
 	return A(caddr, A(eval, first, a))
+}
+
+func F_caddr_ff098e7feb(a, e, first, op, rest, second, third Exp) Exp {
+	return A(caddr, A(teval, first, a))
+}
+
+func F_cadr_97dd4860c1(a, e, first, op, rest, second, third Exp) Exp {
+	return A(cadr, A(teval, first, a))
 }
 
 func F_cadr_aa1c6639fb(a, e, first, op, rest, second, third Exp) Exp {
@@ -934,6 +1143,14 @@ func F_car_6e7ecda3ef(a, e, first, op, rest, second, third Exp) Exp {
 	return A(car, A(eval, first, a))
 }
 
+func F_car_f75331ec0d(a, e, first, op, rest, second, third Exp) Exp {
+	return A(car, A(teval, first, a))
+}
+
+func F_cdar_0d2484fc3d(a, e, first, op, rest, second, third Exp) Exp {
+	return A(cdar, A(teval, first, a))
+}
+
 func F_cdar_f21811a8cc(a, e, first, op, rest, second, third Exp) Exp {
 	return A(cdar, A(eval, first, a))
 }
@@ -942,28 +1159,60 @@ func F_cddar_d9b0da6fb9(a, e, first, op, rest, second, third Exp) Exp {
 	return A(cddar, A(eval, first, a))
 }
 
+func F_cddar_e7dd36b4b4(a, e, first, op, rest, second, third Exp) Exp {
+	return A(cddar, A(teval, first, a))
+}
+
 func F_cdddar_89f98ebd5c(a, e, first, op, rest, second, third Exp) Exp {
 	return A(cdddar, A(eval, first, a))
+}
+
+func F_cdddar_df462d4942(a, e, first, op, rest, second, third Exp) Exp {
+	return A(cdddar, A(teval, first, a))
 }
 
 func F_cddr_b3ffda7668(a, e, first, op, rest, second, third Exp) Exp {
 	return A(cddr, A(eval, first, a))
 }
 
+func F_cddr_f8ecc6aaa8(a, e, first, op, rest, second, third Exp) Exp {
+	return A(cddr, A(teval, first, a))
+}
+
 func F_cdr_6772863567(a, e, first, op, rest, second, third Exp) Exp {
 	return A(cdr, A(eval, first, a))
+}
+
+func F_cdr_edeeb9d86a(a, e, first, op, rest, second, third Exp) Exp {
+	return A(cdr, A(teval, first, a))
+}
+
+func F_concat_65cea90e29(a, e, first, op, rest, second, third Exp) Exp {
+	return A(concat, A(teval, first, a), A(teval, second, a))
 }
 
 func F_concat_832e46a008(a, e, first, op, rest, second, third Exp) Exp {
 	return A(concat, A(eval, first, a), A(eval, second, a))
 }
 
+func F_cond_1c9e788466(a, e, first, op, rest, second, third Exp) Exp {
+	return A(tevcon, A(cdr, e), a)
+}
+
 func F_cond_26e96b4be1(a, e, first, op, rest, second, third Exp) Exp {
 	return A(evcon, A(cdr, e), a)
 }
 
+func F_cons_6a828689dd(a, e, first, op, rest, second, third Exp) Exp {
+	return A(cons, A(teval, first, a), A(teval, second, a))
+}
+
 func F_cons_d4b73be861(a, e, first, op, rest, second, third Exp) Exp {
 	return A(cons, A(eval, first, a), A(eval, second, a))
+}
+
+func F_display_3aae199863(a, e, first, op, rest, second, third Exp) Exp {
+	return A(display, A(teval, first, a))
 }
 
 func F_display_f82db8af96(a, e, first, op, rest, second, third Exp) Exp {
@@ -974,6 +1223,14 @@ func F_eq_9d693d8748(a, e, first, op, rest, second, third Exp) Exp {
 	return A(eq, A(eval, first, a), A(eval, second, a))
 }
 
+func F_eq_fe67330984(a, e, first, op, rest, second, third Exp) Exp {
+	return A(eq, A(teval, first, a), A(teval, second, a))
+}
+
+func F_err_4b7e52c8b5(a, e, first, op, rest, second, third Exp) Exp {
+	return A(err, A(teval, first, a))
+}
+
 func F_err_9d3d836b35(a, e, first, op, rest, second, third Exp) Exp {
 	return A(err, A(eval, first, a))
 }
@@ -982,8 +1239,20 @@ func F_eval_00e5f48f55(a, e, first, op, rest, second, third Exp) Exp {
 	return A(eval, A(eval, first, a), A(eval, second, a))
 }
 
+func F_eval_b8058fcc26(a, e, first, op, rest, second, third Exp) Exp {
+	return A(eval, A(teval, first, a), A(teval, second, a))
+}
+
 func F_evcon_848079d5b8(a, e, first, op, rest, second, third Exp) Exp {
 	return A(evcon, A(eval, first, a), A(eval, second, a))
+}
+
+func F_evcon_c28818cf27(a, e, first, op, rest, second, third Exp) Exp {
+	return A(evcon, A(teval, first, a), A(teval, second, a))
+}
+
+func F_evlis_743ee09b20(a, e, first, op, rest, second, third Exp) Exp {
+	return A(evlis, A(teval, first, a), A(teval, second, a))
 }
 
 func F_evlis_b9bd2f7eb3(a, e, first, op, rest, second, third Exp) Exp {
@@ -994,16 +1263,36 @@ func F_exp_0cf8749970(a, e, first, op, rest, second, third Exp) Exp {
 	return A(exp, A(eval, first, a), A(eval, second, a), A(eval, third, a))
 }
 
+func F_exp_7604958862(a, e, first, op, rest, second, third Exp) Exp {
+	return A(exp, A(teval, first, a), A(teval, second, a), A(teval, third, a))
+}
+
 func F_funcall_38c9a26765(a, e, first, op, rest, second, third Exp) Exp {
 	return A(eval, A(cons, A(eval, first, a), rest), a)
+}
+
+func F_funcall_987f3069e3(a, e, first, op, rest, second, third Exp) Exp {
+	return A(teval, A(cons, A(teval, first, a), rest), a)
 }
 
 func F_hash_890341d522(a, e, first, op, rest, second, third Exp) Exp {
 	return A(hash, A(eval, first, a))
 }
 
+func F_hash_8c55ae0942(a, e, first, op, rest, second, third Exp) Exp {
+	return A(hash, A(teval, first, a))
+}
+
+func F_hashed_115d17ac74(a, e, first, op, rest, second, third Exp) Exp {
+	return A(hashed, A(teval, first, a))
+}
+
 func F_hashed_2106668384(a, e, first, op, rest, second, third Exp) Exp {
 	return A(hashed, A(eval, first, a))
+}
+
+func F_inc_400fee1be0(a, e, first, op, rest, second, third Exp) Exp {
+	return A(inc, A(teval, first, a))
 }
 
 func F_inc_878d5d4d19(a, e, first, op, rest, second, third Exp) Exp {
@@ -1014,20 +1303,40 @@ func F_length_39633e2406(a, e, first, op, rest, second, third Exp) Exp {
 	return A(length, A(eval, first, a))
 }
 
+func F_length_5db708320c(a, e, first, op, rest, second, third Exp) Exp {
+	return A(length, A(teval, first, a))
+}
+
 func F_list_4d554d264a(a, e, first, op, rest, second, third Exp) Exp {
 	return A(evlis, A(cdr, e), a)
+}
+
+func F_list_bc51fac1fc(a, e, first, op, rest, second, third Exp) Exp {
+	return A(tevlis, A(cdr, e), a)
 }
 
 func F_mul_3841a9b191(a, e, first, op, rest, second, third Exp) Exp {
 	return A(mul, A(eval, first, a), A(eval, second, a))
 }
 
+func F_mul_89c1a9b351(a, e, first, op, rest, second, third Exp) Exp {
+	return A(mul, A(teval, first, a), A(teval, second, a))
+}
+
 func F_newkey_623d29c094(a, e, first, op, rest, second, third Exp) Exp {
 	return A(newkey)
 }
 
+func F_next_04e7765f7d(a, e, first, op, rest, second, third Exp) Exp {
+	return A(next, A(teval, first, a))
+}
+
 func F_next_5f5d06563c(a, e, first, op, rest, second, third Exp) Exp {
 	return A(next, A(eval, first, a))
+}
+
+func F_not_bd823ce522(a, e, first, op, rest, second, third Exp) Exp {
+	return A(not, A(teval, first, a))
 }
 
 func F_not_d06984edf2(a, e, first, op, rest, second, third Exp) Exp {
@@ -1038,12 +1347,28 @@ func F_null_0fce507675(a, e, first, op, rest, second, third Exp) Exp {
 	return A(null, A(eval, first, a))
 }
 
+func F_null_2aa1ebc116(a, e, first, op, rest, second, third Exp) Exp {
+	return A(null, A(teval, first, a))
+}
+
+func F_or_085e4486af(a, e, first, op, rest, second, third Exp) Exp {
+	return A(or, A(teval, first, a), A(teval, second, a))
+}
+
 func F_or_c6b938191a(a, e, first, op, rest, second, third Exp) Exp {
 	return A(or, A(eval, first, a), A(eval, second, a))
 }
 
 func F_pair_743e252bfd(a, e, first, op, rest, second, third Exp) Exp {
 	return A(pair, A(eval, first, a), A(eval, second, a))
+}
+
+func F_pair_9832aad8fd(a, e, first, op, rest, second, third Exp) Exp {
+	return A(pair, A(teval, first, a), A(teval, second, a))
+}
+
+func F_pub_5c14d925ed(a, e, first, op, rest, second, third Exp) Exp {
+	return A(pub, A(teval, first, a))
 }
 
 func F_pub_fd1fdb63c7(a, e, first, op, rest, second, third Exp) Exp {
@@ -1058,20 +1383,44 @@ func F_runes_1f36010f59(a, e, first, op, rest, second, third Exp) Exp {
 	return A(runes, A(eval, first, a))
 }
 
+func F_runes_b13cba1366(a, e, first, op, rest, second, third Exp) Exp {
+	return A(runes, A(teval, first, a))
+}
+
 func F_sign_11c1de489d(a, e, first, op, rest, second, third Exp) Exp {
 	return A(sign, A(eval, first, a), A(eval, second, a))
+}
+
+func F_sign_1a1ae46a55(a, e, first, op, rest, second, third Exp) Exp {
+	return A(sign, A(teval, first, a), A(teval, second, a))
 }
 
 func F_sub_246a160bc3(a, e, first, op, rest, second, third Exp) Exp {
 	return A(sub, A(eval, first, a), A(eval, second, a))
 }
 
+func F_sub_9d42fb5187(a, e, first, op, rest, second, third Exp) Exp {
+	return A(sub, A(teval, first, a), A(teval, second, a))
+}
+
 func F_tassoc_038d29f713(a, e, first, op, rest, second, third Exp) Exp {
 	return A(tassoc, A(eval, first, a), A(eval, second, a), A(eval, third, a))
 }
 
+func F_tassoc_f636bcd64a(a, e, first, op, rest, second, third Exp) Exp {
+	return A(tassoc, A(teval, first, a), A(teval, second, a), A(teval, third, a))
+}
+
+func F_test1_90209b6da9(a, e, first, op, rest, second, third Exp) Exp {
+	return A(test1, A(teval, first, a))
+}
+
 func F_test1_b2a90c1647(a, e, first, op, rest, second, third Exp) Exp {
 	return A(test1, A(eval, first, a))
+}
+
+func F_test2_8616d25247(a, e, first, op, rest, second, third Exp) Exp {
+	return A(test2, A(teval, first, a))
 }
 
 func F_test2_97cace0d47(a, e, first, op, rest, second, third Exp) Exp {
@@ -1080,6 +1429,38 @@ func F_test2_97cace0d47(a, e, first, op, rest, second, third Exp) Exp {
 
 func F_test3_54e98f673d(a, e, first, op, rest, second, third Exp) Exp {
 	return A(test3, A(eval, first, a))
+}
+
+func F_test3_ae2e90e234(a, e, first, op, rest, second, third Exp) Exp {
+	return A(test3, A(teval, first, a))
+}
+
+func F_teval_53b008301a(a, e, first, op, rest, second, third Exp) Exp {
+	return A(teval, A(eval, first, a), A(eval, second, a))
+}
+
+func F_teval_a7851d145f(a, e, first, op, rest, second, third Exp) Exp {
+	return A(teval, A(teval, first, a), A(teval, second, a))
+}
+
+func F_tevcon_8a9927345f(a, e, first, op, rest, second, third Exp) Exp {
+	return A(tevcon, A(teval, first, a), A(teval, second, a))
+}
+
+func F_tevcon_ac93d4d153(a, e, first, op, rest, second, third Exp) Exp {
+	return A(tevcon, A(eval, first, a), A(eval, second, a))
+}
+
+func F_tevlis_8d244dcf3e(a, e, first, op, rest, second, third Exp) Exp {
+	return A(tevlis, A(eval, first, a), A(eval, second, a))
+}
+
+func F_tevlis_aa5edd4a06(a, e, first, op, rest, second, third Exp) Exp {
+	return A(tevlis, A(teval, first, a), A(teval, second, a))
+}
+
+func F_verify_349b06b757(a, e, first, op, rest, second, third Exp) Exp {
+	return A(verify, A(teval, first, a), A(teval, second, a), A(teval, third, a))
 }
 
 func F_verify_5199556588(a, e, first, op, rest, second, third Exp) Exp {
@@ -1098,10 +1479,83 @@ func init() {
 	}
 }
 
-var map_2ef5cdf965 = make(map[string]func(a, e, first, op, rest, second, third Exp) Exp)
+var map_405e36fa33 = make(map[string]func(first, rest, x Exp) Exp)
 
 func init() {
-	map_2ef5cdf965 = map[string]func(a, e, first, op, rest, second, third Exp) Exp{
+	map_405e36fa33 = map[string]func(first, rest, x Exp) Exp{
+		"0": F_0_94ffb94c37,
+	}
+}
+
+var map_90b0a5dc15 = make(map[string]func(a, e, first, op, rest, second, third Exp) Exp)
+
+func init() {
+	map_90b0a5dc15 = map[string]func(a, e, first, op, rest, second, third Exp) Exp{
+		"funcall":             F_funcall_987f3069e3,
+		"quote":               F_quote_a7f3dfeaaf,
+		"cond":                F_cond_1c9e788466,
+		"list":                F_list_bc51fac1fc,
+		"add":                 F_add_9009d377ca,
+		"after":               F_after_bef4130e55,
+		"and":                 F_and_d113777881,
+		"append_go_sanitized": F_appendπgoπsanitized_8df69e0808,
+		"assoc":               F_assoc_3de2c39cd4,
+		"atom":                F_atom_3af6273f9e,
+		"caadr":               F_caadr_76dd1b7365,
+		"caar":                F_caar_b3b1da7362,
+		"cadar":               F_cadar_8c7d17fb09,
+		"caddar":              F_caddar_c32f907d16,
+		"cadddar":             F_cadddar_20377d3b71,
+		"caddddar":            F_caddddar_3a72c76487,
+		"caddddr":             F_caddddr_fc076bba5c,
+		"cadddr":              F_cadddr_45e6d154e2,
+		"caddr":               F_caddr_ff098e7feb,
+		"cadr":                F_cadr_97dd4860c1,
+		"car":                 F_car_f75331ec0d,
+		"cdar":                F_cdar_0d2484fc3d,
+		"cddar":               F_cddar_e7dd36b4b4,
+		"cdddar":              F_cdddar_df462d4942,
+		"cddr":                F_cddr_f8ecc6aaa8,
+		"cdr":                 F_cdr_edeeb9d86a,
+		"concat":              F_concat_65cea90e29,
+		"cons":                F_cons_6a828689dd,
+		"display":             F_display_3aae199863,
+		"eq":                  F_eq_fe67330984,
+		"err":                 F_err_4b7e52c8b5,
+		"eval":                F_eval_b8058fcc26,
+		"evcon":               F_evcon_c28818cf27,
+		"evlis":               F_evlis_743ee09b20,
+		"exp":                 F_exp_7604958862,
+		"hash":                F_hash_8c55ae0942,
+		"hashed":              F_hashed_115d17ac74,
+		"inc":                 F_inc_400fee1be0,
+		"length":              F_length_5db708320c,
+		"mul":                 F_mul_89c1a9b351,
+		"newkey":              F_newkey_623d29c094,
+		"next":                F_next_04e7765f7d,
+		"not":                 F_not_bd823ce522,
+		"null":                F_null_2aa1ebc116,
+		"or":                  F_or_085e4486af,
+		"pair":                F_pair_9832aad8fd,
+		"pub":                 F_pub_5c14d925ed,
+		"runes":               F_runes_b13cba1366,
+		"sign":                F_sign_1a1ae46a55,
+		"sub":                 F_sub_9d42fb5187,
+		"tassoc":              F_tassoc_f636bcd64a,
+		"test1":               F_test1_90209b6da9,
+		"test2":               F_test2_8616d25247,
+		"test3":               F_test3_ae2e90e234,
+		"teval":               F_teval_a7851d145f,
+		"tevcon":              F_tevcon_8a9927345f,
+		"tevlis":              F_tevlis_aa5edd4a06,
+		"verify":              F_verify_349b06b757,
+	}
+}
+
+var map_d224b188fd = make(map[string]func(a, e, first, op, rest, second, third Exp) Exp)
+
+func init() {
+	map_d224b188fd = map[string]func(a, e, first, op, rest, second, third Exp) Exp{
 		"funcall":             F_funcall_38c9a26765,
 		"quote":               F_quote_a7f3dfeaaf,
 		"cond":                F_cond_26e96b4be1,
@@ -1156,15 +1610,10 @@ func init() {
 		"test1":               F_test1_b2a90c1647,
 		"test2":               F_test2_97cace0d47,
 		"test3":               F_test3_54e98f673d,
+		"teval":               F_teval_53b008301a,
+		"tevcon":              F_tevcon_ac93d4d153,
+		"tevlis":              F_tevlis_8d244dcf3e,
 		"verify":              F_verify_5199556588,
-	}
-}
-
-var map_405e36fa33 = make(map[string]func(first, rest, x Exp) Exp)
-
-func init() {
-	map_405e36fa33 = map[string]func(first, rest, x Exp) Exp{
-		"0": F_0_94ffb94c37,
 	}
 }
 
@@ -1207,6 +1656,9 @@ func init() {
 		L("test2", test2_label),
 		L("test3", test3_label),
 		L("test4", test4_label),
+		L("teval", teval_label),
+		L("tevcon", tevcon_label),
+		L("tevlis", tevlis_label),
 		L("try", try_label),
 		L("xlist", xlist_label),
 		L("y", y_label),
