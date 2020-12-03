@@ -408,7 +408,7 @@ func cddr(args ...Exp) Exp {
 // eval (compiled)
 //
 
-var eval_label = parse_env("(label eval (lambda (e a) (cond ((atom e) (assoc e a)) ((atom (car e)) ((λ (op first rest) ((λ (second third) (cond ((eq op 'funcall) (eval (cons (eval first a) rest) a)) ((eq op 'quote) (cadr e)) ((eq op 'cond) (evcon (cdr e) a)) ((eq op 'list) (evlis (cdr e) a)) ((eq op 'add) (add (eval first a) (eval second a))) ((eq op 'after) (after (eval first a) (eval second a))) ((eq op 'and) (and (eval first a) (eval second a))) ((eq op 'append_go_sanitized) (append_go_sanitized (eval first a) (eval second a))) ((eq op 'assoc) (assoc (eval first a) (eval second a))) ((eq op 'atom) (atom (eval first a))) ((eq op 'caadr) (caadr (eval first a))) ((eq op 'caar) (caar (eval first a))) ((eq op 'cadar) (cadar (eval first a))) ((eq op 'caddar) (caddar (eval first a))) ((eq op 'cadddar) (cadddar (eval first a))) ((eq op 'caddddar) (caddddar (eval first a))) ((eq op 'caddddr) (caddddr (eval first a))) ((eq op 'cadddr) (cadddr (eval first a))) ((eq op 'caddr) (caddr (eval first a))) ((eq op 'cadr) (cadr (eval first a))) ((eq op 'car) (car (eval first a))) ((eq op 'cdar) (cdar (eval first a))) ((eq op 'cddar) (cddar (eval first a))) ((eq op 'cdddar) (cdddar (eval first a))) ((eq op 'cddr) (cddr (eval first a))) ((eq op 'cdr) (cdr (eval first a))) ((eq op 'concat) (concat (eval first a) (eval second a))) ((eq op 'cons) (cons (eval first a) (eval second a))) ((eq op 'display) (display (eval first a))) ((eq op 'eq) (eq (eval first a) (eval second a))) ((eq op 'err) (err (eval first a))) ((eq op 'eval) (eval (eval first a) (eval second a))) ((eq op 'evcon) (evcon (eval first a) (eval second a))) ((eq op 'evlis) (evlis (eval first a) (eval second a))) ((eq op 'exp) (exp (eval first a) (eval second a) (eval third a))) ((eq op 'hash) (hash (eval first a))) ((eq op 'hashed) (hashed (eval first a))) ((eq op 'inc) (inc (eval first a))) ((eq op 'length) (length (eval first a))) ((eq op 'mul) (mul (eval first a) (eval second a))) ((eq op 'newkey) (newkey)) ((eq op 'next) (next (eval first a))) ((eq op 'not) (not (eval first a))) ((eq op 'null) (null (eval first a))) ((eq op 'or) (or (eval first a) (eval second a))) ((eq op 'pair) (pair (eval first a) (eval second a))) ((eq op 'pub) (pub (eval first a))) ((eq op 'runes) (runes (eval first a))) ((eq op 'sign) (sign (eval first a) (eval second a))) ((eq op 'sub) (sub (eval first a) (eval second a))) ((eq op 'test1) (test1 (eval first a))) ((eq op 'test2) (test2 (eval first a))) ((eq op 'test3) (test3 (eval first a))) ((eq op 'verify) (verify (eval first a) (eval second a) (eval third a))) ('t (eval (cons (assoc op a) (cdr e)) a)))) (car rest) (cadr rest))) (car e) (cadr e) (cddr e))) ((eq (caar e) 'macro) (eval (eval (cadddar e) (pair (caddar e) (cdr e))) a)) ((eq (caar e) 'label) (eval (cons (caddar e) (cdr e)) (cons (list (cadar e) (car e)) a))) ((or (eq (caar e) 'lambda) (eq (caar e) 'λ)) (cond ((atom (cadar e)) (eval (caddar e) (cons (list (cadar e) (evlis (cdr e) a)) a))) ('t (eval (caddar e) (append_go_sanitized (pair (cadar e) (evlis (cdr e) a)) a))))))))")
+var eval_label = parse_env("(label eval (lambda (e a) (cond ((atom e) (assoc e a)) ((atom (car e)) ((λ (op first rest) ((λ (second third) (cond ((eq op 'funcall) (eval (cons (eval first a) rest) a)) ((eq op 'quote) (cadr e)) ((eq op 'cond) (evcon (cdr e) a)) ((eq op 'list) (evlis (cdr e) a)) ((eq op 'add) (add (eval first a) (eval second a))) ((eq op 'after) (after (eval first a) (eval second a))) ((eq op 'and) (and (eval first a) (eval second a))) ((eq op 'append_go_sanitized) (append_go_sanitized (eval first a) (eval second a))) ((eq op 'assoc) (assoc (eval first a) (eval second a))) ((eq op 'atom) (atom (eval first a))) ((eq op 'caadr) (caadr (eval first a))) ((eq op 'caar) (caar (eval first a))) ((eq op 'cadar) (cadar (eval first a))) ((eq op 'caddar) (caddar (eval first a))) ((eq op 'cadddar) (cadddar (eval first a))) ((eq op 'caddddar) (caddddar (eval first a))) ((eq op 'caddddr) (caddddr (eval first a))) ((eq op 'cadddr) (cadddr (eval first a))) ((eq op 'caddr) (caddr (eval first a))) ((eq op 'cadr) (cadr (eval first a))) ((eq op 'car) (car (eval first a))) ((eq op 'cdar) (cdar (eval first a))) ((eq op 'cddar) (cddar (eval first a))) ((eq op 'cdddar) (cdddar (eval first a))) ((eq op 'cddr) (cddr (eval first a))) ((eq op 'cdr) (cdr (eval first a))) ((eq op 'concat) (concat (eval first a) (eval second a))) ((eq op 'cons) (cons (eval first a) (eval second a))) ((eq op 'display) (display (eval first a))) ((eq op 'eq) (eq (eval first a) (eval second a))) ((eq op 'err) (err (eval first a))) ((eq op 'eval) (eval (eval first a) (eval second a))) ((eq op 'evcon) (evcon (eval first a) (eval second a))) ((eq op 'evlis) (evlis (eval first a) (eval second a))) ((eq op 'exp) (exp (eval first a) (eval second a) (eval third a))) ((eq op 'hash) (hash (eval first a))) ((eq op 'hashed) (hashed (eval first a))) ((eq op 'inc) (inc (eval first a))) ((eq op 'length) (length (eval first a))) ((eq op 'mul) (mul (eval first a) (eval second a))) ((eq op 'newkey) (newkey)) ((eq op 'next) (next (eval first a))) ((eq op 'not) (not (eval first a))) ((eq op 'null) (null (eval first a))) ((eq op 'or) (or (eval first a) (eval second a))) ((eq op 'pair) (pair (eval first a) (eval second a))) ((eq op 'pub) (pub (eval first a))) ((eq op 'runes) (runes (eval first a))) ((eq op 'sign) (sign (eval first a) (eval second a))) ((eq op 'sub) (sub (eval first a) (eval second a))) ((eq op 'tassoc) (tassoc (eval first a) (eval second a) (eval third a))) ((eq op 'test1) (test1 (eval first a))) ((eq op 'test2) (test2 (eval first a))) ((eq op 'test3) (test3 (eval first a))) ((eq op 'verify) (verify (eval first a) (eval second a) (eval third a))) ('t (eval (cons (assoc op a) (cdr e)) a)))) (car rest) (cadr rest))) (car e) (cadr e) (cddr e))) ((eq (caar e) 'macro) (eval (eval (cadddar e) (pair (caddar e) (cdr e))) a)) ((eq (caar e) 'label) (eval (cons (caddar e) (cdr e)) (cons (list (cadar e) (car e)) a))) ((or (eq (caar e) 'lambda) (eq (caar e) 'λ)) (cond ((atom (cadar e)) (eval (caddar e) (cons (list (cadar e) (evlis (cdr e) a)) a))) ('t (eval (caddar e) (append_go_sanitized (pair (cadar e) (evlis (cdr e) a)) a))))))))")
 
 func eval(args ...Exp) Exp {
 	e := args[0]
@@ -440,7 +440,7 @@ func eval(args ...Exp) Exp {
 								second := args[0]
 								third := args[1]
 								return func() Exp {
-									if f, ok := map_a365e89649[String(op)]; ok {
+									if f, ok := map_2ef5cdf965[String(op)]; ok {
 										return f(a, e, first, op, rest, second, third)
 									}
 									return A(eval, A(cons, A(assoc, op, a), A(cdr, e)), a)
@@ -742,10 +742,33 @@ var s_label = parse_env("(label s (lambda (f x) (f f x)))")
 var subst_label = parse_env("(label subst (lambda (x y z) (cond ((atom z) (cond ((eq z y) x) ('t z))) ('t (cons (subst x y (car z)) (subst x y (cdr z)))))))")
 
 //
-// tassoc (interpreted)
+// tassoc (compiled)
 //
 
 var tassoc_label = parse_env("(label tassoc (lambda (t x y) (cond ((eq (caar y) x) (cadar y)) ('t (tassoc (next t) x (cdr y))))))")
+
+func tassoc(args ...Exp) Exp {
+	t := args[0]
+	x := args[1]
+	y := args[2]
+	return A(
+		cond,
+		L(
+			Func(func(...Exp) Exp {
+				return A(eq, A(caar, y), x)
+			}),
+			Func(func(...Exp) Exp {
+				return A(cadar, y)
+			}),
+		),
+		L(
+			"t",
+			Func(func(...Exp) Exp {
+				return A(tassoc, A(next, t), x, A(cdr, y))
+			}),
+		),
+	)
+}
 
 //
 // test1 (compiled)
@@ -1043,6 +1066,10 @@ func F_sub_246a160bc3(a, e, first, op, rest, second, third Exp) Exp {
 	return A(sub, A(eval, first, a), A(eval, second, a))
 }
 
+func F_tassoc_038d29f713(a, e, first, op, rest, second, third Exp) Exp {
+	return A(tassoc, A(eval, first, a), A(eval, second, a), A(eval, third, a))
+}
+
 func F_test1_b2a90c1647(a, e, first, op, rest, second, third Exp) Exp {
 	return A(test1, A(eval, first, a))
 }
@@ -1071,18 +1098,10 @@ func init() {
 	}
 }
 
-var map_405e36fa33 = make(map[string]func(first, rest, x Exp) Exp)
+var map_2ef5cdf965 = make(map[string]func(a, e, first, op, rest, second, third Exp) Exp)
 
 func init() {
-	map_405e36fa33 = map[string]func(first, rest, x Exp) Exp{
-		"0": F_0_94ffb94c37,
-	}
-}
-
-var map_a365e89649 = make(map[string]func(a, e, first, op, rest, second, third Exp) Exp)
-
-func init() {
-	map_a365e89649 = map[string]func(a, e, first, op, rest, second, third Exp) Exp{
+	map_2ef5cdf965 = map[string]func(a, e, first, op, rest, second, third Exp) Exp{
 		"funcall":             F_funcall_38c9a26765,
 		"quote":               F_quote_a7f3dfeaaf,
 		"cond":                F_cond_26e96b4be1,
@@ -1133,10 +1152,19 @@ func init() {
 		"runes":               F_runes_1f36010f59,
 		"sign":                F_sign_11c1de489d,
 		"sub":                 F_sub_246a160bc3,
+		"tassoc":              F_tassoc_038d29f713,
 		"test1":               F_test1_b2a90c1647,
 		"test2":               F_test2_97cace0d47,
 		"test3":               F_test3_54e98f673d,
 		"verify":              F_verify_5199556588,
+	}
+}
+
+var map_405e36fa33 = make(map[string]func(first, rest, x Exp) Exp)
+
+func init() {
+	map_405e36fa33 = map[string]func(first, rest, x Exp) Exp{
+		"0": F_0_94ffb94c37,
 	}
 }
 

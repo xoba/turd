@@ -153,6 +153,9 @@
 ;; manual: "sub" with 2 args
 ((eq op 'sub) (sub (eval first  a) (eval second a)))
 
+;; loaded: "tassoc" with 3 args
+((eq op 'tassoc) (tassoc (eval first  a) (eval second a) (eval third  a)))
+
 ;; loaded: "test1" with 1 args
 ((eq op 'test1) (test1 (eval first a)))
 

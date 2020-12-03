@@ -1,3 +1,4 @@
+;; assoc but for "try", not "eval"
 (defun tassoc (t x y) 
   (cond
    ((eq (caar y) x) (cadar y))
