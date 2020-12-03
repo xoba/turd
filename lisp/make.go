@@ -325,14 +325,14 @@ func DefunCode(c context, defun Exp) (string, []string /* args */, []byte, error
 	}
 	body := cadddr(defun)
 	w := new(bytes.Buffer)
-	fmt.Fprintf(w, "func %[1]s(args ... Exp) Exp {\n", name)
+	fmt.Fprintf(w, "func %[1]s(_args ... Exp) Exp {\n", name)
 	var vars []string
 	for i, a := range args {
 		if !isString(a) {
 			return name, nil, nil, fmt.Errorf("not a string: %s", a)
 		}
 		v := String(a)
-		fmt.Fprintf(w, "%s := args[%d];\n", v, i)
+		fmt.Fprintf(w, "%s := _args[%d];\n", v, i)
 		vars = append(vars, v)
 	}
 	code, err := Compile(c, body, true, dedup(vars))
@@ -500,12 +500,12 @@ func Compile(c context, e Exp, indent bool, vars []string) ([]byte, error) {
 		}
 		fmt.Fprintf(w, `func() Exp {
 var %[1]s func(... Exp) Exp
-%[1]s = func(args ... Exp) Exp {
+%[1]s = func(_args ... Exp) Exp {
 `,
 			name,
 		)
 		for i, a := range args {
-			fmt.Fprintf(w, "%s := args[%d]\n", a, i)
+			fmt.Fprintf(w, "%s := _args[%d]\n", a, i)
 			vars = append(vars, a)
 		}
 		vars = dedup(vars)

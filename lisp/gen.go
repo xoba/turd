@@ -28,9 +28,9 @@ func parse_env(s string) Exp {
 
 var and_label = parse_env("(label and (lambda (x y) (cond (x (cond (y 't) ('t ()))) ('t '()))))")
 
-func and(args ...Exp) Exp {
-	x := args[0]
-	y := args[1]
+func and(_args ...Exp) Exp {
+	x := _args[0]
+	y := _args[1]
 	return A(
 		cond,
 		L(
@@ -58,9 +58,9 @@ func and(args ...Exp) Exp {
 
 var append_go_sanitized_label = parse_env("(label append_go_sanitized (lambda (x y) (cond ((null x) y) ('t (cons (car x) (append_go_sanitized (cdr x) y))))))")
 
-func append_go_sanitized(args ...Exp) Exp {
-	x := args[0]
-	y := args[1]
+func append_go_sanitized(_args ...Exp) Exp {
+	x := _args[0]
+	y := _args[1]
 	return A(
 		cond,
 		L(
@@ -84,9 +84,9 @@ func append_go_sanitized(args ...Exp) Exp {
 
 var assoc_label = parse_env("(label assoc (lambda (x y) (cond ((eq (caar y) x) (cadar y)) ('t (assoc x (cdr y))))))")
 
-func assoc(args ...Exp) Exp {
-	x := args[0]
-	y := args[1]
+func assoc(_args ...Exp) Exp {
+	x := _args[0]
+	y := _args[1]
 	return A(
 		cond,
 		L(
@@ -112,8 +112,8 @@ func assoc(args ...Exp) Exp {
 
 var caadr_label = parse_env("(label caadr (lambda (x) (car (car (cdr x)))))")
 
-func caadr(args ...Exp) Exp {
-	x := args[0]
+func caadr(_args ...Exp) Exp {
+	x := _args[0]
 	return A(
 		car,
 		A(
@@ -132,8 +132,8 @@ func caadr(args ...Exp) Exp {
 
 var caar_label = parse_env("(label caar (lambda (x) (car (car x))))")
 
-func caar(args ...Exp) Exp {
-	x := args[0]
+func caar(_args ...Exp) Exp {
+	x := _args[0]
 	return A(
 		car,
 		A(
@@ -149,8 +149,8 @@ func caar(args ...Exp) Exp {
 
 var cadar_label = parse_env("(label cadar (lambda (x) (car (cdr (car x)))))")
 
-func cadar(args ...Exp) Exp {
-	x := args[0]
+func cadar(_args ...Exp) Exp {
+	x := _args[0]
 	return A(
 		car,
 		A(
@@ -169,8 +169,8 @@ func cadar(args ...Exp) Exp {
 
 var caddar_label = parse_env("(label caddar (lambda (x) (car (cdr (cdr (car x))))))")
 
-func caddar(args ...Exp) Exp {
-	x := args[0]
+func caddar(_args ...Exp) Exp {
+	x := _args[0]
 	return A(
 		car,
 		A(
@@ -192,8 +192,8 @@ func caddar(args ...Exp) Exp {
 
 var cadddar_label = parse_env("(label cadddar (lambda (x) (car (cdr (cdr (cdr (car x)))))))")
 
-func cadddar(args ...Exp) Exp {
-	x := args[0]
+func cadddar(_args ...Exp) Exp {
+	x := _args[0]
 	return A(
 		car,
 		A(
@@ -218,8 +218,8 @@ func cadddar(args ...Exp) Exp {
 
 var caddddar_label = parse_env("(label caddddar (lambda (x) (car (cdr (cdr (cdr (cdr (car x))))))))")
 
-func caddddar(args ...Exp) Exp {
-	x := args[0]
+func caddddar(_args ...Exp) Exp {
+	x := _args[0]
 	return A(
 		car,
 		A(
@@ -247,8 +247,8 @@ func caddddar(args ...Exp) Exp {
 
 var caddddr_label = parse_env("(label caddddr (lambda (x) (car (cdr (cdr (cdr (cdr x)))))))")
 
-func caddddr(args ...Exp) Exp {
-	x := args[0]
+func caddddr(_args ...Exp) Exp {
+	x := _args[0]
 	return A(
 		car,
 		A(
@@ -273,8 +273,8 @@ func caddddr(args ...Exp) Exp {
 
 var cadddr_label = parse_env("(label cadddr (lambda (x) (car (cdr (cdr (cdr x))))))")
 
-func cadddr(args ...Exp) Exp {
-	x := args[0]
+func cadddr(_args ...Exp) Exp {
+	x := _args[0]
 	return A(
 		car,
 		A(
@@ -296,8 +296,8 @@ func cadddr(args ...Exp) Exp {
 
 var caddr_label = parse_env("(label caddr (lambda (x) (car (cdr (cdr x)))))")
 
-func caddr(args ...Exp) Exp {
-	x := args[0]
+func caddr(_args ...Exp) Exp {
+	x := _args[0]
 	return A(
 		car,
 		A(
@@ -316,8 +316,8 @@ func caddr(args ...Exp) Exp {
 
 var cadr_label = parse_env("(label cadr (lambda (x) (car (cdr x))))")
 
-func cadr(args ...Exp) Exp {
-	x := args[0]
+func cadr(_args ...Exp) Exp {
+	x := _args[0]
 	return A(
 		car,
 		A(
@@ -333,8 +333,8 @@ func cadr(args ...Exp) Exp {
 
 var cdar_label = parse_env("(label cdar (lambda (x) (cdr (car x))))")
 
-func cdar(args ...Exp) Exp {
-	x := args[0]
+func cdar(_args ...Exp) Exp {
+	x := _args[0]
 	return A(
 		cdr,
 		A(
@@ -350,8 +350,8 @@ func cdar(args ...Exp) Exp {
 
 var cddar_label = parse_env("(label cddar (lambda (x) (cdr (cdr (car x)))))")
 
-func cddar(args ...Exp) Exp {
-	x := args[0]
+func cddar(_args ...Exp) Exp {
+	x := _args[0]
 	return A(
 		cdr,
 		A(
@@ -370,8 +370,8 @@ func cddar(args ...Exp) Exp {
 
 var cdddar_label = parse_env("(label cdddar (lambda (x) (cdr (cdr (cdr (car x))))))")
 
-func cdddar(args ...Exp) Exp {
-	x := args[0]
+func cdddar(_args ...Exp) Exp {
+	x := _args[0]
 	return A(
 		cdr,
 		A(
@@ -393,8 +393,8 @@ func cdddar(args ...Exp) Exp {
 
 var cddr_label = parse_env("(label cddr (lambda (x) (cdr (cdr x))))")
 
-func cddr(args ...Exp) Exp {
-	x := args[0]
+func cddr(_args ...Exp) Exp {
+	x := _args[0]
 	return A(
 		cdr,
 		A(
@@ -410,9 +410,9 @@ func cddr(args ...Exp) Exp {
 
 var eval_label = parse_env("(label eval (lambda (e a) (cond ((atom e) (assoc e a)) ((atom (car e)) ((λ (op first rest) ((λ (second third) (cond ((eq op 'funcall) (eval (cons (eval first a) rest) a)) ((eq op 'quote) (cadr e)) ((eq op 'cond) (evcon (cdr e) a)) ((eq op 'list) (evlis (cdr e) a)) ((eq op 'add) (add (eval first a) (eval second a))) ((eq op 'after) (after (eval first a) (eval second a))) ((eq op 'and) (and (eval first a) (eval second a))) ((eq op 'append_go_sanitized) (append_go_sanitized (eval first a) (eval second a))) ((eq op 'assoc) (assoc (eval first a) (eval second a))) ((eq op 'atom) (atom (eval first a))) ((eq op 'caadr) (caadr (eval first a))) ((eq op 'caar) (caar (eval first a))) ((eq op 'cadar) (cadar (eval first a))) ((eq op 'caddar) (caddar (eval first a))) ((eq op 'cadddar) (cadddar (eval first a))) ((eq op 'caddddar) (caddddar (eval first a))) ((eq op 'caddddr) (caddddr (eval first a))) ((eq op 'cadddr) (cadddr (eval first a))) ((eq op 'caddr) (caddr (eval first a))) ((eq op 'cadr) (cadr (eval first a))) ((eq op 'car) (car (eval first a))) ((eq op 'cdar) (cdar (eval first a))) ((eq op 'cddar) (cddar (eval first a))) ((eq op 'cdddar) (cdddar (eval first a))) ((eq op 'cddr) (cddr (eval first a))) ((eq op 'cdr) (cdr (eval first a))) ((eq op 'concat) (concat (eval first a) (eval second a))) ((eq op 'cons) (cons (eval first a) (eval second a))) ((eq op 'display) (display (eval first a))) ((eq op 'eq) (eq (eval first a) (eval second a))) ((eq op 'err) (err (eval first a))) ((eq op 'eval) (eval (eval first a) (eval second a))) ((eq op 'evcon) (evcon (eval first a) (eval second a))) ((eq op 'evlis) (evlis (eval first a) (eval second a))) ((eq op 'exp) (exp (eval first a) (eval second a) (eval third a))) ((eq op 'hash) (hash (eval first a))) ((eq op 'hashed) (hashed (eval first a))) ((eq op 'inc) (inc (eval first a))) ((eq op 'length) (length (eval first a))) ((eq op 'mul) (mul (eval first a) (eval second a))) ((eq op 'newkey) (newkey)) ((eq op 'next) (next (eval first a))) ((eq op 'not) (not (eval first a))) ((eq op 'null) (null (eval first a))) ((eq op 'or) (or (eval first a) (eval second a))) ((eq op 'pair) (pair (eval first a) (eval second a))) ((eq op 'pub) (pub (eval first a))) ((eq op 'runes) (runes (eval first a))) ((eq op 'sign) (sign (eval first a) (eval second a))) ((eq op 'sub) (sub (eval first a) (eval second a))) ((eq op 'tassoc) (tassoc (eval first a) (eval second a) (eval third a))) ((eq op 'test1) (test1 (eval first a))) ((eq op 'test2) (test2 (eval first a))) ((eq op 'test3) (test3 (eval first a))) ((eq op 'teval) (teval (eval first a) (eval second a) (eval third a))) ((eq op 'tevcon) (tevcon (eval first a) (eval second a) (eval third a))) ((eq op 'tevlis) (tevlis (eval first a) (eval second a) (eval third a))) ((eq op 'verify) (verify (eval first a) (eval second a) (eval third a))) ('t (eval (cons (assoc op a) (cdr e)) a)))) (car rest) (cadr rest))) (car e) (cadr e) (cddr e))) ((eq (caar e) 'macro) (eval (eval (cadddar e) (pair (caddar e) (cdr e))) a)) ((eq (caar e) 'label) (eval (cons (caddar e) (cdr e)) (cons (list (cadar e) (car e)) a))) ((or (eq (caar e) 'lambda) (eq (caar e) 'λ)) (cond ((atom (cadar e)) (eval (caddar e) (cons (list (cadar e) (evlis (cdr e) a)) a))) ('t (eval (caddar e) (append_go_sanitized (pair (cadar e) (evlis (cdr e) a)) a))))))))")
 
-func eval(args ...Exp) Exp {
-	e := args[0]
-	a := args[1]
+func eval(_args ...Exp) Exp {
+	e := _args[0]
+	a := _args[1]
 	return A(
 		cond,
 		L(
@@ -430,15 +430,15 @@ func eval(args ...Exp) Exp {
 			Func(func(...Exp) Exp {
 				return func() Exp {
 					var λ func(...Exp) Exp
-					λ = func(args ...Exp) Exp {
-						op := args[0]
-						first := args[1]
-						rest := args[2]
+					λ = func(_args ...Exp) Exp {
+						op := _args[0]
+						first := _args[1]
+						rest := _args[2]
 						return func() Exp {
 							var λ func(...Exp) Exp
-							λ = func(args ...Exp) Exp {
-								second := args[0]
-								third := args[1]
+							λ = func(_args ...Exp) Exp {
+								second := _args[0]
+								third := _args[1]
 								return func() Exp {
 									if f, ok := map_8641[String(op)]; ok {
 										return f(a, e, first, op, rest, second, third)
@@ -501,9 +501,9 @@ func eval(args ...Exp) Exp {
 
 var evcon_label = parse_env("(label evcon (lambda (c a) (cond ((eval (caar c) a) (eval (cadar c) a)) ('t (evcon (cdr c) a)))))")
 
-func evcon(args ...Exp) Exp {
-	c := args[0]
-	a := args[1]
+func evcon(_args ...Exp) Exp {
+	c := _args[0]
+	a := _args[1]
 	return A(
 		cond,
 		L(
@@ -529,9 +529,9 @@ func evcon(args ...Exp) Exp {
 
 var evlis_label = parse_env("(label evlis (lambda (m a) (cond ((null m) '()) ('t (cons (eval (car m) a) (evlis (cdr m) a))))))")
 
-func evlis(args ...Exp) Exp {
-	m := args[0]
-	a := args[1]
+func evlis(_args ...Exp) Exp {
+	m := _args[0]
+	a := _args[1]
 	return A(
 		cond,
 		L(
@@ -561,8 +561,8 @@ var factorial_label = parse_env("(label factorial (lambda (n) (cond ((eq '0 n) '
 
 var inc_label = parse_env("(label inc (lambda (x) (add '1 x)))")
 
-func inc(args ...Exp) Exp {
-	x := args[0]
+func inc(_args ...Exp) Exp {
+	x := _args[0]
 	return A(
 		add,
 		"1",
@@ -582,8 +582,8 @@ var lambdatest_label = parse_env("(label lambdatest (lambda (x) (list (car x) (c
 
 var length_label = parse_env("(label length (lambda (x) (cond ((atom x) '0) ('t (add '1 (length (cdr x)))))))")
 
-func length(args ...Exp) Exp {
-	x := args[0]
+func length(_args ...Exp) Exp {
+	x := _args[0]
 	return A(
 		cond,
 		L(
@@ -613,13 +613,13 @@ var mapcar_label = parse_env("(label mapcar (lambda (op arglist) (cond ((eq argl
 
 var next_label = parse_env("(label next (lambda (t) ((lambda (max current) (cond ((eq max current) (err (list 'max max))) ('t (list max (inc current))))) (car t) (cadr t))))")
 
-func next(args ...Exp) Exp {
-	t := args[0]
+func next(_args ...Exp) Exp {
+	t := _args[0]
 	return func() Exp {
 		var λ func(...Exp) Exp
-		λ = func(args ...Exp) Exp {
-			max := args[0]
-			current := args[1]
+		λ = func(_args ...Exp) Exp {
+			max := _args[0]
+			current := _args[1]
 			return A(cond, L(
 				Func(func(...Exp) Exp {
 					return A(eq, max, current)
@@ -645,8 +645,8 @@ func next(args ...Exp) Exp {
 
 var not_label = parse_env("(label not (lambda (x) (cond (x '()) ('t 't))))")
 
-func not(args ...Exp) Exp {
-	x := args[0]
+func not(_args ...Exp) Exp {
+	x := _args[0]
 	return A(
 		cond,
 		L(
@@ -666,8 +666,8 @@ func not(args ...Exp) Exp {
 
 var null_label = parse_env("(label null (lambda (x) (eq x '())))")
 
-func null(args ...Exp) Exp {
-	x := args[0]
+func null(_args ...Exp) Exp {
+	x := _args[0]
 	return A(
 		eq,
 		x,
@@ -681,9 +681,9 @@ func null(args ...Exp) Exp {
 
 var or_label = parse_env("(label or (lambda (x y) (cond (x 't) (y 't) ('t '()))))")
 
-func or(args ...Exp) Exp {
-	x := args[0]
-	y := args[1]
+func or(_args ...Exp) Exp {
+	x := _args[0]
+	y := _args[1]
 	return A(
 		cond,
 		L(
@@ -707,9 +707,9 @@ func or(args ...Exp) Exp {
 
 var pair_label = parse_env("(label pair (lambda (x y) (cond ((and (null x) (null y)) '()) ((and (not (atom x)) (not (atom y))) (cons (list (car x) (car y)) (pair (cdr x) (cdr y)))))))")
 
-func pair(args ...Exp) Exp {
-	x := args[0]
-	y := args[1]
+func pair(_args ...Exp) Exp {
+	x := _args[0]
+	y := _args[1]
 	return A(
 		cond,
 		L(
@@ -747,10 +747,10 @@ var subst_label = parse_env("(label subst (lambda (x y z) (cond ((atom z) (cond 
 
 var tassoc_label = parse_env("(label tassoc (lambda (t x y) (cond ((eq (caar y) x) (cadar y)) ('t (tassoc (next t) x (cdr y))))))")
 
-func tassoc(args ...Exp) Exp {
-	t := args[0]
-	x := args[1]
-	y := args[2]
+func tassoc(_args ...Exp) Exp {
+	t := _args[0]
+	x := _args[1]
+	y := _args[2]
 	return A(
 		cond,
 		L(
@@ -776,13 +776,13 @@ func tassoc(args ...Exp) Exp {
 
 var test1_label = parse_env("(label test1 (lambda (x) ((lambda (first rest) (list first rest)) (car x) (cdr x))))")
 
-func test1(args ...Exp) Exp {
-	x := args[0]
+func test1(_args ...Exp) Exp {
+	x := _args[0]
 	return func() Exp {
 		var λ func(...Exp) Exp
-		λ = func(args ...Exp) Exp {
-			first := args[0]
-			rest := args[1]
+		λ = func(_args ...Exp) Exp {
+			first := _args[0]
+			rest := _args[1]
 			return A(list, first, rest)
 		}
 		return λ(A(car, x), A(cdr, x))
@@ -796,13 +796,13 @@ func test1(args ...Exp) Exp {
 
 var test2_label = parse_env("(label test2 (lambda (x) ((label f (lambda (first rest) (list first rest))) (car x) (cdr x))))")
 
-func test2(args ...Exp) Exp {
-	x := args[0]
+func test2(_args ...Exp) Exp {
+	x := _args[0]
 	return func() Exp {
 		var f func(...Exp) Exp
-		f = func(args ...Exp) Exp {
-			first := args[0]
-			rest := args[1]
+		f = func(_args ...Exp) Exp {
+			first := _args[0]
+			rest := _args[1]
 			return A(list, first, rest)
 		}
 		return f(A(car, x), A(cdr, x))
@@ -816,13 +816,13 @@ func test2(args ...Exp) Exp {
 
 var test3_label = parse_env("(label test3 (lambda (x) ((label fx (lambda (first rest) (cond ((eq first '0) (list first rest)) ('t (fx (sub first '1) rest))))) (car x) (cdr x))))")
 
-func test3(args ...Exp) Exp {
-	x := args[0]
+func test3(_args ...Exp) Exp {
+	x := _args[0]
 	return func() Exp {
 		var fx func(...Exp) Exp
-		fx = func(args ...Exp) Exp {
-			first := args[0]
-			rest := args[1]
+		fx = func(_args ...Exp) Exp {
+			first := _args[0]
+			rest := _args[1]
 			return func() Exp {
 				if f, ok := map_9e64[String(first)]; ok {
 					return f(first, rest, x)
@@ -848,10 +848,10 @@ var test4_label = parse_env("(label test4 (lambda (x) ((label f (lambda (first r
 
 var teval_label = parse_env("(label teval (lambda (t e a) (cond ((atom e) (tassoc (next t) e a)) ((atom (car e)) ((λ (op first rest) ((λ (second third) (cond ((eq op 'funcall) (teval (next t) (cons (teval (next t) first a) rest) a)) ((eq op 'quote) (cadr e)) ((eq op 'cond) (tevcon (next t) (cdr e) a)) ((eq op 'list) (tevlis (next t) (cdr e) a)) ((eq op 'add) (add (teval (next t) first a) (teval (next t) second a))) ((eq op 'after) (after (teval (next t) first a) (teval (next t) second a))) ((eq op 'and) (and (teval (next t) first a) (teval (next t) second a))) ((eq op 'append_go_sanitized) (append_go_sanitized (teval (next t) first a) (teval (next t) second a))) ((eq op 'assoc) (assoc (teval (next t) first a) (teval (next t) second a))) ((eq op 'atom) (atom (teval (next t) first a))) ((eq op 'caadr) (caadr (teval (next t) first a))) ((eq op 'caar) (caar (teval (next t) first a))) ((eq op 'cadar) (cadar (teval (next t) first a))) ((eq op 'caddar) (caddar (teval (next t) first a))) ((eq op 'cadddar) (cadddar (teval (next t) first a))) ((eq op 'caddddar) (caddddar (teval (next t) first a))) ((eq op 'caddddr) (caddddr (teval (next t) first a))) ((eq op 'cadddr) (cadddr (teval (next t) first a))) ((eq op 'caddr) (caddr (teval (next t) first a))) ((eq op 'cadr) (cadr (teval (next t) first a))) ((eq op 'car) (car (teval (next t) first a))) ((eq op 'cdar) (cdar (teval (next t) first a))) ((eq op 'cddar) (cddar (teval (next t) first a))) ((eq op 'cdddar) (cdddar (teval (next t) first a))) ((eq op 'cddr) (cddr (teval (next t) first a))) ((eq op 'cdr) (cdr (teval (next t) first a))) ((eq op 'concat) (concat (teval (next t) first a) (teval (next t) second a))) ((eq op 'cons) (cons (teval (next t) first a) (teval (next t) second a))) ((eq op 'display) (display (teval (next t) first a))) ((eq op 'eq) (eq (teval (next t) first a) (teval (next t) second a))) ((eq op 'err) (err (teval (next t) first a))) ((eq op 'eval) (eval (teval (next t) first a) (teval (next t) second a))) ((eq op 'evcon) (evcon (teval (next t) first a) (teval (next t) second a))) ((eq op 'evlis) (evlis (teval (next t) first a) (teval (next t) second a))) ((eq op 'exp) (exp (teval (next t) first a) (teval (next t) second a) (teval (next t) third a))) ((eq op 'hash) (hash (teval (next t) first a))) ((eq op 'hashed) (hashed (teval (next t) first a))) ((eq op 'inc) (inc (teval (next t) first a))) ((eq op 'length) (length (teval (next t) first a))) ((eq op 'mul) (mul (teval (next t) first a) (teval (next t) second a))) ((eq op 'newkey) (newkey)) ((eq op 'next) (next (teval (next t) first a))) ((eq op 'not) (not (teval (next t) first a))) ((eq op 'null) (null (teval (next t) first a))) ((eq op 'or) (or (teval (next t) first a) (teval (next t) second a))) ((eq op 'pair) (pair (teval (next t) first a) (teval (next t) second a))) ((eq op 'pub) (pub (teval (next t) first a))) ((eq op 'runes) (runes (teval (next t) first a))) ((eq op 'sign) (sign (teval (next t) first a) (teval (next t) second a))) ((eq op 'sub) (sub (teval (next t) first a) (teval (next t) second a))) ((eq op 'tassoc) (tassoc (teval (next t) first a) (teval (next t) second a) (teval (next t) third a))) ((eq op 'test1) (test1 (teval (next t) first a))) ((eq op 'test2) (test2 (teval (next t) first a))) ((eq op 'test3) (test3 (teval (next t) first a))) ((eq op 'teval) (teval (teval (next t) first a) (teval (next t) second a) (teval (next t) third a))) ((eq op 'tevcon) (tevcon (teval (next t) first a) (teval (next t) second a) (teval (next t) third a))) ((eq op 'tevlis) (tevlis (teval (next t) first a) (teval (next t) second a) (teval (next t) third a))) ((eq op 'verify) (verify (teval (next t) first a) (teval (next t) second a) (teval (next t) third a))) ('t (teval (next t) (cons (tassoc (next t) op a) (cdr e)) a)))) (car rest) (cadr rest))) (car e) (cadr e) (cddr e))) ((eq (caar e) 'macro) (teval (next t) (teval (next t) (cadddar e) (pair (caddar e) (cdr e))) a)) ((eq (caar e) 'label) (teval (next t) (cons (caddar e) (cdr e)) (cons (list (cadar e) (car e)) a))) ((or (eq (caar e) 'lambda) (eq (caar e) 'λ)) (cond ((atom (cadar e)) (teval (next t) (caddar e) (cons (list (cadar e) (tevlis (next t) (cdr e) a)) a))) ('t (teval (next t) (caddar e) (append_go_sanitized (pair (cadar e) (tevlis (next t) (cdr e) a)) a))))))))")
 
-func teval(args ...Exp) Exp {
-	t := args[0]
-	e := args[1]
-	a := args[2]
+func teval(_args ...Exp) Exp {
+	t := _args[0]
+	e := _args[1]
+	a := _args[2]
 	return A(
 		cond,
 		L(
@@ -869,15 +869,15 @@ func teval(args ...Exp) Exp {
 			Func(func(...Exp) Exp {
 				return func() Exp {
 					var λ func(...Exp) Exp
-					λ = func(args ...Exp) Exp {
-						op := args[0]
-						first := args[1]
-						rest := args[2]
+					λ = func(_args ...Exp) Exp {
+						op := _args[0]
+						first := _args[1]
+						rest := _args[2]
 						return func() Exp {
 							var λ func(...Exp) Exp
-							λ = func(args ...Exp) Exp {
-								second := args[0]
-								third := args[1]
+							λ = func(_args ...Exp) Exp {
+								second := _args[0]
+								third := _args[1]
 								return func() Exp {
 									if f, ok := map_1de7[String(op)]; ok {
 										return f(a, e, first, op, rest, second, t, third)
@@ -940,10 +940,10 @@ func teval(args ...Exp) Exp {
 
 var tevcon_label = parse_env("(label tevcon (lambda (t c a) (cond ((teval (next t) (caar c) a) (teval (next t) (cadar c) a)) ('t (tevcon (next t) (cdr c) a)))))")
 
-func tevcon(args ...Exp) Exp {
-	t := args[0]
-	c := args[1]
-	a := args[2]
+func tevcon(_args ...Exp) Exp {
+	t := _args[0]
+	c := _args[1]
+	a := _args[2]
 	return A(
 		cond,
 		L(
@@ -969,10 +969,10 @@ func tevcon(args ...Exp) Exp {
 
 var tevlis_label = parse_env("(label tevlis (lambda (t m a) (cond ((null m) '()) ('t (cons (teval (next t) (car m) a) (tevlis (next t) (cdr m) a))))))")
 
-func tevlis(args ...Exp) Exp {
-	t := args[0]
-	m := args[1]
-	a := args[2]
+func tevlis(_args ...Exp) Exp {
+	t := _args[0]
+	m := _args[1]
+	a := _args[2]
 	return A(
 		cond,
 		L(
