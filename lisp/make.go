@@ -11,6 +11,7 @@ import (
 	"path"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"text/template"
 	"unicode"
@@ -199,7 +200,10 @@ func CompileDefuns(cnfg.Config) error {
 
 package %[2]s
 
-import "fmt"
+import (
+"fmt"
+"math/big"
+)
 
 func init() {
 return
@@ -470,6 +474,9 @@ return %s
 func compileQuote(c context, x Exp, vars []string) (string, error) {
 	switch t := x.(type) {
 	case string:
+		if v, err := strconv.ParseInt(t, 10, 64); err == nil {
+			return fmt.Sprintf("big.NewInt(%d)", v), nil
+		}
 		return fmt.Sprintf("%q", t), nil
 	default:
 		compiled, err := Compile(c, t, false, vars)

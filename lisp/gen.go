@@ -2,7 +2,10 @@
 
 package lisp
 
-import "fmt"
+import (
+	"fmt"
+	"math/big"
+)
 
 func init() {
 	return
@@ -561,14 +564,14 @@ func factorial(_args ...Exp) Exp {
 		cond,
 		L(
 			Func(func(...Exp) Exp {
-				return A(eq, "0", n)
+				return A(eq, big.NewInt(0), n)
 			}),
-			"1",
+			big.NewInt(1),
 		),
 		L(
 			"t",
 			Func(func(...Exp) Exp {
-				return A(mul, n, A(factorial, A(sub, n, "1")))
+				return A(mul, n, A(factorial, A(sub, n, big.NewInt(1))))
 			}),
 		),
 	)
@@ -584,7 +587,7 @@ func inc(_args ...Exp) Exp {
 	x := _args[0]
 	return A(
 		add,
-		"1",
+		big.NewInt(1),
 		x,
 	)
 }
@@ -609,12 +612,12 @@ func length(_args ...Exp) Exp {
 			Func(func(...Exp) Exp {
 				return A(atom, x)
 			}),
-			"0",
+			big.NewInt(0),
 		),
 		L(
 			"t",
 			Func(func(...Exp) Exp {
-				return A(add, "1", A(length, A(cdr, x)))
+				return A(add, big.NewInt(1), A(length, A(cdr, x)))
 			}),
 		),
 	)
@@ -846,7 +849,7 @@ func test3(_args ...Exp) Exp {
 				if f, ok := map_9e64[String(first)]; ok {
 					return f(first, rest, x)
 				}
-				return A(fx, A(sub, first, "1"), rest)
+				return A(fx, A(sub, first, big.NewInt(1)), rest)
 			}()
 
 		}
