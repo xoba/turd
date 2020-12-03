@@ -1,7 +1,15 @@
 #!/bin/bash -e
 ./clean.sh
 git checkout lisp/gen.go
-go run . -m eval # generates eval from template
-go run . -m lispcompile # compiles defuns
-go run . -m lispparse # tests parsing
-go run . -m lisptest # tests eval
+
+# generate eval and teval from template
+go run . -m geneval
+
+# compile defuns
+go run . -m lispcompile
+
+# test parsing
+go run . -m lispparse
+
+# test eval
+go run . -m lisptest -debug

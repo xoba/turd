@@ -125,9 +125,6 @@ func Run(c cnfg.Config) error {
 		},
 	}
 
-	// interpreted2 is way too slow! never actually saw it finish:
-	delete(evals, "interpreted2")
-
 	if !c.Debug {
 		delete(evals, "interpreted2")
 		delete(evals, "interpreted")

@@ -62,6 +62,7 @@ func Run(c cnfg.Config) error {
 	modes := map[string]func(cnfg.Config) error{
 		"connect":     Connect,
 		"dd":          dd.Run,
+		"geneval":     lisp.EvalTemplate,
 		"gossip":      gossip.Run,
 		"hnode":       RunHTMLNode,
 		"infbig":      infl.RunBig,
@@ -75,7 +76,6 @@ func Run(c cnfg.Config) error {
 		"poset":       poset.Run,
 		"trans":       trans.Run,
 		"trie":        trie.Run,
-		"eval":        lisp.EvalTemplate,
 	}
 	handler, ok := modes[c.Mode]
 	if !ok {
