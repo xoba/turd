@@ -1,13 +1,13 @@
 {{.comment}}
-(defun eval (e a) 
+(defun {{.defun}} (e a) 
   (cond
    ((atom e) (assoc e a))
    ((atom (car e))
     ((λ (op first rest)
        ((λ (second third)
 	  (cond ;; TODO: can we compile funcall instead?
-	   ((eq op 'funcall) (eval (cons
-				    (eval first a) ;; the function
+	   ((eq op 'funcall) ({{.eval}} (cons
+				    ({{.eval}} first a) ;; the function
 				    rest)          ;; the args
 				   a))
 	   
@@ -18,7 +18,7 @@
 	   {{.compiled}}
 	   
 	   ;; resolve an unknown op:
-	   ('t (eval (cons (assoc op a)
+	   ('t ({{.eval}} (cons (assoc op a)
 			   (cdr e))
 		     a))))
 	
@@ -30,10 +30,10 @@
    
    ;; initial macro concept, note the two evals:
    ((eq (caar e) 'macro)
-    (eval (eval (cadddar e) (pair (caddar e) (cdr e))) a))
+    ({{.eval}} ({{.eval}} (cadddar e) (pair (caddar e) (cdr e))) a))
    
    ((eq (caar e) 'label)
-    (eval (cons (caddar e) (cdr e))
+    ({{.eval}} (cons (caddar e) (cdr e))
 	  (cons (list (cadar e) (car e)) a)))
    
    ((or ;; two different notations for lambda
@@ -41,10 +41,10 @@
      (eq (caar e) 'λ))
     (cond ;; two different forms for lambda
      ((atom (cadar e)) ; lexpr form (lambda x ...)
-      (eval (caddar e)
+      ({{.eval}} (caddar e)
 	    (cons (list (cadar e) (evlis (cdr e) a))
 		  a)))
      ('t ; traditional form (lambda (x...) ...)
-      (eval (caddar e)
+      ({{.eval}} (caddar e)
 	    (append (pair (cadar e) (evlis (cdr e) a))
 		    a)))))))

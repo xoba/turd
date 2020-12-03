@@ -135,6 +135,8 @@ func EvalTemplate(cnfg.Config) error {
 	}
 	defer f.Close()
 	if err := t.Execute(f, map[string]interface{}{
+		"defun":    "eval",
+		"eval":     "eval",
 		"comment":  ";; " + autogen,
 		"compiled": w.String(),
 	}); err != nil {
