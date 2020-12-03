@@ -5,10 +5,9 @@
     ((λ (op first rest) 
        ((λ (second third)
 	  (cond
-	   
 	   ((eq op 'funcall) (eval (cons
 				    (eval first a) ;; the function
-				    rest)      ;; the args
+				    rest)          ;; the args
 				   a))	   
 	   ;; axioms:
 	   ((eq op 'quote)   (cadr e))
@@ -28,7 +27,7 @@
 	   ;; arithmetic
 	   ((eq op 'add)     (add     (eval first  a)
 				      (eval second a)))
-	   ((eq op 'inc)     (add     (eval first  a) '1))
+	   ((eq op 'inc)     (inc     (eval first  a)))
 	   ((eq op 'sub)     (sub     (eval first  a)
 				      (eval second a)))
 	   ((eq op 'mul)     (mul     (eval first  a)
