@@ -39,6 +39,7 @@ func EvalTemplate(cnfg.Config) error {
 	}); err != nil {
 		return err
 	}
+	return nil
 	if err := GenEval("defs/compiled/teval.lisp", map[string]string{
 		"nextlambda_prefix": "((lambda (t2)",
 		"nextlambda_suffix": "t2))",
@@ -329,7 +330,7 @@ func DefunCode(c context, defun Exp) (string, []string /* args */, []byte, error
 	}
 	body := cadddr(defun)
 	w := new(bytes.Buffer)
-	fmt.Fprintf(w, "func %[1]s(_args ... Exp) Exp {\n", name)
+	fmt.Fprintf(w, "func %[1]s(_args ... Exp) Exp { \n", name)
 	var vars []string
 	for i, a := range args {
 		if !isString(a) {
@@ -504,7 +505,7 @@ func Compile(c context, e Exp, indent bool, vars []string) ([]byte, error) {
 		}
 		fmt.Fprintf(w, `func() Exp {
 var %[1]s func(... Exp) Exp
-%[1]s = func(_args ... Exp) Exp {
+%[1]s = func(_args ... Exp) Exp { /* xx */
 `,
 			name,
 		)
