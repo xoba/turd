@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"path"
@@ -23,6 +24,89 @@ const (
 )
 
 func EvalTemplate(cnfg.Config) error {
+
+	type compiled struct {
+		name  string
+		class string
+		args  int
+	}
+
+	m := make(map[string]compiled)
+
+	set := func(c compiled) {
+		if _, ok := m[c.name]; ok {
+			log.Fatalf("duplicate %q", c.name)
+		}
+		m[c.name] = c
+	}
+
+	load := func(name string, args int) {
+		set(compiled{name: name, class: "loaded", args: args})
+	}
+	add := func(name string, args int) {
+		if name == "" {
+			return
+		}
+		set(compiled{name: name, class: "manual", args: args})
+	}
+
+	add("atom", 1)
+	add("eq", 2)
+	add("car", 1)
+	add("cdr", 1)
+	add("cons", 1)
+	add("display", 1)
+	add("exp", 3)
+	add("mul", 2)
+	add("add", 2)
+	add("sub", 2)
+	add("hash", 1)
+	add("hashed", 1)
+	add("concat", 2)
+	add("newkey", 0)
+	add("pub", 1)
+	add("sign", 2)
+	add("verify", 3)
+	add("after", 2)
+	add("err", 1)
+	add("runes", 1)
+
+	const dirname = "defs/compiled"
+	dir, err := ioutil.ReadDir(dirname)
+	if err != nil {
+		return err
+	}
+	c := NewContext()
+	for _, fi := range dir {
+		file := filepath.Join(dirname, fi.Name())
+		if filepath.Ext(file) != ".lisp" {
+			continue
+		}
+		buf, err := ioutil.ReadFile(file)
+		if err != nil {
+			return err
+		}
+		e, err := Parse(string(buf))
+		if err != nil {
+			return err
+		}
+		name, args, _, err := DefunCode(c, e)
+		if err != nil {
+			return err
+		}
+		load(name, len(args))
+	}
+
+	var sorted []string
+	for k := range m {
+		sorted = append(sorted, k)
+	}
+	sort.Strings(sorted)
+	for _, k := range sorted {
+		c := m[k]
+		fmt.Printf("%s %s %d\n", c.class, c.name, c.args)
+	}
+
 	return nil
 }
 
@@ -109,10 +193,8 @@ return e
 		return defs[i].name < defs[j].name
 	})
 
-	c := context{
-		cases: make(map[string]string),
-		funcs: make(map[string]string),
-	}
+	c := NewContext()
+
 	for _, def := range defs {
 		e := def.expr
 		e = SanitizeGo(e)
@@ -129,7 +211,7 @@ return e
 		}
 		fmt.Fprintf(f, "\n\n//\n// %s (%s)\n//\n\n\n", def.name, msg)
 		fmt.Fprintf(f, "var %[1]s_label = parse_env(%[2]q)\n", name, String(label))
-		name, code, err := DefunCode(c, e)
+		name, _, code, err := DefunCode(c, e)
 		if err != nil {
 			return err
 		}
@@ -158,9 +240,9 @@ return e
 	return nil
 }
 
-func DefunCode(c context, defun Exp) (string, []byte, error) {
+func DefunCode(c context, defun Exp) (string, []string /* args */, []byte, error) {
 	if String(car(defun)) != "defun" {
-		return "", nil, fmt.Errorf("not a defun")
+		return "", nil, nil, fmt.Errorf("not a defun")
 	}
 	name := String(cadr(defun))
 	var args []Exp
@@ -169,14 +251,17 @@ func DefunCode(c context, defun Exp) (string, []byte, error) {
 	} else {
 		args = []Exp{caddr(defun)}
 	}
+	var arglist []string
+	for _, a := range args {
+		arglist = append(arglist, String(a))
+	}
 	body := cadddr(defun)
 	w := new(bytes.Buffer)
-
 	fmt.Fprintf(w, "func %[1]s(args ... Exp) Exp {\n", name)
 	var vars []string
 	for i, a := range args {
 		if !isString(a) {
-			return name, nil, fmt.Errorf("not a string: %s", a)
+			return name, nil, nil, fmt.Errorf("not a string: %s", a)
 		}
 		v := String(a)
 		fmt.Fprintf(w, "%s := args[%d];\n", v, i)
@@ -184,10 +269,10 @@ func DefunCode(c context, defun Exp) (string, []byte, error) {
 	}
 	code, err := Compile(c, body, true, dedup(vars))
 	if err != nil {
-		return name, nil, err
+		return name, nil, nil, err
 	}
 	fmt.Fprintf(w, "return %s\n}\n\n", string(code))
-	return name, w.Bytes(), nil
+	return name, arglist, w.Bytes(), nil
 }
 
 func isString(e Exp) bool {
@@ -202,6 +287,13 @@ func isString(e Exp) bool {
 type context struct {
 	cases map[string]string
 	funcs map[string]string
+}
+
+func NewContext() context {
+	return context{
+		cases: make(map[string]string),
+		funcs: make(map[string]string),
+	}
 }
 
 func (c context) emit() string {

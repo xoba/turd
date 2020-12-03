@@ -24,6 +24,11 @@
 	   ((eq op 'cdddar)   (cdddar   (eval first  a)))
 	   ((eq op 'cddr)     (cddr     (eval first  a)))
 	   
+	   ((eq op 'evcon)    (evcon    (eval first  a)
+				        (eval second a)))
+	   ((eq op 'evlis)    (evlis    (eval first  a)
+					(eval second a)))
+	   
 	   ;; axioms:
 	   ((eq op 'quote)   (cadr e))
 	   ((eq op 'atom)    (atom    (eval first  a)))
