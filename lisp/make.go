@@ -78,10 +78,10 @@ func formatLisp(f io.Reader) ([]byte, error) {
 // autogenerate an eval func, TODO also "try"
 func EvalTemplate(cnfg.Config) error {
 	if err := GenEval("defs/compiled/eval.lisp", map[string]string{
-		"nextlambda_prefix": "",
-		"nextlambda_suffix": "",
 		"defun":             "eval",
 		"args":              "(e a)",
+		"nextlambda_prefix": "",
+		"nextlambda_suffix": "",
 		"eval":              "eval",
 		"assoc":             "assoc",
 		"evlis":             "evlis",
@@ -91,14 +91,14 @@ func EvalTemplate(cnfg.Config) error {
 		return err
 	}
 	if err := GenEval("defs/compiled/teval.lisp", map[string]string{
-		"nextlambda_prefix": "((lambda (t2)",
-		"nextlambda_suffix": ")\n(next t))",
 		"defun":             "teval",
-		"args":              "(t e a)",
-		"eval":              "teval t2",
-		"assoc":             "tassoc t2",
-		"evlis":             "tevlis t2",
-		"evcon":             "tevcon t2",
+		"args":              "(t0 e a) ;; t0 is time spec",
+		"nextlambda_prefix": "((lambda (t1) ;; t1 is the next time spec",
+		"nextlambda_suffix": ")\n(next t0))",
+		"eval":              "teval t1",
+		"assoc":             "tassoc t1",
+		"evlis":             "tevlis t1",
+		"evcon":             "tevcon t1",
 		"comment":           autogen,
 	}); err != nil {
 		return err
