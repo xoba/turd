@@ -3,7 +3,6 @@ package lisp
 import (
 	"bufio"
 	"bytes"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -17,6 +16,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"text/template"
 	"unicode"
 
@@ -486,8 +486,25 @@ func (c context) emit() string {
 }
 
 // non-negligible chance of collision, but maybe worth it for brevity:
+
+var (
+	hashes   = make(map[string]int)
+	hashLock = new(sync.Mutex)
+)
+
 func smallHash(s string) string {
-	return hex.EncodeToString(thash.Hash([]byte(s)))[:4]
+	hashLock.Lock()
+	defer hashLock.Unlock()
+	h := thash.Hash([]byte(s))
+	i, ok := hashes[string(h)]
+	if !ok {
+		i = len(hashes)
+		hashes[string(h)] = i
+	}
+	if i > 999 {
+		panic(i)
+	}
+	return fmt.Sprintf("%03d", i)
 }
 
 func funcName(name, code string, vars []string) string {
@@ -498,7 +515,7 @@ func funcName(name, code string, vars []string) string {
 			case unicode.IsDigit(r), unicode.IsLetter(r):
 				w.WriteRune(r)
 			default:
-				w.WriteRune('π')
+				w.WriteRune('_')
 			}
 		}
 		return w.String()
