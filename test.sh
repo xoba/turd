@@ -4,6 +4,9 @@ git checkout lisp/gen.go
 git checkout defs/compiled/eval.lisp
 git checkout defs/compiled/teval.lisp
 
+# generate all cxr's
+go run . -m cxr
+
 # generate eval and teval from template
 go run . -m geneval
 

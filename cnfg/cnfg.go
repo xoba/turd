@@ -12,4 +12,5 @@ type Config struct {
 	Lisp           string
 	File           string
 	Profile        string // name of profile output, if any
+	N              int
 }

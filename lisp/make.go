@@ -30,31 +30,43 @@ const (
 )
 
 func GenCXRs(c cnfg.Config) error {
+	if c.N == 0 {
+		c.N = 6
+	}
 	m := make(map[string]bool)
-	n := 3
-	for j := 0; j < 1000; j++ {
-		w := new(bytes.Buffer)
-		w.WriteRune('c')
+	pow := func(n int) int {
+		out := 1
 		for i := 0; i < n; i++ {
-			switch rand.Intn(2) {
-			case 0:
-				w.WriteRune('a')
-			case 1:
-				w.WriteRune('d')
-			default:
-				panic("illegal")
-			}
+			out *= 2
 		}
-		w.WriteRune('r')
-		m[w.String()] = true
+		return out
+	}
+	var total int
+	for n := 2; n < c.N; n++ {
+		total += pow(n)
+		for len(m) < total {
+			w := new(bytes.Buffer)
+			w.WriteRune('c')
+			for i := 0; i < n; i++ {
+				switch rand.Intn(2) {
+				case 0:
+					w.WriteRune('a')
+				case 1:
+					w.WriteRune('d')
+				default:
+					panic("illegal")
+				}
+			}
+			w.WriteRune('r')
+			m[w.String()] = true
+		}
 	}
 	var list []string
 	for k := range m {
 		list = append(list, k)
 	}
 	sort.Strings(list)
-	for i, k := range list {
-		fmt.Printf("%d: %s\n", i, k)
+	for _, k := range list {
 		if err := GenCXR(k); err != nil {
 			return err
 		}
@@ -63,7 +75,32 @@ func GenCXRs(c cnfg.Config) error {
 }
 
 func GenCXR(cxr string) error {
-	return nil
+	w := new(bytes.Buffer)
+	fmt.Fprintf(w, "(defun %s (x) ", cxr)
+	var i int
+	for _, r := range cxr {
+		switch r {
+		case 'c':
+		case 'a':
+			i++
+			fmt.Fprintf(w, "(car ")
+		case 'd':
+			i++
+			fmt.Fprintf(w, "(cdr ")
+		case 'r':
+			fmt.Fprintf(w, "x")
+		default:
+			panic(r)
+		}
+	}
+	for j := 0; j < i; j++ {
+		fmt.Fprintf(w, ")")
+	}
+	fmt.Fprintln(w, ")")
+	if err := os.MkdirAll("defs/cxr", os.ModePerm); err != nil {
+		return err
+	}
+	return ioutil.WriteFile(fmt.Sprintf("defs/cxr/%s.lisp", cxr), w.Bytes(), os.ModePerm)
 }
 
 func Format(c cnfg.Config) error {
@@ -354,6 +391,7 @@ return e
 	}
 
 	load("defs/compiled", true)
+	load("defs/cxr", true)
 	load("defs/interpreted", false)
 
 	sort.Slice(defs, func(i, j int) bool {

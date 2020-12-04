@@ -37,6 +37,7 @@ func main() {
 	flag.StringVar(&c.PrivateKeyFile, "priv", "priv.dat", "private key file")
 	flag.StringVar(&c.AWSProfile, "aws", "", "aws profile")
 	flag.IntVar(&c.Port, "p", 8080, "http port to run on")
+	flag.IntVar(&c.N, "n", 0, "a count of something")
 	flag.IntVar(&c.Seed, "s", 0, "if not zero, the random seed")
 	flag.BoolVar(&c.Delete, "d", false, "whether to delete something in a test")
 	flag.BoolVar(&c.Debug, "debug", false, "whether to debug")

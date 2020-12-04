@@ -242,16 +242,36 @@ func (b Block) Lisp() lisp.Exp {
 }
 
 type Block struct {
-	Height        *big.Int
-	Time          time.Time
-	Hash          Hash          // hash of entire block except ID field
-	ID            Hash          // final output of all chained transaction scripts, a kind of "ID" for this block
-	Transactions  []Transaction `asn1:"omitempty" json:",omitempty"`
-	State         Hash          // pointer to the state trie
-	ParentOutputs []Hash        // first is intra-chain, others are inter-chain
-	Threshold     *big.Int      // max hash value for this block to be valid mining
-	// a randomly chosen nonce for mining purposes:
-	Nonce []byte
+	Parent       Hash // parent in blockchain picture
+	Height       *big.Int
+	Time         time.Time
+	Transactions []Transaction `json:",omitempty"`
+	Threshold    *big.Int      // max hash value for this block to be valid mining
+	Nonce        []byte        // a randomly chosen nonce for mining purposes
+	Hash         Hash          // hash of entire block except ID field, this is the input to transactions
+	Output       Hash          // output of all transactions
+	FinalState   Hash          // pointer to the state trie after the transactions are processed
+	ID           Hash          // hash of hash, output, and final state
+}
+
+func (b Block) ComputeHash() (Hash, error) {
+	b.Hash = nil
+	b.FinalState = nil
+	b.ID = nil
+	buf, err := asn1.Marshal(b)
+	if err != nil {
+		return nil, err
+	}
+	return thash.Hash(buf), nil
+}
+
+// returns true if hash could be verified
+func (b Block) VerifyHash() bool {
+	h, err := b.ComputeHash()
+	if err != nil {
+		return false
+	}
+	return bytes.Equal(h, b.Hash)
 }
 
 /*
@@ -269,14 +289,6 @@ requirement, then block is valid. otherwise, repeat this procedure.
 */
 
 type Hash []byte
-
-// content, compatible with a trie's KeyValue
-type xContent struct {
-	Key    []byte   `asn1:"omitempty" json:",omitempty"`
-	Hash   []byte   `asn1:"omitempty" json:",omitempty"` // hash of key and value
-	Value  []byte   `asn1:"omitempty" json:",omitempty"`
-	Length *big.Int // length of the value
-}
 
 // quantity and script hash must match a previous transaction's output
 // script is called with input, block, and transaction arguments,
