@@ -1,15 +1,18 @@
 package lisp
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -24,6 +27,53 @@ const (
 	optimize = true
 	pkg      = "lisp"
 )
+
+func Format(c cnfg.Config) error {
+	if c.File == "" {
+		c.File = "defs/compiled/eval.lisp"
+	}
+	f, err := os.Open(c.File)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	buf, err := formatLisp(f)
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(buf))
+	return nil
+}
+
+func formatLisp(f io.Reader) ([]byte, error) {
+	s := bufio.NewScanner(f)
+	var i int
+	space := regexp.MustCompile(`\s+`)
+	w := new(bytes.Buffer)
+	for s.Scan() {
+		line := strings.TrimSpace(s.Text())
+		if len(line) == 0 {
+			continue
+		}
+		line = space.ReplaceAllString(line, " ")
+		for j := 0; j < i; j++ {
+			fmt.Fprint(w, "  ")
+		}
+		for _, r := range line {
+			switch r {
+			case '(':
+				i++
+			case ')':
+				i--
+			}
+		}
+		fmt.Fprintln(w, line)
+	}
+	if err := s.Err(); err != nil {
+		return nil, err
+	}
+	return w.Bytes(), nil
+}
 
 // autogenerate an eval func, TODO also "try"
 func EvalTemplate(cnfg.Config) error {
@@ -172,12 +222,15 @@ func GenEval(file string, args map[string]string) error {
 	if err != nil {
 		return err
 	}
-	f, err := os.Create(file)
+	f := new(bytes.Buffer)
+	if err := t.Execute(f, addkv("compiled", "\n"+w.String(), args)); err != nil {
+		return err
+	}
+	buf, err := formatLisp(f)
 	if err != nil {
 		return err
 	}
-	defer f.Close()
-	if err := t.Execute(f, addkv("compiled", "\n"+w.String(), args)); err != nil {
+	if err := ioutil.WriteFile(file, buf, os.ModePerm); err != nil {
 		return err
 	}
 	fmt.Printf("%s compiled: %v\n", filepath.Base(file), counts)

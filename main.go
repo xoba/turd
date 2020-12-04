@@ -31,6 +31,7 @@ import (
 func main() {
 	var c cnfg.Config
 	flag.StringVar(&c.Mode, "m", "lisp", "mode to run")
+	flag.StringVar(&c.File, "f", "", "file to reference")
 	flag.StringVar(&c.Lisp, "lisp", "", "lisp code")
 	flag.StringVar(&c.PublicKeyFile, "pub", "pub.dat", "public key file")
 	flag.StringVar(&c.PrivateKeyFile, "priv", "priv.dat", "private key file")
@@ -62,6 +63,7 @@ func Run(c cnfg.Config) error {
 	modes := map[string]func(cnfg.Config) error{
 		"connect":     Connect,
 		"dd":          dd.Run,
+		"fmt":         lisp.Format,
 		"geneval":     lisp.EvalTemplate,
 		"gossip":      gossip.Run,
 		"hnode":       RunHTMLNode,
