@@ -422,182 +422,191 @@ func Run(cnfg.Config) error {
 
 	start := time.Now()
 	for time.Since(start) < time.Minute {
+		if err := timing("round", func() error {
+			var rounds int
+			for {
+				rounds++
 
-		var rounds int
-		for {
-			rounds++
-
-			state, err := NewStorage()
-			if err != nil {
-				return err
-			}
-
-			key := func(addr []byte) []byte {
-				return []byte(fmt.Sprintf("%x", addr)[:4])
-			}
-
-			balances := func() string {
-				return "n/a"
-				m := make(map[string]*big.Int)
-				kv, err := state.db.Search(func(kv *trie.KeyValue) bool {
-					return false
-				})
-				if err == trie.NotFound {
-				} else if err != nil {
-					log.Fatal(err)
-				}
-				if kv != nil {
-					fmt.Printf("found %v\n", kv)
-				}
-				buf, err := json.Marshal(m)
+				state, err := NewStorage()
 				if err != nil {
-					log.Fatal(err)
-				}
-				return string(buf)
-			}
-
-			balance := func(addr []byte) *big.Int {
-				i, err := state.GetBalance(key(addr))
-				if err != nil {
-					log.Fatal(err)
-				}
-				return i
-			}
-
-			inc := func(addr []byte, o *big.Int) {
-				if err := state.IncBalance(key(addr), o); err != nil {
-					log.Fatal(err)
-				}
-			}
-			dec := func(addr []byte, o *big.Int) {
-				inc(addr, big.NewInt(0).Neg(o))
-			}
-
-			type compiled struct {
-				transaction lisp.Exp
-				inputs      []lisp.Exp
-				lengths     []*big.Int
-			}
-
-			var compiledTrans []compiled
-			for _, t := range trans {
-				if err := t.Validate(); err != nil {
 					return err
 				}
-				c := compiled{
-					transaction: t.Lisp(),
+
+				key := func(addr []byte) []byte {
+					return []byte(fmt.Sprintf("%x", addr)[:4])
 				}
-				for _, input := range t.Inputs {
-					x, err := lisp.Parse(input.Script)
+
+				balances := func() string {
+					return "n/a"
+					m := make(map[string]*big.Int)
+					kv, err := state.db.Search(func(kv *trie.KeyValue) bool {
+						return false
+					})
+					if err == trie.NotFound {
+					} else if err != nil {
+						log.Fatal(err)
+					}
+					if kv != nil {
+						fmt.Printf("found %v\n", kv)
+					}
+					buf, err := json.Marshal(m)
 					if err != nil {
+						log.Fatal(err)
+					}
+					return string(buf)
+				}
+
+				balance := func(addr []byte) *big.Int {
+					i, err := state.GetBalance(key(addr))
+					if err != nil {
+						log.Fatal(err)
+					}
+					return i
+				}
+
+				inc := func(addr []byte, o *big.Int) {
+					if err := state.IncBalance(key(addr), o); err != nil {
+						log.Fatal(err)
+					}
+				}
+				dec := func(addr []byte, o *big.Int) {
+					inc(addr, big.NewInt(0).Neg(o))
+				}
+
+				type compiled struct {
+					transaction lisp.Exp
+					inputs      []lisp.Exp
+					lengths     []*big.Int
+				}
+
+				var compiledTrans []compiled
+				for _, t := range trans {
+					if err := t.Validate(); err != nil {
 						return err
 					}
-					c.inputs = append(c.inputs, x)
-					if input.Max == nil || input.Max.Cmp(big.NewInt(0)) <= 0 {
-						return fmt.Errorf("script max %v", input.Max)
+					c := compiled{
+						transaction: t.Lisp(),
 					}
-					c.lengths = append(c.lengths, input.Max)
-				}
-				compiledTrans = append(compiledTrans, c)
-			}
-
-			blockLisp := block.Lisp()
-			quote := func(e lisp.Exp) lisp.Exp {
-				return []lisp.Exp{"quote", e}
-			}
-
-			// block hash to be chained through all inputs of all transactions
-			if err := timing("proc", func() error {
-				// TODO: output of each transaction is a "receipt"
-				// for data it updates in trie.
-				// also check that output of transaction is hashed!
-				for i, t := range trans {
-					if err := timing("trans", func() error {
-						if err := t.Validate(); err != nil {
+					for _, input := range t.Inputs {
+						x, err := lisp.Parse(input.Script)
+						if err != nil {
 							return err
 						}
-						for j, input := range t.Inputs {
-							if b := balance(input.Address()); b.Cmp(input.Quantity) < 0 {
-								return fmt.Errorf("input %s from %s", input.Quantity, b)
+						c.inputs = append(c.inputs, x)
+						if input.Max == nil || input.Max.Cmp(big.NewInt(0)) <= 0 {
+							return fmt.Errorf("script max %v", input.Max)
+						}
+						c.lengths = append(c.lengths, input.Max)
+					}
+					compiledTrans = append(compiledTrans, c)
+				}
+
+				blockLisp := block.Lisp()
+				quote := func(e lisp.Exp) lisp.Exp {
+					return []lisp.Exp{"quote", e}
+				}
+
+				// block hash to be chained through all inputs of all transactions
+				if err := timing("proc", func() error {
+					// TODO: output of each transaction is a "receipt"
+					// for data it updates in trie.
+					// also check that output of transaction is hashed!
+					for i, t := range trans {
+						if err := timing("trans", func() error {
+							if err := t.Validate(); err != nil {
+								return err
 							}
-							e := []lisp.Exp{
-								compiledTrans[i].inputs[j],
-								quote(bhash),
-								quote(blockLisp),
-								quote(compiledTrans[i].transaction),
-							}
-							var res lisp.Exp
-							if err := timing("eval", func() error {
-								res = lisp.Try(e, compiledTrans[i].lengths[j])
+							if err := timing("input", func() error {
+								for j, input := range t.Inputs {
+									if b := balance(input.Address()); b.Cmp(input.Quantity) < 0 {
+										return fmt.Errorf("input %s from %s", input.Quantity, b)
+									}
+									e := []lisp.Exp{
+										compiledTrans[i].inputs[j],
+										quote(bhash),
+										quote(blockLisp),
+										quote(compiledTrans[i].transaction),
+									}
+									var res lisp.Exp
+									if err := timing("eval", func() error {
+										res = lisp.Try(e, compiledTrans[i].lengths[j])
+										return nil
+									}); err != nil {
+										return err
+									}
+									var hashed bool
+									switch t := res.(type) {
+									case string:
+										buf, err := base64.RawStdEncoding.DecodeString(t)
+										if err != nil {
+											return err
+										}
+										bhash = buf
+									case []byte:
+										bhash = t
+									case *lisp.Blob:
+										hashed = t.Hashed
+										bhash = t.Content
+									default:
+										return fmt.Errorf("%d. bad result: %s\n", i, lisp.String(res))
+									}
+									if !hashed {
+										return fmt.Errorf("transaction output not hashed: %s", lisp.String(res))
+									}
+									dec(input.Address(), input.Quantity)
+								}
 								return nil
 							}); err != nil {
 								return err
 							}
-							var hashed bool
-							switch t := res.(type) {
-							case string:
-								buf, err := base64.RawStdEncoding.DecodeString(t)
-								if err != nil {
+							for _, o := range t.Outputs {
+								inc(o.Address, o.Quantity)
+							}
+							for _, c := range t.Content {
+								if err := c.Verify(); err != nil {
 									return err
 								}
-								bhash = buf
-							case []byte:
-								bhash = t
-							case *lisp.Blob:
-								hashed = t.Hashed
-								bhash = t.Content
-							default:
-								return fmt.Errorf("%d. bad result: %s\n", i, lisp.String(res))
+								if err := state.SetContent(c); err != nil {
+									return err
+								}
 							}
-							if !hashed {
-								return fmt.Errorf("transaction output not hashed: %s", lisp.String(res))
-							}
-							dec(input.Address(), input.Quantity)
+							return nil
+						}); err != nil {
+							return err
 						}
-						for _, o := range t.Outputs {
-							inc(o.Address, o.Quantity)
-						}
-						for _, c := range t.Content {
-							if err := c.Verify(); err != nil {
-								return err
-							}
-							if err := state.SetContent(c); err != nil {
-								return err
-							}
-						}
-						return nil
-					}); err != nil {
-						return err
 					}
+					return nil
+				}); err != nil {
+					return err
 				}
-				return nil
-			}); err != nil {
-				return err
-			}
 
-			if false {
-				fmt.Printf("balances: %s\n", balances())
-				fmt.Printf("final hash = %s\n", marshal(bhash))
-			}
-
-			x := big.NewInt(0).SetBytes(bhash)
-			if x.Cmp(difficulty) < 0 {
 				if false {
-					if err := state.db.ToGviz("trie.svg", "state"); err != nil {
-						return err
-					}
-					return open.Run("trie.svg")
+					fmt.Printf("balances: %s\n", balances())
+					fmt.Printf("final hash = %s\n", marshal(bhash))
 				}
-				break
+
+				x := big.NewInt(0).SetBytes(bhash)
+				if x.Cmp(difficulty) < 0 {
+					if false {
+						if err := state.db.ToGviz("trie.svg", "state"); err != nil {
+							return err
+						}
+						return open.Run("trie.svg")
+					}
+					break
+				}
 			}
+			allRounds = append(allRounds, rounds)
+			sort.Ints(allRounds)
+			fmt.Printf("***** %d rounds; %d median (%d)\n",
+				rounds,
+				allRounds[len(allRounds)/2],
+				len(allRounds),
+			)
+			return nil
+		}); err != nil {
+			return err
 		}
-		allRounds = append(allRounds, rounds)
-		sort.Ints(allRounds)
-		fmt.Printf("***** %d rounds; %d median (%d)\n",
-			rounds,
-			allRounds[len(allRounds)/2],
-			len(allRounds),
-		)
 	}
 	fmt.Printf("all rounds: %v\n", allRounds)
 	for k := range times {
