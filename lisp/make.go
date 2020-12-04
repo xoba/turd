@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"os"
 	"os/exec"
 	"path"
@@ -27,6 +28,43 @@ const (
 	optimize = true
 	pkg      = "lisp"
 )
+
+func GenCXRs(c cnfg.Config) error {
+	m := make(map[string]bool)
+	n := 3
+	for j := 0; j < 1000; j++ {
+		w := new(bytes.Buffer)
+		w.WriteRune('c')
+		for i := 0; i < n; i++ {
+			switch rand.Intn(2) {
+			case 0:
+				w.WriteRune('a')
+			case 1:
+				w.WriteRune('d')
+			default:
+				panic("illegal")
+			}
+		}
+		w.WriteRune('r')
+		m[w.String()] = true
+	}
+	var list []string
+	for k := range m {
+		list = append(list, k)
+	}
+	sort.Strings(list)
+	for i, k := range list {
+		fmt.Printf("%d: %s\n", i, k)
+		if err := GenCXR(k); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func GenCXR(cxr string) error {
+	return nil
+}
 
 func Format(c cnfg.Config) error {
 	if c.File == "" {

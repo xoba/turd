@@ -62,6 +62,7 @@ func main() {
 func Run(c cnfg.Config) error {
 	modes := map[string]func(cnfg.Config) error{
 		"connect":     Connect,
+		"cxr":         lisp.GenCXRs,
 		"dd":          dd.Run,
 		"fmt":         lisp.Format,
 		"geneval":     lisp.EvalTemplate,
