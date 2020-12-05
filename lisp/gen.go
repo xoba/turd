@@ -2004,8 +2004,7 @@ func teval(_args ...Exp) Exp {
 	t0 := _args[0]
 	e := _args[1]
 	a := _args[2]
-
-	out := func() Exp {
+	return func() Exp {
 		var λ func(...Exp) Exp
 		λ = func(_args ...Exp) Exp {
 			t1 := _args[0]
@@ -2086,13 +2085,6 @@ func teval(_args ...Exp) Exp {
 		return λ(A(next, t0))
 	}()
 
-	if Debug {
-		fmt.Printf("teval t0 = %s\n", String(t0))
-		fmt.Printf("teval e = %s\n", String(e))
-		fmt.Printf("teval a = %s\n", String(a))
-		fmt.Printf("teval output = %s\n", String(out))
-	}
-	return out
 }
 
 //

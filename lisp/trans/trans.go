@@ -10,7 +10,6 @@ import (
 	"log"
 	"math/big"
 	"math/rand"
-	"os"
 	"sort"
 	"text/template"
 	"time"
@@ -218,7 +217,7 @@ func (t *Transaction) NewInput(n int64, key *tnet.PublicKey, nonce string, after
 	t.Inputs = append(t.Inputs, Input{
 		Quantity: big.NewInt(n),
 		Script:   script,
-		Max:      big.NewInt(12),
+		Max:      big.NewInt(20),
 	})
 	return nil
 }
@@ -365,7 +364,7 @@ func Run(cnfg.Config) error {
 		block.Transactions = append(block.Transactions, t)
 	}
 
-	after := block.Time.Add(+time.Millisecond)
+	after := block.Time.Add(-time.Millisecond)
 	{
 		var t Transaction
 		t.Type = "turd"
@@ -543,8 +542,6 @@ func Run(cnfg.Config) error {
 									if err := timing("eval", func() error {
 										lisp.Debug = true
 										res = lisp.Try(e, compiledTrans[i].lengths[j])
-										fmt.Printf("output = %s\n", lisp.String(res))
-										os.Exit(0)
 										return nil
 									}); err != nil {
 										return err
