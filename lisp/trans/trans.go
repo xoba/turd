@@ -217,7 +217,7 @@ func (t *Transaction) NewInput(n int64, key *tnet.PublicKey, nonce string, after
 	t.Inputs = append(t.Inputs, Input{
 		Quantity: big.NewInt(n),
 		Script:   script,
-		Max:      big.NewInt(100),
+		Max:      big.NewInt(12),
 	})
 	return nil
 }
