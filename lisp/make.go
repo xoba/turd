@@ -494,6 +494,7 @@ func DefunCode(c context, defun Exp, debug bool) (string /* name */, []string /*
 	if debug {
 		fmt.Fprintf(w, `
 out:= %[1]s
+if Debug {
 `, string(code))
 		for _, a := range args {
 			v := String(a)
@@ -501,6 +502,7 @@ out:= %[1]s
 `, name, v, v)
 		}
 		fmt.Fprintf(w, `fmt.Printf("%[2]s output = %%s\n",String(out))
+}
 return out
 }
 
