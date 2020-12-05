@@ -294,7 +294,12 @@ func GenEval(file string, args map[string]string) error {
 		case 0:
 			emit(`((eq op '{{.name}}) ({{.name}}))`)
 		case 1:
-			emit(`((eq op '{{.name}}) ({{.name}} ({{.eval}} first a)))`)
+			if true {
+				emit(`((eq op '{{.name}}) ({{.name}} ({{.eval}} first a)))`)
+			} else {
+				// tracing:
+				emit(`((eq op '{{.name}}) (cadr (display (list '{{.name}} ({{.name}} ({{.eval}} first a))))))`)
+			}
 		case 2:
 			emit(`((eq op '{{.name}}) ({{.name}} ({{.eval}} first a) ({{.eval}} second a)))`)
 		case 3:

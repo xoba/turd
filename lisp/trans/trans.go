@@ -169,19 +169,11 @@ func (t *Transaction) NewOutput(n int64, key *tnet.PublicKey, nonce string, afte
 }
 
 func (t *Transaction) NewContent(key *tnet.PrivateKey, path string, content []byte) error {
-	buf, err := key.Public().MarshalBinary()
-	if err != nil {
-		return err
-	}
 	c := Content{
 		Path:    path,
-		Owner:   buf,
 		Payload: content,
 		Length:  big.NewInt(int64(len(content))),
 		Hash:    thash.Hash(content),
-	}
-	if err := c.Sign(key); err != nil {
-		return err
 	}
 	t.Content = append(t.Content, c)
 	return nil
@@ -575,9 +567,8 @@ func Run(cnfg.Config) error {
 								inc(o.Address, o.Quantity)
 							}
 							for _, c := range t.Content {
-								if err := c.Verify(); err != nil {
-									return err
-								}
+								// TODO: run content script if content already
+								// exists, to see if we're authorized to update it
 								if err := state.SetContent(c); err != nil {
 									return err
 								}

@@ -263,6 +263,7 @@ func Run(c cnfg.Config) error {
 
 	test("display", "(display ())", "()")
 	test("display", "(display 'a)", "a")
+	test("display", "(display 'a 'b 'c)", "a")
 
 	if false {
 		test("macro", `((macro test (x) (cdr x))

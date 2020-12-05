@@ -2,7 +2,6 @@ package trans
 
 import (
 	"bytes"
-	"encoding/asn1"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -12,8 +11,6 @@ import (
 
 	"github.com/skratchdot/open-golang/open"
 	"github.com/xoba/turd/lisp"
-	"github.com/xoba/turd/thash"
-	"github.com/xoba/turd/tnet"
 	"github.com/xoba/turd/trie"
 )
 
@@ -110,12 +107,11 @@ func contentKey(p string) []byte {
 
 type Content struct {
 	Path        string
-	Payload     []byte `json:",omitempty"` // generally should be empty, stored somewhere else
+	Payload     []byte `json:",omitempty"` // generally should be empty, stored somewhere else.
 	Length      *big.Int
+	Hash        []byte `json:",omitempty"` // hash of the actual content, could also be a merkle root
 	ContentType string `json:",omitempty"` // like a mime header
-	Owner       []byte
-	Hash        []byte `json:",omitempty"` // hash of the actual content
-	Signature   []byte `json:",omitempty"`
+	Script      string // script to authorize content modification, if it already exists
 }
 
 func (i Content) Lisp() lisp.Exp {
@@ -129,49 +125,9 @@ func (i Content) Lisp() lisp.Exp {
 	add("path", LispAtom(i.Path))
 	add("length", LispInt(*i.Length))
 	add("type", LispAtom(i.ContentType))
-	add("owner", LispBlob(i.Owner))
 	add("payload", LispBlob(i.Payload))
 	add("hash", LispBlob(i.Hash))
-	add("signature", LispBlob(i.Signature))
 	return self.Lisp()
-}
-
-func (c *Content) Sign(key *tnet.PrivateKey) error {
-	c.Hash = nil
-	c.Signature = nil
-	buf, err := asn1.Marshal(*c)
-	if err != nil {
-		return err
-	}
-	c.Hash = thash.Hash(buf)
-	sig, err := key.Sign(c.Hash)
-	if err != nil {
-		return err
-	}
-	c.Signature = sig
-	return nil
-}
-
-func (c Content) Verify() error {
-	hash := c.Hash
-	sig := c.Signature
-	c.Hash = nil
-	c.Signature = nil
-	buf, err := asn1.Marshal(c)
-	if err != nil {
-		return err
-	}
-	if !bytes.Equal(hash, thash.Hash(buf)) {
-		return fmt.Errorf("hash mismatch")
-	}
-	var key tnet.PublicKey
-	if err := key.UnmarshalBinary(c.Owner); err != nil {
-		return err
-	}
-	if err := key.Verify(hash, sig); err != nil {
-		return err
-	}
-	return nil
 }
 
 func (s *Storage) SetContent(c Content) error {
@@ -189,9 +145,6 @@ func (s *Storage) SetContent(c Content) error {
 		found = c
 	default:
 		return err
-	}
-	if !bytes.Equal(c.Owner, found.Owner) {
-		return fmt.Errorf("owner can't modify others' content")
 	}
 	if buf2, err := json.Marshal(found); err != nil {
 		return err

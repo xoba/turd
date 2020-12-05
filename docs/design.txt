@@ -41,7 +41,11 @@ trie is a stand-in for state of blockchain. thus, to check
 a block, miners must simply arrive at the same state hash.
 
 in trie, register a receipt from transaction output,
-to enforce processing
+to enforce processing.
+
+content parts of transactions also need validation scripts,
+to enforce who can update already-existing content.
+
 
 problems:
 
