@@ -80,6 +80,11 @@ func NewStorage() (*Storage, error) {
 	return &Storage{db: db}, nil
 }
 
+// unique to the particular state of storage
+func (s *Storage) Hash() ([]byte, error) {
+	return s.db.Hash()
+}
+
 func (s *Storage) Copy() *Storage {
 	return &Storage{db: s.db}
 }

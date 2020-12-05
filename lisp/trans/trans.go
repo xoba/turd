@@ -19,7 +19,6 @@ import (
 	"github.com/xoba/turd/lisp"
 	"github.com/xoba/turd/thash"
 	"github.com/xoba/turd/tnet"
-	"github.com/xoba/turd/trie"
 )
 
 // script output: either a blob or empty list.
@@ -218,7 +217,7 @@ func (t *Transaction) NewInput(n int64, key *tnet.PublicKey, nonce string, after
 	t.Inputs = append(t.Inputs, Input{
 		Quantity: big.NewInt(n),
 		Script:   script,
-		Max:      big.NewInt(20),
+		Max:      big.NewInt(200),
 	})
 	return nil
 }
@@ -241,20 +240,7 @@ func (b Block) Lisp() lisp.Exp {
 	return self.Lisp()
 }
 
-type Block struct {
-	Parent       Hash // parent in blockchain picture
-	Height       *big.Int
-	Time         time.Time
-	Transactions []Transaction `json:",omitempty"`
-	Threshold    *big.Int      // max hash value for this block to be valid mining
-	Nonce        []byte        // a randomly chosen nonce for mining purposes
-	Hash         Hash          // hash of entire block except ID field, this is the input to transactions
-	Output       Hash          // output of all transactions
-	FinalState   Hash          // pointer to the state trie after the transactions are processed
-	ID           Hash          // hash of hash, output, and final state
-}
-
-func (b Block) ComputeHash() (Hash, error) {
+func (b Block) ComputeHash() ([]byte, error) {
 	b.Hash = nil
 	b.FinalState = nil
 	b.ID = nil
@@ -287,8 +273,6 @@ last transaction's output is the block's output. if it satisfies the mining
 requirement, then block is valid. otherwise, repeat this procedure.
 
 */
-
-type Hash []byte
 
 // quantity and script hash must match a previous transaction's output
 // script is called with input, block, and transaction arguments,
@@ -332,9 +316,31 @@ func replace(s string, m map[string]string) (string, error) {
 	return formatScript(w.String())
 }
 
+type Block struct {
+	Parent       []byte // parent in blockchain picture
+	Height       *big.Int
+	Time         time.Time
+	Transactions []Transaction `json:",omitempty"`
+	Threshold    *big.Int      // max hash value for this block to be valid mining
+	Nonce        []byte        // a randomly chosen nonce for mining purposes
+	Hash         []byte        // hash of entire block except ID field, this is the input to transactions
+	Output       []byte        // output of all transactions
+	FinalState   []byte        // pointer to the state trie after the transactions are processed
+	ID           []byte        // hash of hash, output, and final state
+}
+
 func Run(cnfg.Config) error {
 
 	//return Trie()
+
+	block := Block{
+		Height:    big.NewInt(1000),
+		Time:      time.Now().UTC(),
+		Nonce:     make([]byte, 10),
+		Threshold: Difficulty(MaxHash(32), big.NewInt(30)),
+	}
+
+	rand.Read(block.Nonce)
 
 	key1, err := tnet.NewKey()
 	if err != nil {
@@ -349,9 +355,8 @@ func Run(cnfg.Config) error {
 		return err
 	}
 
-	var trans []Transaction
 	addt := func(t Transaction) {
-		trans = append(trans, t)
+		block.Transactions = append(block.Transactions, t)
 	}
 
 	now := time.Now().UTC()
@@ -396,18 +401,7 @@ func Run(cnfg.Config) error {
 		addt(t)
 	}
 
-	bhash := make([]byte, 10)
-	rand.Read(bhash)
-
-	block := Block{
-		Nonce:  bhash,
-		Height: big.NewInt(1000),
-		Time:   time.Now().UTC(),
-	}
-
 	fmt.Printf("block = %s\n", lisp.String(block.Lisp()))
-
-	difficulty := Difficulty(MaxHash(32), big.NewInt(30))
 
 	var allRounds []int
 
@@ -448,26 +442,6 @@ func Run(cnfg.Config) error {
 					return []byte(fmt.Sprintf("%x", addr)[:4])
 				}
 
-				balances := func() string {
-					return "n/a"
-					m := make(map[string]*big.Int)
-					kv, err := state.db.Search(func(kv *trie.KeyValue) bool {
-						return false
-					})
-					if err == trie.NotFound {
-					} else if err != nil {
-						log.Fatal(err)
-					}
-					if kv != nil {
-						fmt.Printf("found %v\n", kv)
-					}
-					buf, err := json.Marshal(m)
-					if err != nil {
-						log.Fatal(err)
-					}
-					return string(buf)
-				}
-
 				balance := func(addr []byte) *big.Int {
 					i, err := state.GetBalance(key(addr))
 					if err != nil {
@@ -492,7 +466,7 @@ func Run(cnfg.Config) error {
 				}
 
 				var compiledTrans []compiled
-				for _, t := range trans {
+				for _, t := range block.Transactions {
 					if err := t.Validate(); err != nil {
 						return err
 					}
@@ -518,12 +492,31 @@ func Run(cnfg.Config) error {
 					return []lisp.Exp{"quote", e}
 				}
 
+				{
+					bhash, err := block.ComputeHash()
+					if err != nil {
+						return err
+					}
+					block.Hash = bhash
+				}
+
+				concat := func(list ...[]byte) (out []byte) {
+					for _, x := range list {
+						out = append(out, x...)
+					}
+					return
+				}
+
 				// block hash to be chained through all inputs of all transactions
 				if err := timing("proc", func() error {
 					// TODO: output of each transaction is a "receipt"
 					// for data it updates in trie.
 					// also check that output of transaction is hashed!
-					for i, t := range trans {
+
+					bhash := block.Hash
+
+					for i, t := range block.Transactions {
+						var output []byte
 						if err := timing("trans", func() error {
 							if err := t.Validate(); err != nil {
 								return err
@@ -539,6 +532,7 @@ func Run(cnfg.Config) error {
 										quote(blockLisp),
 										quote(compiledTrans[i].transaction),
 									}
+									fmt.Println(lisp.String(e))
 									var res lisp.Exp
 									if err := timing("eval", func() error {
 										res = lisp.Try(e, compiledTrans[i].lengths[j])
@@ -553,12 +547,12 @@ func Run(cnfg.Config) error {
 										if err != nil {
 											return err
 										}
-										bhash = buf
+										output = buf
 									case []byte:
-										bhash = t
+										output = t
 									case *lisp.Blob:
 										hashed = t.Hashed
-										bhash = t.Content
+										output = t.Content
 									default:
 										return fmt.Errorf("%d. bad result: %s\n", i, lisp.String(res))
 									}
@@ -582,6 +576,14 @@ func Run(cnfg.Config) error {
 									return err
 								}
 							}
+							// thread the output back to input of next transaction
+							h, err := state.Hash()
+							if err != nil {
+								return err
+							}
+							block.Output = thash.Hash(concat(output, h))
+							block.FinalState = h
+							bhash = block.Output
 							return nil
 						}); err != nil {
 							return err
@@ -592,13 +594,10 @@ func Run(cnfg.Config) error {
 					return err
 				}
 
-				if false {
-					fmt.Printf("balances: %s\n", balances())
-					fmt.Printf("final hash = %s\n", marshal(bhash))
-				}
+				block.ID = thash.Hash(concat(block.Hash, block.Output, block.FinalState))
 
-				x := big.NewInt(0).SetBytes(bhash)
-				if x.Cmp(difficulty) < 0 {
+				x := big.NewInt(0).SetBytes(block.ID)
+				if x.Cmp(block.Threshold) < 0 {
 					if false {
 						if err := state.db.ToGviz("trie.svg", "state"); err != nil {
 							return err
@@ -708,7 +707,7 @@ func (t *Transaction) Fee() *big.Int {
 	return &i
 }
 
-func (t Transaction) Hash() (Hash, error) {
+func (t Transaction) Hash() ([]byte, error) {
 	t.Arguments = ""
 	m, err := t.Marshal()
 	if err != nil {
