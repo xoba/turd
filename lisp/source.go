@@ -261,9 +261,17 @@ func Run(c cnfg.Config) error {
 	test("eval", "(eval '((label firstatom (lambda (x) (cond ((atom x) x) ('t (firstatom (car x)))))) y) '((y ((a b) (c d)))))", "a")
 	test("eval", "(eval '((lambda (x y) (cons x (cdr y))) 'a '(b c d)) '())", "(a c d)")
 
-	test("display", "(display ())", "()")
-	test("display", "(display 'a)", "a")
+	if false {
+		// the following exhibits a difference between compiles
+		// and interpreted for evlis-version of display
+		test("display", "(display 'a 'b 'c)", "")
+		test("display", "(display 'a)", "")
+		test("display", "(display ())", "")
+	}
+
 	test("display", "(display 'a 'b 'c)", "a")
+	test("display", "(display 'a)", "a")
+	test("display", "(display ())", "()")
 
 	if false {
 		test("macro", `((macro test (x) (cdr x))

@@ -14,6 +14,7 @@
                     ((eq op 'quote) first)
                     ((eq op 'cond) (tevcon t1 (cdr e) a))
                     ((eq op 'list) (tevlis t1 (cdr e) a))
+                    ;; ((eq op 'display) (display (tevlis t1 (cdr e) a)))
                     ;; "add" with 2 args (manual)
                     ((eq op 'add) (add (teval t1 first a) (teval t1 second a)))
                     ;; "after" with 2 args (manual)
