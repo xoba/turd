@@ -2,7 +2,6 @@ package trans
 
 import (
 	"bytes"
-	"crypto/rand"
 	"encoding/asn1"
 	"encoding/base64"
 	"encoding/json"
@@ -10,6 +9,7 @@ import (
 	"io/ioutil"
 	"log"
 	"math/big"
+	"math/rand"
 	"sort"
 	"text/template"
 	"time"
@@ -217,7 +217,7 @@ func (t *Transaction) NewInput(n int64, key *tnet.PublicKey, nonce string, after
 	t.Inputs = append(t.Inputs, Input{
 		Quantity: big.NewInt(n),
 		Script:   script,
-		Max:      big.NewInt(200),
+		Max:      big.NewInt(100),
 	})
 	return nil
 }
@@ -329,6 +329,11 @@ type Block struct {
 	ID           []byte        // hash of hash, output, and final state
 }
 
+func (b Block) String() string {
+	buf, _ := json.MarshalIndent(b, "", "  ")
+	return string(buf)
+}
+
 func Run(cnfg.Config) error {
 
 	//return Trie()
@@ -336,11 +341,9 @@ func Run(cnfg.Config) error {
 	block := Block{
 		Height:    big.NewInt(1000),
 		Time:      time.Now().UTC(),
-		Nonce:     make([]byte, 10),
 		Threshold: Difficulty(MaxHash(32), big.NewInt(30)),
+		Nonce:     make([]byte, 20),
 	}
-
-	rand.Read(block.Nonce)
 
 	key1, err := tnet.NewKey()
 	if err != nil {
@@ -359,8 +362,7 @@ func Run(cnfg.Config) error {
 		block.Transactions = append(block.Transactions, t)
 	}
 
-	now := time.Now().UTC()
-	after := now.Add(-time.Millisecond)
+	after := block.Time.Add(-time.Millisecond)
 	{
 		var t Transaction
 		t.Type = "turd"
@@ -432,6 +434,8 @@ func Run(cnfg.Config) error {
 			var rounds int
 			for {
 				rounds++
+
+				rand.Read(block.Nonce)
 
 				state, err := NewStorage()
 				if err != nil {
@@ -532,7 +536,6 @@ func Run(cnfg.Config) error {
 										quote(blockLisp),
 										quote(compiledTrans[i].transaction),
 									}
-									fmt.Println(lisp.String(e))
 									var res lisp.Exp
 									if err := timing("eval", func() error {
 										res = lisp.Try(e, compiledTrans[i].lengths[j])
