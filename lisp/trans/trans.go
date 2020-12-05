@@ -10,6 +10,7 @@ import (
 	"log"
 	"math/big"
 	"math/rand"
+	"os"
 	"sort"
 	"text/template"
 	"time"
@@ -338,10 +339,12 @@ func Run(cnfg.Config) error {
 
 	//return Trie()
 
+	const targetRounds = 30 // i.e., 30'ish rounds per mining
+
 	block := Block{
 		Height:    big.NewInt(1000),
 		Time:      time.Now().UTC(),
-		Threshold: Difficulty(MaxHash(32), big.NewInt(30)),
+		Threshold: Difficulty(MaxHash(32), big.NewInt(targetRounds)),
 		Nonce:     make([]byte, 20),
 	}
 
@@ -362,7 +365,7 @@ func Run(cnfg.Config) error {
 		block.Transactions = append(block.Transactions, t)
 	}
 
-	after := block.Time.Add(-time.Millisecond)
+	after := block.Time.Add(+time.Millisecond)
 	{
 		var t Transaction
 		t.Type = "turd"
@@ -538,7 +541,10 @@ func Run(cnfg.Config) error {
 									}
 									var res lisp.Exp
 									if err := timing("eval", func() error {
+										lisp.Debug = true
 										res = lisp.Try(e, compiledTrans[i].lengths[j])
+										fmt.Printf("output = %s\n", lisp.String(res))
+										os.Exit(0)
 										return nil
 									}); err != nil {
 										return err

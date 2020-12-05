@@ -12,7 +12,10 @@ import (
 	"github.com/xoba/turd/cnfg"
 )
 
+var Debug bool
+
 type EvalFunc func(e Exp) Exp
+type TryFunc func(t, e Exp) Exp
 
 func Eval(e Exp) Exp {
 	return CompiledEval(e)
@@ -23,11 +26,22 @@ func Try(e Exp, max *big.Int) Exp {
 }
 
 func CompiledEval(e Exp) Exp {
-	return UnsanitizeGo(eval([]Exp{SanitizeGo(e), env}...))
+	return UnsanitizeGo(
+		eval([]Exp{
+			SanitizeGo(e),
+			env,
+		}...),
+	)
 }
 
 func CompiledTry(e Exp, max *big.Int) Exp {
-	return UnsanitizeGo(teval([]Exp{[]Exp{max, big.NewInt(0)}, SanitizeGo(e), env}...))
+	return UnsanitizeGo(
+		teval([]Exp{
+			[]Exp{max, big.NewInt(0)},
+			SanitizeGo(e),
+			env,
+		}...),
+	)
 }
 
 func InterpretedEval(e Exp, eval EvalFunc) Exp {
@@ -37,6 +51,9 @@ func InterpretedEval(e Exp, eval EvalFunc) Exp {
 	return eval([]Exp{eval_label, q(e), q(env)})
 }
 
+// TODO: needs to have better error checking, like
+// some inputs need to generate errors for tokenizer
+// and parser to be correct.
 func TestParse(c cnfg.Config) error {
 	test0 := func(s string) error {
 		fmt.Printf("testing %s\n", s)
@@ -323,7 +340,6 @@ func Run(c cnfg.Config) error {
 	file("crypto2.lisp", "/Bmm7Jh2vHGd56htMfK1looDkZfay3hJgLrY+QZRQvM")
 	file("block.lisp", "1000")
 	file("block1.lisp", "2020-11-22T11:16:18.838Z")
-	file("trans.lisp", "((cTJq28DsB6r2l2dd0sBD2ZjQ/F+a6+dTaG85aLtxbL0 MEUCIAeBVoHQPo86Qerj/EzdjFV0QwVAwo2m3vVMgy/HiIzjAiEAoNKehjpzam+uO9lRyOHkv0i7WOq2MUir7V+bR4vLJOg) (9lCAMaW3i+knbrdq6GIX0Nt5/ETo3FwTz14j8ynR5io MEUCIQDPaNR9Nt+OHaflycjb2w2pvcA/mEeSpJY/k9eV8cw0ygIgRFPc7XaRW0LE0Sp41IrhtyW1JJd3VGUsqVAoHElYv2o))")
 	file("block2.lisp", "rwSvYFupU7ZH1xqBj/YFOzaHZsyeSye0TGErmVV3mAI")
 
 	test("len", `(length 'x)`, `0`)
@@ -348,10 +364,10 @@ func Run(c cnfg.Config) error {
 	test("teval", "(teval '(10 0) '(car '(a b)) '())", "a")
 	test("teval", "(teval '(10 0) '(cdr '(a b)) '())", "(b)")
 	test("teval", fmt.Sprintf("(teval '(10 0) '(cdr '(a b)) '%s)", String(env)), "(b)")
-	test("teval", "(teval '(100 0) '(blah '(a b)) '())", "error: (max 100)")
+	test("teval", "(teval '(100 0) '(blah '(a b)) '())", "error: (100 100)")
 
 	test("next", `(next '(10 6))`, `(10 7)`)
-	test("next", `(next '(10 10))`, `error: (max 10)`)
+	test("next", `(next '(10 10))`, `error: (10 10)`)
 
 	test("ltest", `((label lambdatest (lambda (x) 
   (list (car x) (cdr x)))) '(a b c))`, "(a (b c))")

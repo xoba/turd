@@ -42,6 +42,7 @@ func main() {
 	flag.BoolVar(&c.Delete, "d", false, "whether to delete something in a test")
 	flag.BoolVar(&c.Debug, "debug", false, "whether to debug")
 	flag.StringVar(&c.Profile, "profile", "", "name of profile file, if any")
+	flag.StringVar(&c.DebugDefuns, "ddefuns", "", "csv of defuns to debug")
 	flag.Parse()
 	if len(c.Profile) > 0 {
 		f, err := os.Create(c.Profile)

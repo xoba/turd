@@ -31,7 +31,7 @@ func Parse(s string) (Exp, error) {
 		return nil, fmt.Errorf("expression not a list")
 	}
 	if n := len(x); n != 1 {
-		return nil, fmt.Errorf("need just one element, got %d", n)
+		return nil, fmt.Errorf("need just one expression, got %d", n)
 	}
 	return x[0], nil
 }

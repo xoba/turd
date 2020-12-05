@@ -1,5 +1,5 @@
 ;; this is a script that has time and signature constraints
-((lambda
+(lambda
    (input block trans)
    ((lambda (pub t0 time thash sig)
       (cond
