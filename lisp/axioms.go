@@ -62,9 +62,9 @@ func String(e Exp) string {
 		if len(t) == 2 && t[0] == "quote" {
 			return fmt.Sprintf("'%s", String(t[1]))
 		}
-		var list []string
-		for _, e := range t {
-			list = append(list, String(e))
+		list := make([]string, len(t))
+		for i, e := range t {
+			list[i] = String(e)
 		}
 		return fmt.Sprintf("(%s)", strings.Join(list, " "))
 	case Func:
@@ -185,9 +185,9 @@ func cons(args ...Exp) Exp {
 	y := manifest(args[1])
 	switch t := y.(type) {
 	case []Exp:
-		var out []Exp
-		out = append(out, x)
-		out = append(out, t...)
+		out := make([]Exp, 1+len(t))
+		out[0] = x
+		copy(out[1:], t)
 		return out
 	default:
 		return fmt.Errorf("cons needs a list")
@@ -230,20 +230,17 @@ func compute(args []Exp, f func(...*big.Int) *big.Int) Exp {
 }
 
 func toInts(args []Exp) ([]*big.Int, error) {
-	var out []*big.Int
-	add := func(i *big.Int) {
-		out = append(out, i)
-	}
-	for _, e := range args {
+	out := make([]*big.Int, len(args))
+	for j, e := range args {
 		switch t := e.(type) {
 		case string:
 			var i big.Int
 			if _, ok := i.SetString(t, 10); !ok {
 				return nil, fmt.Errorf("can't parse %q", t)
 			}
-			add(&i)
+			out[j] = &i
 		case *big.Int:
-			add(t)
+			out[j] = t
 		default:
 			return nil, fmt.Errorf("not an int: %T", e)
 		}
@@ -327,11 +324,12 @@ func concat(args ...Exp) Exp {
 		return err
 	}
 	var out Blob
+	out.Content = make([]byte, len(xb.Content)+len(yb.Content))
 	if xb.Hashed || yb.Hashed {
 		out.Hashed = true
 	}
-	out.Content = append(out.Content, xb.Content...)
-	out.Content = append(out.Content, yb.Content...)
+	copy(out.Content, xb.Content)
+	copy(out.Content[len(xb.Content):], yb.Content)
 	return &out
 }
 
@@ -464,9 +462,10 @@ func runes(args ...Exp) Exp {
 	if !ok {
 		return fmt.Errorf("not a string")
 	}
-	var out []Exp
-	for _, r := range op {
-		out = append(out, string(r))
+	chars := []rune(op)
+	out := make([]Exp, len(chars))
+	for i, r := range chars {
+		out[i] = string(r)
 	}
 	return out
 }
