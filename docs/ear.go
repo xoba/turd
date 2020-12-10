@@ -148,7 +148,7 @@ func Head() (string, error) {
 }
 
 type EmailParameters struct {
-	Config
+	Config  Config
 	From    string
 	To      []string
 	Subject string
@@ -156,8 +156,8 @@ type EmailParameters struct {
 }
 
 type Receipt struct {
-	EmailParameters
-	MessageID string
+	EmailParameters EmailParameters
+	MessageID       string
 }
 
 func (r Receipt) String() string {
@@ -190,7 +190,7 @@ func SendEmail(e EmailParameters) (*Receipt, error) {
 	resp, err := ses.New(session).SendEmail(&ses.SendEmailInput{
 		Destination: &ses.Destination{
 			ToAddresses:  addrs(e.To),
-			BccAddresses: []*string{},
+			BccAddresses: addrs([]string{e.From}),
 		},
 		Message: &ses.Message{
 			Subject: content(e.Subject),
