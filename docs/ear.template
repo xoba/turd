@@ -12,7 +12,7 @@ Sent: {{.Sent.Format "2006-01-02"}}
     POINT OF CONTACT: {{.Contact}}
     TELEPHONE: {{.Phone}}
     MANUFACTURER(S): {{.Manufacturer}}
-    PRODUCT NAME/MODEL #: {{.Product}}
+    PRODUCT NAME/MODEL #: {{.Product}} / <a href='https://github.com/xoba/turd/tree/{{.GitCommit}}'>{{.GitCommit}}</a>
     ECCN: {{.ECCN}}
     INTERNET LOCATION(S): {{.Locations}}
 </pre>

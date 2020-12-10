@@ -9,6 +9,7 @@ import (
 	"html/template"
 	"log"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -49,6 +50,7 @@ type EarSubmission struct {
 	Product      string
 	ECCN         string
 	Locations    string
+	GitCommit    string
 	Sender       string // name of person sending the email
 }
 
@@ -78,7 +80,7 @@ func Run(c Config) error {
 		Sent:         time.Now(),
 		Type:         "EAR 742.15(b) and 734.3(b)(3)",
 		By:           mike,
-		For:          "turd open source project",
+		For:          "the turd open source project",
 		Contact:      mike,
 		Phone:        "+19176086254",
 		Manufacturer: mike + " and collaborators",
@@ -87,6 +89,11 @@ func Run(c Config) error {
 		Locations:    "https://github.com/xoba/turd",
 		Sender:       mike,
 	}
+	head, err := Head()
+	if err != nil {
+		return err
+	}
+	ear.GitCommit = head[:10]
 	t, err := template.ParseFiles("docs/ear.template")
 	if err != nil {
 		return err
@@ -97,7 +104,7 @@ func Run(c Config) error {
 	}
 	var to string
 	if c.Prod {
-		to = "blah blah"
+		to = "crypt@bis.doc.gov,enc@nsa.gov"
 	} else {
 		to = c.From
 	}
@@ -105,6 +112,7 @@ func Run(c Config) error {
 		fmt.Println(w)
 	} else {
 		out, err := SendEmail(EmailParameters{
+			Config:  c,
 			From:    c.From,
 			To:      strings.Split(to, ","),
 			Subject: c.Subject,
@@ -129,7 +137,18 @@ func Run(c Config) error {
 	return nil
 }
 
+func Head() (string, error) {
+	cmd := exec.Command("git", "rev-parse", "HEAD")
+	w := new(bytes.Buffer)
+	cmd.Stdout = w
+	if err := cmd.Run(); err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(w.String()), nil
+}
+
 type EmailParameters struct {
+	Config
 	From    string
 	To      []string
 	Subject string
