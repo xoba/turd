@@ -76,3 +76,7 @@ be voluntarily followed by concerned users of the system. the oversight
 groups should also publish ways they can be contacted, and be receptive
 to unsolicited reports that thus come in to their attention.
 
+notes for EAR's:
+
+https://www.linuxfoundation.org/blog/2020/07/understanding-us-export-controls-with-open-source-projects/
+

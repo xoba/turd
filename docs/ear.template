@@ -1,0 +1,23 @@
+<p>
+dear sir or madam:
+
+<p>
+we are hereby registering our export compliance notification for the turd project, please see below for details.
+
+<pre>Project: {{.Project}}
+Sent: {{.Sent.Format "2006-01-02"}}
+    SUBMISSION TYPE: {{.Type}}
+    SUBMITTED BY: {{.By}}
+    SUBMITTED FOR: {{.For}}
+    POINT OF CONTACT: {{.Contact}}
+    TELEPHONE: {{.Phone}}
+    MANUFACTURER(S): {{.Manufacturer}}
+    PRODUCT NAME/MODEL #: {{.Product}}
+    ECCN: {{.ECCN}}
+    INTERNET LOCATION(S): {{.Locations}}
+</pre>
+
+<p>
+thanks and best regards,
+<br>
+{{.Sender}}
